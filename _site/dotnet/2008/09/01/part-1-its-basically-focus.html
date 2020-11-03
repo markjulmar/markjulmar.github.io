@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Part 1: It’s Basically Focus | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="Part 1: It’s Basically Focus" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Focus Types" />
+<meta property="og:description" content="Focus Types" />
+<link rel="canonical" href="http://localhost:4000/dotnet/2008/09/01/part-1-its-basically-focus.html" />
+<meta property="og:url" content="http://localhost:4000/dotnet/2008/09/01/part-1-its-basically-focus.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2008-09-01T19:00:00-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Part 1: It’s Basically Focus" />
+<script type="application/ld+json">
+{"headline":"Part 1: It’s Basically Focus","dateModified":"2008-09-01T19:00:00-05:00","datePublished":"2008-09-01T19:00:00-05:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/dotnet/2008/09/01/part-1-its-basically-focus.html"},"description":"Focus Types","url":"http://localhost:4000/dotnet/2008/09/01/part-1-its-basically-focus.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Part 1: It&#39;s Basically Focus</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2008-09-01T19:00:00-05:00" itemprop="datePublished">Sep 1, 2008
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h3 id="focus-types">Focus Types</h3>
+
+<p>As you may know, in WPF there are two types of focus: <strong>logical</strong> focus and <strong>keyboard</strong> focus.</p>
+
+<p><strong>Keyboard focus</strong> is the easiest to grasp: the element with keyboard focus is where any keystrokes will end up. Only one element can have keyboard focus at any particular time, and it’s possible that no element currently has keyboard focus (this happens most commonly when the application itself is not the activated application).</p>
+
+<p><strong>Logical focus</strong> is a little murkier. Logical focus represents where keyboard focus <em>could</em> go within a group of elements. There may be multiple elements with logical focus within the application and one of them likely has keyboard focus.  Having keyboard focus automatically indicates logical focus but not vice-versa.</p>
+
+<p>This distinction is modeled after Win32 itself – each thread has one HWND it has identified to have focus but only one of them really has input focus at any given point in time.</p>
+
+<p>In WPF, logical focus is tracked and managed by a <em>Focus Scope</em>. A focus scope is created by certain elements to keep track of which element should have focus. There can be multiple focus scopes within the application – each identifying a single element that has logical focus.  Focus scopes are created and managed by the FocusManager class.  It exposes two attached properties and the requisite static method wrappers to access them:</p>
+
+<p><strong>IsFocusScope</strong> - determines whether the current object is a focus scope. <strong>FocusedElement</strong> - returns which element child of the given focus scope object has logical focus.</p>
+
+<p>It also exposes a handy method to find the focus scope for a given element - <strong>GetFocusScope</strong></p>
+
+<p>So what creates a focus scope and why do we need more than one?  Well, the elements in WPF that create focus scopes by default are <strong>Window</strong>, <strong>Menu</strong>, <strong>ContextMenu</strong> and <strong>ToolBar</strong>. The reason we need more than one is to ensure your application works the way you expect it to.  When you are typing in a <strong>TextBox</strong> and click a menu item, you really want focus to return to the original <strong>TextBox</strong> once the menu is dismissed. That’s focus scopes in action – the Window maintains <em>logical focus</em> in the <strong>TextBox</strong> and when you click on the menu, keyboard focus shifts to the menu. Since it maintains its own focus scope, it has its own logically focused element that WPF sets focus to (the menu and menu items in this case). Once you shift back to the window, keyboard focus moves back to that focus scope’s logical focus: the text box.  Without focus scopes to track the original focus holder, WPF wouldn’t know where focus should go.</p>
+
+<p>Focus scopes are also critical to command routing – often execution of commands depends upon focus. Some commands become active because a specific control which has a handler for the command has focus. Without focus scopes, we could not have menu items and toolbar buttons initiate those commands – they would steal focus away from the target, making the command unavailable. However, when WPF encounters a focus scope it checks the element that has logical focus in that scope to see if it can handle the command. If not, the command continues routing up to the parent of the focus scope.</p>
+
+<p>To show all of this behavior, I have rigged up a sample application with two windows. The first is a traditional text editor window with a menu and toolbar and a RichEdit control for the content. It looks like:</p>
+
+<p><img src="/images/ste001.jpg" alt="ste001.jpg" /></p>
+
+<p>Forgive my 5-minute graphics for the buttons – I just threw them together in Visual Studio, a real project would use Blend to generate the graphics.</p>
+
+<p>Regardless of it’s look, the application functions the way you expect – you can type in the text field, click buttons and select menu choices to Open, Cut, Copy and Paste content. The Cut/Copy/Paste commands are only available when the TextBox is in the appropriate state:</p>
+
+<p><strong>Cut:</strong>  TextBox has focus and has some text selected. <strong>Copy:</strong> TextBox has focus and has some text selected. <strong>Paste:</strong> TextBox has focus and text exists on the clipboard.</p>
+
+<p>This is all an artifact of the routed command system in WPF – the TextBox has command handlers registered for <strong>ApplicationCommands.Cut</strong>, <strong>ApplicationCommands.Copy</strong> and <strong>ApplicationCommands.Paste</strong> and when it has focus (and the above criteria is met) those commands <em>could</em> be executed.</p>
+
+<p>When you click on a button or a menu choice, it executes the command it is associated with and WPF decides which handler should be called. This normally involves walking the visual tree:</p>
+
+<p><img src="/images/ste002.jpg" alt="ste002.jpg" /></p>
+
+<p>In this case, if the menu item for “Cut” were selected, it would start looking at the menu, then move up the tree consulting each parent and looking for a <strong>CommandBinding</strong> to handle the command. If that were the whole story then the Cut command would never happen because nothing in the visual tree above the menu has a binding to execute the Cut command. But, of course,  it’s not the whole story – in this case, WPF sees that the Window is a focus scope and so it gets the logically focused element from the Window and looks for a CommandBinding there. That happens to be our RichTextBox – which is where the command ultimately gets handled.</p>
+
+<p>To see all of this in action, the second part of the application is a focus scope monitor window.</p>
+
+<p><img src="/images/ste004.jpg" alt="ste004.jpg" /></p>
+
+<p>It shows all the known focus scopes and what the active focused element is, as well as whether that element has keyboard focus. The window is live so as you click around in the text editor you can see focus shifting and changing.  The element with keyboard focus is the Paste menu item – notice that the rich text box is the logically focused item for “Window1” but does not have keyboard focus. Once you select the menu choice (or cancel) then keyboard focus shifts back to Window1 which assigns it to the RichTextBox.</p>
+
+<p><img src="/images/ste003.jpg" alt="ste003.jpg" /></p>
+
+<p>If you’d like to play with this sample, you can get the full source code <a href="/samples/SimpleEditor.zip">here</a>.</p>
+
+<p>In the next blog post, I’ll write about how you can programmatically assign and control focus in code and XAML.</p>
+
+  </div><a class="u-url" href="/dotnet/2008/09/01/part-1-its-basically-focus.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Using the Message Mediator Service in MVVM Helpers | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="Using the Message Mediator Service in MVVM Helpers" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="One of the services exposed in the MVVM Helpers library is a Message Mediator. This service implements the mediator design pattern which is used to enable objects to talk to each other without having any explicit knowledge of each other. In this pattern, we use a third-party object (the “mediator”) to negotiate communication between the interested parties." />
+<meta property="og:description" content="One of the services exposed in the MVVM Helpers library is a Message Mediator. This service implements the mediator design pattern which is used to enable objects to talk to each other without having any explicit knowledge of each other. In this pattern, we use a third-party object (the “mediator”) to negotiate communication between the interested parties." />
+<link rel="canonical" href="http://localhost:4000/mvvm/2011/02/21/using-the-message-mediator-service-in-mvvm-helpers.html" />
+<meta property="og:url" content="http://localhost:4000/mvvm/2011/02/21/using-the-message-mediator-service-in-mvvm-helpers.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2011-02-21T18:00:00-06:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Using the Message Mediator Service in MVVM Helpers" />
+<script type="application/ld+json">
+{"headline":"Using the Message Mediator Service in MVVM Helpers","dateModified":"2011-02-21T18:00:00-06:00","datePublished":"2011-02-21T18:00:00-06:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/mvvm/2011/02/21/using-the-message-mediator-service-in-mvvm-helpers.html"},"description":"One of the services exposed in the MVVM Helpers library is a Message Mediator. This service implements the mediator design pattern which is used to enable objects to talk to each other without having any explicit knowledge of each other. In this pattern, we use a third-party object (the “mediator”) to negotiate communication between the interested parties.","url":"http://localhost:4000/mvvm/2011/02/21/using-the-message-mediator-service-in-mvvm-helpers.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Using the Message Mediator Service in MVVM Helpers</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2011-02-21T18:00:00-06:00" itemprop="datePublished">Feb 21, 2011
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>One of the services exposed in the MVVM Helpers library is a Message Mediator.  This service implements the <a href="http://www.dofactory.com/Patterns/PatternMediator.aspx">mediator design pattern</a> which is used to enable objects to talk to each other without having any explicit knowledge of each other.  In this pattern, we use a third-party object (the “mediator”) to negotiate communication between the interested parties.</p>
+
+<p>The message mediator is actually part of the <strong>JulMar.Core</strong> assembly – this is a general .NET assembly that contains useful code, extensions and services which are not specific to the presentation technology being used (i.e. they can be used in any .NET project type).  I actually work in all kinds of fields and technologies, but WPF has a special place in my heart – and it turns out this service is pretty useful for GUI applications to enable loose-coupling between elements, particularly when you are relying on other design patterns such as Model-View-ViewModel (MVVM).</p>
+
+<p>To introduce the service, let’s look at the definition of the interface that describes it in <strong>JulMar.Core.Interfaces</strong>:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">///&lt;summary&gt;</span>
+<span class="c1">/// The interface definition for our Message mediator.  This allows loose-event coupling between components</span>
+<span class="c1">/// in an application by sending messages to registered elements.</span>
+<span class="c1">///&lt;/summary&gt;</span>
+<span class="k">public</span> <span class="k">interface</span> <span class="nc">IMessageMediator</span>
+<span class="p">{</span>
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// This registers a Type with the mediator.  Any methods decorated with &lt;seealso cref="MessageMediatorTargetAttribute"/&gt; will be </span>
+    <span class="c1">/// registered as target method handlers for the given message key.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="c1">/// &lt;param name="view"&gt;Object to register&lt;/param&gt;</span>
+    <span class="k">void</span> <span class="nf">Register</span><span class="p">(</span><span class="kt">object</span> <span class="n">view</span><span class="p">);</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// This method unregisters a type from the message mediator.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="c1">/// &lt;param name="view"&gt;Object to unregister&lt;/param&gt;</span>
+    <span class="k">void</span> <span class="nf">Unregister</span><span class="p">(</span><span class="kt">object</span> <span class="n">view</span><span class="p">);</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// This registers a specific method as a message handler for a specific type.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="c1">/// &lt;param name="key"&gt;Message key&lt;/param&gt;</span>
+    <span class="c1">/// &lt;param name="handler"&gt;Handler method&lt;/param&gt;</span>
+    <span class="k">void</span> <span class="n">RegisterHandler</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;(</span><span class="kt">string</span> <span class="n">key</span><span class="p">,</span> <span class="n">Action</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;</span> <span class="n">handler</span><span class="p">);</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// This registers a specific method as a message handler for a specific type.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="c1">/// &lt;param name="handler"&gt;Handler method&lt;/param&gt;</span>
+    <span class="k">void</span> <span class="n">RegisterHandler</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;(</span><span class="n">Action</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;</span> <span class="n">handler</span><span class="p">);</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// This unregisters a method as a handler.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="c1">/// &lt;param name="key"&gt;Message key&lt;/param&gt;</span>
+    <span class="c1">/// &lt;param name="handler"&gt;Handler&lt;/param&gt;</span>
+    <span class="k">void</span> <span class="n">UnregisterHandler</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;(</span><span class="kt">string</span> <span class="n">key</span><span class="p">,</span> <span class="n">Action</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;</span> <span class="n">handler</span><span class="p">);</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// This unregisters a method as a handler for a specific type</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="c1">/// &lt;param name="handler"&gt;Handler&lt;/param&gt;</span>
+    <span class="k">void</span> <span class="n">UnregisterHandler</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;(</span><span class="n">Action</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;</span> <span class="n">handler</span><span class="p">);</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// This method broadcasts a message to all message targets for a given</span>
+    <span class="c1">/// message key and passes a parameter.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="c1">/// &lt;param name="key"&gt;Message key&lt;/param&gt;</span>
+    <span class="c1">/// &lt;param name="message"&gt;Message parameter&lt;/param&gt;</span>
+    <span class="c1">/// &lt;returns&gt;True/False if any handlers were invoked.&lt;/returns&gt;</span>
+    <span class="kt">bool</span> <span class="n">SendMessage</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;(</span><span class="kt">string</span> <span class="n">key</span><span class="p">,</span> <span class="n">T</span> <span class="n">message</span><span class="p">);</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// This method broadcasts a message to all message targets for a given parameter type.</span>
+    <span class="c1">/// If a derived type is passed, any handlers for interfaces or base types will also be</span>
+    <span class="c1">/// invoked.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="c1">/// &lt;param name="message"&gt;Message parameter&lt;/param&gt;</span>
+    <span class="c1">/// &lt;returns&gt;True/False if any handlers were invoked.&lt;/returns&gt;</span>
+    <span class="kt">bool</span> <span class="n">SendMessage</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;(</span><span class="n">T</span> <span class="n">message</span><span class="p">);</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// This method broadcasts a message to all message targets for a given</span>
+    <span class="c1">/// message key and passes a parameter.  The message targets are all called</span>
+    <span class="c1">/// asynchronously and any resulting exceptions are ignored.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="c1">/// &lt;param name="key"&gt;Message key&lt;/param&gt;</span>
+    <span class="c1">/// &lt;param name="message"&gt;Message parameter&lt;/param&gt;</span>
+    <span class="k">void</span> <span class="n">SendMessageAsync</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;(</span><span class="kt">string</span> <span class="n">key</span><span class="p">,</span> <span class="n">T</span> <span class="n">message</span><span class="p">);</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// This method broadcasts a message to all message targets for a given parameter type.</span>
+    <span class="c1">/// If a derived type is passed, any handlers for interfaces or base types will also be</span>
+    <span class="c1">/// invoked.  The message targets are all called asynchronously and any resulting exceptions</span>
+    <span class="c1">/// are ignored.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="c1">/// &lt;param name="message"&gt;Message parameter&lt;/param&gt;</span>
+    <span class="k">void</span> <span class="n">SendMessageAsync</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;(</span><span class="n">T</span> <span class="n">message</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>As with most things in MVVM Helpers, the above interface has a private, internal implementation that is used by default – you an override services by supplying your own implementation of the above interface in your code.  It will get picked up automatically by the library (I use MEF to pair up dependencies) assuming you go through the service locator (<strong>IServiceProvider</strong>).  I’ll show an example of getting the service in a moment.</p>
+
+<p>If you examine the interface, most of the methods relate to actually sending messages and then there are a couple of methods used for registration and de-registration with the mediator.  The point of this service is to loosely couple things together, to accomplish that, the two endpoints both take a dependency against the mediator service – one side registers with the mediator to receive traffic, the other side sends traffic.  If both sides register you can perform bi-directional messaging.  All the message sent by the built-in implementation simply use delegates to wire things together – so it’s all in-AppDomain messaging.  If you need to go cross-AppDomain, cross-process, or cross-machine, consider using a formal WCF service or a message queue implementation.</p>
+
+<p>To start off with, let’s look at the registration APIs.  There are three basic forms:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">void</span> <span class="nf">Register</span><span class="p">(</span><span class="kt">object</span> <span class="n">view</span><span class="p">);</span>  
+<span class="k">void</span> <span class="n">RegisterHandler</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;(</span><span class="kt">string</span> <span class="n">key</span><span class="p">,</span> <span class="n">Action</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;</span> <span class="n">handler</span><span class="p">);</span>  
+<span class="k">void</span> <span class="n">RegisterHandler</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;(</span><span class="n">Action</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;</span> <span class="n">handler</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>Basically, there are two types of registration – direct (<strong>RegisterHandler</strong>), and attributed (<strong>Register</strong>).  Both forms accomplish exactly the same thing, just in different ways.</p>
+
+<p><strong>RegisterHandler</strong> is useful if you have a single method you want to have as a target for a message, or if you have an anonymous method (or lambda) you want to assign as the target of a message.  It has two forms – both take an <code class="language-plaintext highlighter-rouge">Action&lt;T&gt;</code> handler which is the actual target body.  One of the forms also takes a string <strong>key</strong>.</p>
+
+<p>The message mediator service provided here has two ways of sending messages – one involves just passing a typed data structure, the other involves passing a data structure and a key to identify the target.  The key is always a string (for simplicity), and can be anything you like but the sender and receiver have to agree on the string and the case must match.  When no key is supplied, the object data type is used as the key – so anytime that specific type of object is used as the parameter for a message, registered targets expecting that type of object will be notified.</p>
+
+<p>The <strong>Register</strong> method is a bit more mysterious in terms of how it works.  It allows multiple subscriber endpoints to be registered on an object as a group.  The single parameter is the object implementing the subscriber (target) methods.  Each method must be decorated with a <code class="language-plaintext highlighter-rouge">[MessageMediatorTarget]</code> attribute (at least for the built-in implementation, if you replaced it then you could use whatever convention you like).</p>
+
+<p>There are also paired un-register methods:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">void</span> <span class="nf">Unregister</span><span class="p">(</span><span class="kt">object</span> <span class="n">view</span><span class="p">);</span>  
+<span class="k">void</span> <span class="n">UnregisterHandler</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;(</span><span class="kt">string</span> <span class="n">key</span><span class="p">,</span> <span class="n">Action</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;</span> <span class="n">handler</span><span class="p">);</span>  
+<span class="k">void</span> <span class="n">UnregisterHandler</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;(</span><span class="n">Action</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;</span> <span class="n">handler</span><span class="p">);</span>  
+</code></pre></div></div>
+
+<p>If the lifetime of the publisher / subscriber are different then you should make sure to unregister from the mediator to allow the subscriber to be efficiently collected.  The built-in implementation of the service doesn’t explicitly require this at it holds onto weak references to the delegates and instances so they will be released when they are no longer necessary.  This also means any lambda you use must be an instance lambda or it might go away unintentionally – make sure you hold references to your subscribers while they are to be alive (make them static if you want global lifetime for example).</p>
+
+<p>The other methods on the interface are for the publisher and revolve around <em>sending</em> messages.</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">bool</span> <span class="n">SendMessage</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;(</span><span class="kt">string</span> <span class="n">key</span><span class="p">,</span> <span class="n">T</span> <span class="n">message</span><span class="p">);</span>  
+<span class="kt">bool</span> <span class="n">SendMessage</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;(</span><span class="n">T</span> <span class="n">message</span><span class="p">);</span>  
+<span class="k">void</span> <span class="n">SendMessageAsync</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;(</span><span class="kt">string</span> <span class="n">key</span><span class="p">,</span> <span class="n">T</span> <span class="n">message</span><span class="p">);</span>  
+<span class="k">void</span> <span class="n">SendMessageAsync</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;(</span><span class="n">T</span> <span class="n">message</span><span class="p">);</span>  
+</code></pre></div></div>
+
+<p>Notice there are overrides for using a typed message with and without a key, and there are async versions available which will send the message on a background thread.  The default behavior with <strong>Send</strong> is to send on the caller thread and block the caller while the message is being processed.  These synchronous versions return a true/false result indicating if a target processed the message.  The async forms do not have any (easy) way to return a result.</p>
+
+<p>Let’s get to some examples to make this a little more concrete.  First, I am going to create a new WPF 4.0 project in Visual Studio 2010 – I’ll name it <strong>MessageMediatorExamples</strong> for clarity (the code is at the end of the article if you’d like to download the sample).  Once it’s done creating, I’ll add the required libraries through NuGet (<a href="http://www.nuget.org">www.nuget.org</a>) by right-clicking on the solution and selecting “Add Library Package Reference”:</p>
+
+<p><img src="/images/using-the-message-mediator-service-in-mvvm-helpers-image_thumb.png" alt="image" title="image" /></p>
+
+<p>If you search in the packages for MVVMHelpers you will find it:</p>
+
+<p><img src="/images/using-the-message-mediator-service-in-mvvm-helpers-image_thumb_1.png" alt="image" title="image" /></p>
+
+<p>Install the package and it adds the required assemblies for you.  Pretty cool stuff – easy to use.</p>
+
+<p>To show off the mediator, I setup the <strong>MainWindow</strong> to have a <strong>TextBox</strong> as it’s primary content – I then created a <strong>ViewModel</strong> to hold the data for it:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">class</span> <span class="nc">MainViewModel</span> <span class="p">:</span> <span class="n">ViewModel</span>  
+<span class="p">{</span>  
+    <span class="k">private</span> <span class="kt">string</span> <span class="n">_text</span><span class="p">,</span> <span class="n">_font</span><span class="p">,</span> <span class="n">_foregroundColor</span><span class="p">,</span> <span class="n">_backgroundColor</span><span class="p">;</span>  
+    <span class="k">private</span> <span class="kt">double</span> <span class="n">_fontSize</span><span class="p">;</span>  
+  
+    <span class="k">public</span> <span class="kt">string</span> <span class="n">Text</span>  
+    <span class="p">{</span>  
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_text</span><span class="p">;</span> <span class="p">}</span>  
+        <span class="k">set</span> <span class="p">{</span> <span class="n">_text</span> <span class="p">=</span> <span class="k">value</span><span class="p">;</span> <span class="nf">OnPropertyChanged</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="n">Text</span><span class="p">);</span> <span class="p">}</span>  
+    <span class="p">}</span>  
+  
+    <span class="k">public</span> <span class="kt">string</span> <span class="n">Font</span>  
+    <span class="p">{</span>  
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_font</span><span class="p">;</span> <span class="p">}</span>  
+        <span class="k">set</span> <span class="p">{</span> <span class="n">_font</span> <span class="p">=</span> <span class="k">value</span><span class="p">;</span> <span class="nf">OnPropertyChanged</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="n">Font</span><span class="p">);</span> <span class="p">}</span>  
+    <span class="p">}</span>  
+  
+    <span class="k">public</span> <span class="kt">string</span> <span class="n">ForegroundColor</span>  
+    <span class="p">{</span>  
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_foregroundColor</span><span class="p">;</span> <span class="p">}</span>  
+        <span class="k">set</span> <span class="p">{</span> <span class="n">_foregroundColor</span> <span class="p">=</span> <span class="k">value</span><span class="p">;</span> <span class="nf">OnPropertyChanged</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="n">ForegroundColor</span><span class="p">);</span> <span class="p">}</span>  
+    <span class="p">}</span>  
+  
+    <span class="k">public</span> <span class="kt">string</span> <span class="n">BackgroundColor</span>  
+    <span class="p">{</span>  
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_backgroundColor</span><span class="p">;</span> <span class="p">}</span>  
+        <span class="k">set</span> <span class="p">{</span> <span class="n">_backgroundColor</span> <span class="p">=</span> <span class="k">value</span><span class="p">;</span> <span class="nf">OnPropertyChanged</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="n">BackgroundColor</span><span class="p">);</span> <span class="p">}</span>  
+    <span class="p">}</span>  
+  
+    <span class="k">public</span> <span class="kt">double</span> <span class="n">FontSize</span>  
+    <span class="p">{</span>  
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_fontSize</span><span class="p">;</span> <span class="p">}</span>  
+        <span class="k">set</span> <span class="p">{</span> <span class="n">_fontSize</span> <span class="p">=</span> <span class="k">value</span><span class="p">;</span> <span class="nf">OnPropertyChanged</span><span class="p">(</span><span class="s">"FontSize"</span><span class="p">);</span> <span class="p">}</span>  
+    <span class="p">}</span>  
+  
+    <span class="k">public</span> <span class="nf">MainViewModel</span><span class="p">()</span>  
+    <span class="p">{</span>  
+       <span class="p">...</span>  
+    <span class="p">}</span>  
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>I set this view model as the DataContext for the window in XAML and data bound the properties of the <code class="language-plaintext highlighter-rouge">TextBox</code> to the View Model properties:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;Window</span> <span class="na">x:Class=</span><span class="s">"MessageMediatorExamples.MainWindow"</span>  
+        <span class="na">xmlns=</span><span class="s">"http://schemas.microsoft.com/winfx/2006/xaml/presentation"</span>  
+        <span class="na">xmlns:x=</span><span class="s">"http://schemas.microsoft.com/winfx/2006/xaml"</span>
+        <span class="na">xmlns:ViewModels=</span><span class="s">"clr-namespace:MessageMediatorExamples.ViewModels"</span>
+        <span class="na">Title=</span><span class="s">"MainWindow"</span> <span class="na">mc:Ignorable=</span><span class="s">"d"</span> <span class="na">xmlns:d=</span><span class="s">"http://schemas.microsoft.com/expression/blend/2008"</span>   
+        <span class="na">xmlns:mc=</span><span class="s">"http://schemas.openxmlformats.org/markup-compatibility/2006"</span> <span class="na">d:DesignHeight=</span><span class="s">"300"</span> <span class="na">d:DesignWidth=</span><span class="s">"400"</span><span class="nt">&gt;</span>  
+
+    <span class="nt">&lt;Window.DataContext&gt;</span>  
+        <span class="nt">&lt;ViewModels:MainViewModel</span> <span class="nt">/&gt;</span>  
+    <span class="nt">&lt;/Window.DataContext&gt;</span>  
+
+    <span class="nt">&lt;DockPanel</span> <span class="na">Background=</span><span class="s">"DarkOliveGreen"</span><span class="nt">&gt;</span>  
+        <span class="nt">&lt;TextBox</span> <span class="na">Margin=</span><span class="s">"5"</span> <span class="na">AcceptsReturn=</span><span class="s">"True"</span> <span class="na">TextWrapping=</span><span class="s">"Wrap"</span>  
+                 <span class="na">VerticalScrollBarVisibility=</span><span class="s">"Auto"</span>  
+                 <span class="na">Text=</span><span class="s">"{Binding Text}"</span>   
+                 <span class="na">Foreground=</span><span class="s">"{Binding ForegroundColor}"</span>  
+                 <span class="na">Background=</span><span class="s">"{Binding BackgroundColor}"</span>  
+                 <span class="na">FontFamily=</span><span class="s">"{Binding Font}"</span>   
+                 <span class="na">FontSize=</span><span class="s">"{Binding FontSize}"</span><span class="nt">/&gt;</span>  
+    <span class="nt">&lt;/DockPanel&gt;</span>  
+<span class="nt">&lt;/Window&gt;</span>
+</code></pre></div></div>
+
+<p>Running the application produces the expected results:</p>
+
+<p><img src="/images/image_thumb_4.png" alt="image" title="image" /></p>
+
+<p>Next, I added two more windows to the project – one to hold fonts and the other to hold colors.  Since this post is about the mediator, I’ll leave the implementation of these to your imagination (or to looking at the final sample!)</p>
+
+<p>Our goal is to link the three of these together using the message mediator.  As a first step, let’s add some support to invoke the dialogs.  Users of MVVMHelpers are aware that it includes a visualization service for this, but I’m not going to use it here – instead, let’s send a message to the view from the ViewModel to actually create a secondary view bound to the same view model.  We’ll do this for both dialogs – to actually invoke the dialog we’ll use commands bound to two toolbar buttons:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;ToolBar</span> <span class="na">DockPanel.Dock=</span><span class="s">"Top"</span><span class="nt">&gt;</span>  
+    <span class="nt">&lt;Button</span> <span class="na">Content=</span><span class="s">"Colors"</span> <span class="na">Command=</span><span class="s">"{Binding ChangeColors}"</span> <span class="nt">/&gt;</span>  
+    <span class="nt">&lt;Button</span> <span class="na">Content=</span><span class="s">"Fonts"</span> <span class="na">Command=</span><span class="s">"{Binding ChangeFonts}"</span> <span class="nt">/&gt;</span>  
+<span class="nt">&lt;/ToolBar&gt;</span>  
+</code></pre></div></div>
+
+<p>.. and in the View Model, create the command handlers using the <strong>DelegatingCommand</strong> object:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="n">ICommand</span> <span class="n">ChangeColors</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>  
+<span class="k">public</span> <span class="n">ICommand</span> <span class="n">ChangeFonts</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>  
+  
+<span class="k">public</span> <span class="nf">MainViewModel</span><span class="p">()</span>  
+<span class="p">{</span>  
+    <span class="p">...</span>  
+    <span class="n">ChangeColors</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">DelegatingCommand</span><span class="p">(</span><span class="n">OnChangeColors</span><span class="p">);</span>  
+    <span class="n">ChangeFonts</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">DelegatingCommand</span><span class="p">(</span><span class="n">OnChangeFonts</span><span class="p">);</span>  
+<span class="p">}</span>  
+  
+<span class="k">private</span> <span class="k">void</span> <span class="nf">OnChangeColors</span><span class="p">()</span>  
+<span class="p">{</span>  
+<span class="p">}</span>  
+  
+<span class="k">private</span> <span class="k">void</span> <span class="nf">OnChangeFonts</span><span class="p">()</span>  
+<span class="p">{</span>  
+<span class="p">}</span>  
+</code></pre></div></div>
+
+<p>Now, when we handle the commands, we’ll send a message to the main view to create the appropriate modaless dialogs for us – passing our view model as a parameter, and using a string key to identify the action.  When using string-based keys, I prefer to consolidate the strings to a known class – here I’ll call it <strong>ViewMessages</strong>:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">static</span> <span class="k">class</span> <span class="nc">ViewMessages</span>  
+<span class="p">{</span>  
+    <span class="k">public</span> <span class="k">const</span> <span class="kt">string</span> <span class="n">ChangeColors</span> <span class="p">=</span> <span class="s">"ChangeColors"</span><span class="p">;</span>  
+    <span class="k">public</span> <span class="k">const</span> <span class="kt">string</span> <span class="n">ChangeFonts</span> <span class="p">=</span> <span class="s">"ChangeFonts"</span><span class="p">;</span>  
+<span class="p">}</span>  
+</code></pre></div></div>
+
+<p>Then, I’ll call the built-in <strong>SendMessage</strong> method I inherit from the <strong>ViewModel</strong> base class to send the message to the mediator, note that if you derive from SimpleViewModel, or are not in the ViewModel inheritance change then you would need to get the <strong>IMessageMediator</strong> implementation either through dependency injection or through the service locator service – more on that in a second.</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">private</span> <span class="k">void</span> <span class="nf">OnChangeColors</span><span class="p">()</span>  
+<span class="p">{</span>  
+    <span class="k">this</span><span class="p">.</span><span class="nf">SendMessage</span><span class="p">(</span><span class="n">ViewMessages</span><span class="p">.</span><span class="n">ChangeColors</span><span class="p">,</span> <span class="k">this</span><span class="p">);</span>  
+<span class="p">}</span>  
+  
+<span class="k">private</span> <span class="k">void</span> <span class="nf">OnChangeFonts</span><span class="p">()</span>  
+<span class="p">{</span>  
+    <span class="k">this</span><span class="p">.</span><span class="nf">SendMessage</span><span class="p">(</span><span class="n">ViewMessages</span><span class="p">.</span><span class="n">ChangeFonts</span><span class="p">,</span> <span class="k">this</span><span class="p">);</span>  
+<span class="p">}</span>  
+</code></pre></div></div>
+
+<p>Now, we need a handler for both of these messages.  Since I want to perform a view-specific action here that’s not testable, the clear place to put this logic is into the View, so let’s switch to the MainWindow.xaml.cs and add a handler for the message.  Recall there are two ways to register a handler – through attributes, or through direct registration.  We’ll use both to show how they work.  In order to register handlers, we need access to the message mediator.  The easiest way to get the instance is to ask for it:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">partial</span> <span class="k">class</span> <span class="nc">MainWindow</span>  
+<span class="p">{</span>  
+    <span class="k">private</span> <span class="n">IMessageMediator</span> <span class="n">_messageMediator</span><span class="p">;</span>  
+  
+    <span class="k">public</span> <span class="nf">MainWindow</span><span class="p">()</span>  
+    <span class="p">{</span>  
+        <span class="n">_messageMediator</span> <span class="p">=</span> <span class="n">ViewModel</span><span class="p">.</span><span class="n">ServiceProvider</span><span class="p">.</span><span class="n">Resolve</span><span class="p">&lt;</span><span class="n">IMessageMediator</span><span class="p">&gt;();</span>  
+  
+        <span class="nf">InitializeComponent</span><span class="p">();</span>  
+    <span class="p">}</span>  
+<span class="p">}</span>  
+</code></pre></div></div>
+
+<p>You could also add an <code class="language-plaintext highlighter-rouge">[Import]</code> attribute and then ask MEF to compose the view – that would inject the implementation into the view, but for simplicity, let’s pull the value.  Next, let’s register a handler for the Color message:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="nf">MainWindow</span><span class="p">()</span>  
+<span class="p">{</span>  
+    <span class="n">_messageMediator</span> <span class="p">=</span> <span class="n">ViewModel</span><span class="p">.</span><span class="n">ServiceProvider</span><span class="p">.</span><span class="n">Resolve</span><span class="p">&lt;</span><span class="n">IMessageMediator</span><span class="p">&gt;();</span>  
+  
+    <span class="n">_messageMediator</span><span class="p">.</span><span class="n">RegisterHandler</span><span class="p">&lt;</span><span class="n">MainViewModel</span><span class="p">&gt;(</span><span class="n">ViewMessages</span><span class="p">.</span><span class="n">ChangeColors</span><span class="p">,</span> <span class="n">OnChangeColors</span><span class="p">);</span>  
+  
+    <span class="nf">InitializeComponent</span><span class="p">();</span>  
+<span class="p">}</span>  
+  
+<span class="k">private</span> <span class="k">void</span> <span class="nf">OnChangeColors</span><span class="p">(</span><span class="n">MainViewModel</span> <span class="n">vm</span><span class="p">)</span>  
+<span class="p">{</span>  
+      
+<span class="p">}</span>  
+</code></pre></div></div>
+
+<p>Notice how we get type safety by using the generic version?  If you want to handle <em>any</em> object as the parameter you can use the non-generic form of the <strong>RegisterHandler</strong> as well.  This will call the target method with a general object type vs. requiring it to be a MainViewModel as shown here.</p>
+
+<p>The implementation will show the color dialog – setting it’s <code class="language-plaintext highlighter-rouge">DataContext</code> to be the passed view model.  For the second (font) window, we’ll use the attribute syntax – this involves adding a <strong>[MessageMediatorTarget]</strong> attribute to the target method:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="nf">MessageMediatorTarget</span><span class="p">(</span><span class="n">ViewMessages</span><span class="p">.</span><span class="n">ChangeFonts</span><span class="p">)]</span>  
+<span class="k">private</span> <span class="k">void</span> <span class="nf">OnChangeFonts</span><span class="p">(</span><span class="n">MainViewModel</span> <span class="n">vm</span><span class="p">)</span>  
+<span class="p">{</span>  
+    <span class="n">FontWindow</span> <span class="n">window</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">FontWindow</span><span class="p">()</span> <span class="p">{</span><span class="n">DataContext</span> <span class="p">=</span> <span class="n">vm</span><span class="p">};</span>  
+    <span class="n">window</span><span class="p">.</span><span class="nf">Show</span><span class="p">();</span>  
+<span class="p">}</span>  
+</code></pre></div></div>
+
+<p>Now, in order to make this work, I need to also call the Register method – passing my view instance – we’ll do this in the constructor:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">_messageMediator</span><span class="p">.</span><span class="nf">Register</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>  
+</code></pre></div></div>
+
+<p>This will use reflection on the instance and identify all instance methods with the attribute applied – it will then call <strong>RegisterHandler</strong> for each one.  With the magic of Data Binding (remember the child dialogs are sharing the main view model – and they have their selections bound to the same properties being used by the TextBox), we get simple font and color changes applied easily:</p>
+
+<p><img src="/images/image_thumb_5.png" alt="image" title="image" /></p>
+
+<p>You can also send messages using a typed data structure.  For example, if we wanted to encapsulate all the font / color information into a single dialog and then use a child view model to drive it we could do this:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">FontColorInfo</span>  
+<span class="p">{</span>  
+   <span class="k">public</span> <span class="kt">string</span> <span class="n">ForegroundColor</span> <span class="p">{</span><span class="k">get</span><span class="p">;</span><span class="k">set</span><span class="p">;}</span>  
+   <span class="k">public</span> <span class="kt">string</span> <span class="n">BackgroundColor</span> <span class="p">{</span><span class="k">get</span><span class="p">;</span><span class="k">set</span><span class="p">;}</span>  
+   <span class="k">public</span> <span class="kt">string</span> <span class="n">Font</span> <span class="p">{</span><span class="k">get</span><span class="p">;</span><span class="k">set</span><span class="p">;}</span>  
+<span class="p">}</span>  
+<span class="p">...</span>  
+  
+<span class="k">void</span> <span class="nf">OnChangeColor</span><span class="p">()</span>  
+<span class="p">{</span>  
+   <span class="k">this</span><span class="p">.</span><span class="nf">SendMessage</span><span class="p">(</span><span class="k">new</span> <span class="nf">FontColorInfo</span><span class="p">()</span> <span class="p">{</span> <span class="p">...</span> <span class="p">});</span>  
+<span class="p">}</span>  
+  
+<span class="p">...</span>  
+  
+<span class="p">[</span><span class="n">MessageMediatorTarget</span><span class="p">]</span>  
+<span class="k">void</span> <span class="nf">OnChangeFontAndColors</span><span class="p">(</span><span class="n">FontColorInfo</span> <span class="n">fci</span><span class="p">)</span>  
+<span class="p">{</span>  
+   <span class="p">..</span> <span class="n">invoke</span> <span class="n">dialog</span> <span class="k">using</span> <span class="nn">passed</span> <span class="n">data</span> <span class="p">..</span>  
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Notice that now we don’t need magic strings – but it requires you have a devoted data structure which is then used as the key for the message target lookup.  Another thing you can use the mediator for is to do dynamic queries – targets are called in sequence and can modify the passed data.  When the <code class="language-plaintext highlighter-rouge">SendMessage</code> call returns, the data could be filled in:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">void</span> <span class="nf">OnGetLoadedFiles</span><span class="p">()</span>  
+<span class="p">{</span>  
+   <span class="n">List</span><span class="p">&lt;</span><span class="kt">string</span><span class="p">&gt;</span> <span class="n">filenames</span><span class="p">;</span>  
+   <span class="nf">SendMessage</span><span class="p">(</span><span class="s">"GetLoadedFilesFromAllViews"</span><span class="p">,</span> <span class="n">filenames</span><span class="p">);</span>  
+   <span class="k">foreach</span> <span class="p">(</span><span class="kt">string</span> <span class="n">file</span> <span class="k">in</span> <span class="n">filesnames</span><span class="p">)</span>  
+   <span class="p">{</span>  
+     <span class="p">...</span>  
+   <span class="p">}</span>  
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Here we pass a message to all registered targets – each target (called sequentially) would add it’s loaded files to the passed <code class="language-plaintext highlighter-rouge">List&lt;string&gt;</code>.  When the message returns the code can process all the files in one operation.  It’s a nice, loosely coupled way of collecting data from various sources.</p>
+
+<p>The final project for this blog post is located <a href="/samples/MessageMediatorExamples.zip">here</a></p>
+
+  </div><a class="u-url" href="/mvvm/2011/02/21/using-the-message-mediator-service-in-mvvm-helpers.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

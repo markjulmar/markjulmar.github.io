@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Using Excel for VSTS Data Driven Testing | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="Using Excel for VSTS Data Driven Testing" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="A colleague of mine, Kev Jones, has posted some information on using a detached SQL Server database for driving VSTS unit tests which works great if you need a full blown SQL implementation. However, if all you want is a simple data feed, you can also use an Excel file, and as it turns out, it’s pretty easy to do." />
+<meta property="og:description" content="A colleague of mine, Kev Jones, has posted some information on using a detached SQL Server database for driving VSTS unit tests which works great if you need a full blown SQL implementation. However, if all you want is a simple data feed, you can also use an Excel file, and as it turns out, it’s pretty easy to do." />
+<link rel="canonical" href="http://localhost:4000/dotnet/2006/04/30/using-excel-for-vsts-data-driven-testing.html" />
+<meta property="og:url" content="http://localhost:4000/dotnet/2006/04/30/using-excel-for-vsts-data-driven-testing.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2006-04-30T19:00:00-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Using Excel for VSTS Data Driven Testing" />
+<script type="application/ld+json">
+{"headline":"Using Excel for VSTS Data Driven Testing","dateModified":"2006-04-30T19:00:00-05:00","datePublished":"2006-04-30T19:00:00-05:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/dotnet/2006/04/30/using-excel-for-vsts-data-driven-testing.html"},"description":"A colleague of mine, Kev Jones, has posted some information on using a detached SQL Server database for driving VSTS unit tests which works great if you need a full blown SQL implementation. However, if all you want is a simple data feed, you can also use an Excel file, and as it turns out, it’s pretty easy to do.","url":"http://localhost:4000/dotnet/2006/04/30/using-excel-for-vsts-data-driven-testing.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Using Excel for VSTS Data Driven Testing</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2006-04-30T19:00:00-05:00" itemprop="datePublished">Apr 30, 2006
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>A colleague of mine, Kev Jones, has posted some information on using a detached SQL Server database for driving VSTS unit tests which works great if you need a full blown SQL implementation.  However, if all you want is a simple data feed, you can also use an Excel file, and as it turns out, it’s pretty easy to do.</p>
+
+<p>Let’s start by stealing Kev’s sample, hopefully he won’t mind – say I have a starship class with a <strong>FirePhotonTorpedo</strong> method:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">class</span> <span class="nc">Enterprise</span>  
+<span class="p">{</span>  
+    <span class="k">private</span> <span class="kt">int</span> <span class="n">torpedosLeft</span> <span class="p">=</span> <span class="m">10</span><span class="p">;</span>  
+    <span class="k">public</span> <span class="kt">int</span> <span class="nf">FirePhotonTorpedo</span><span class="p">(</span><span class="kt">int</span> <span class="n">count</span><span class="p">)</span>  
+    <span class="p">{</span>  
+        <span class="k">if</span> <span class="p">(</span><span class="n">torpedosLeft</span> <span class="p">&lt;</span> <span class="n">count</span><span class="p">)</span>  
+            <span class="k">throw</span> <span class="k">new</span> <span class="nf">ArgumentException</span><span class="p">(</span><span class="s">"count"</span><span class="p">);</span>  
+        <span class="n">torpedosLeft</span> <span class="p">-=</span> <span class="n">count</span><span class="p">;</span>  
+
+        <span class="c1">// Instruct bridge officer to "Fire!"  </span>
+        <span class="k">return</span> <span class="n">torpedosLeft</span><span class="p">;</span>  
+    <span class="p">}</span>  
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The equivalent unit test might look something like:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="n">TestMethod</span><span class="p">]</span>  
+<span class="k">public</span> <span class="k">void</span> <span class="nf">TestFirePhotonTorpedo</span><span class="p">()</span>  
+<span class="p">{</span>  
+    <span class="n">Enterprise</span> <span class="n">target</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">Enterprise</span><span class="p">();</span>  
+    <span class="kt">int</span> <span class="n">torpedoCount</span> <span class="p">=</span> <span class="m">5</span><span class="p">;</span>  
+    <span class="kt">int</span> <span class="n">expected</span> <span class="p">=</span> <span class="m">5</span><span class="p">;</span>  
+
+    <span class="kt">int</span> <span class="n">actual</span> <span class="p">=</span> <span class="n">target</span><span class="p">.</span><span class="nf">FirePhotonTorpedo</span><span class="p">(</span><span class="n">torpedoCount</span><span class="p">);</span>  
+    <span class="n">Assert</span><span class="p">.</span><span class="nf">AreEqual</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span> <span class="n">actual</span><span class="p">,</span> <span class="s">"FirePhotonTorpedo did not return the expected value."</span><span class="p">);</span>  
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>This code just tests a specific case – I would also need to write other unit tests for edge cases and exceptional cases.  I can do this several different ways I could do this:</p>
+
+<ol>
+  <li>Write a unit test for each specific case passing each value and testing the expected result.</li>
+  <li>Put all the tests into this one unit test function – asserting each validation as we go.</li>
+  <li>Pull the input and expected out of a database and run them through the function.</li>
+</ol>
+
+<p>This last step, as Kev details can be done from a SQL database - either one reachable by all the people who might run the unit tests, or as his blog shows from a .MDF file you check in with the project and then locally attach prior to running the unit tests.</p>
+
+<p>So, to make an Excel data-driven test, the first step is to create an Excel document with columns for each of our pieces of data.  My sample Excel document has the following columns:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Column</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>ID</strong></td>
+      <td>A unique number identifying the row so we can use the Random data driven test.</td>
+    </tr>
+    <tr>
+      <td><strong>torpedoCount</strong></td>
+      <td>The input for our unit test.</td>
+    </tr>
+    <tr>
+      <td><strong>expected</strong></td>
+      <td>The expected result coming out of the function.</td>
+    </tr>
+    <tr>
+      <td><strong>shouldFail</strong></td>
+      <td>Whether the function will throw an exception.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>I can then enter a single test on each row of the given worksheet.  Here’s a screen shot –</p>
+
+<p><img src="/images/datadriven-excel1.JPG" alt="" /></p>
+
+<p>You can create multiple “tables” by adding additional sheets to the worksheet.  Each sheet can be named as appropriate; I’m naming this one “TorpedoData”.</p>
+
+<p>Now, I need to add the appropriate attribute to my test case to indicate that it should pull the data from a data source and run the method once per row found.  The key is that <em>any</em> ADO.NET data source can be used.  Here I will specify my Excel file which is named <strong>UnitTests.xls</strong> and indicate that the table itself is a particular sheet within the Excel document “TorpedoData”:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="n">TestMethod</span><span class="p">]</span>  
+<span class="p">[</span><span class="nf">DeploymentItem</span><span class="p">(</span><span class="s">"Tests.xls"</span><span class="p">)]</span> <span class="c1">// Copies the file to the deployment directory  </span>
+<span class="p">[</span><span class="nf">DataSource</span><span class="p">(</span><span class="s">"System.Data.OleDb"</span><span class="p">,</span> <span class="c1">// The provider  </span>
+    <span class="s">"Provider=Microsoft.Jet.OLEDB.4.0;Data Source=**'Tests.xls'**;Persist Security Info=False;Extended Properties='Excel 8.0'"</span><span class="p">,</span>  
+    <span class="s">"TorpedoData$"</span><span class="p">,</span>      <span class="c1">// The table name, in this case, the sheet name with a '$' appended.  </span>
+    <span class="n">DataAccessMethod</span><span class="p">.</span><span class="n">Sequential</span><span class="p">)]</span>
+<span class="k">public</span> <span class="k">void</span> <span class="nf">TestFirePhotonTorpedo</span><span class="p">()</span>  
+<span class="p">{</span>  
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>I also need to update the test case itself to use the data – we do that through the TestContext.DataRow property that gives us access to the current row of data from our data source:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">void</span> <span class="nf">TestFirePhotonTorpedo</span><span class="p">()</span>  
+<span class="p">{</span>
+    <span class="n">Enterprise</span> <span class="n">target</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">Enterprise</span><span class="p">();</span>
+    <span class="kt">int</span> <span class="n">torpedoCount</span> <span class="p">=</span> <span class="n">Convert</span><span class="p">.</span><span class="nf">ToInt32</span><span class="p">(</span><span class="n">TestContext</span><span class="p">.</span><span class="n">DataRow</span><span class="p">[</span><span class="s">"torpedoCount"</span><span class="p">]);</span>  
+    <span class="kt">int</span> <span class="n">expected</span> <span class="p">=</span> <span class="n">Convert</span><span class="p">.</span><span class="nf">ToInt32</span><span class="p">(</span><span class="n">TestContext</span><span class="p">.</span><span class="n">DataRow</span><span class="p">[</span><span class="s">"expected"</span><span class="p">]);</span>  
+    <span class="kt">bool</span> <span class="n">shouldFail</span> <span class="p">=</span> <span class="p">(</span><span class="kt">bool</span><span class="p">)</span><span class="n">TestContext</span><span class="p">.</span><span class="n">DataRow</span><span class="p">[</span><span class="s">"shouldFail"</span><span class="p">];</span>  
+  
+    <span class="n">TestContext</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Running test with TorpedoCount={0}, ExpectedCount={1}, ShouldFail={2}"</span><span class="p">,</span>  
+            <span class="n">torpedoCount</span><span class="p">,</span> <span class="n">expected</span><span class="p">,</span> <span class="n">shouldFail</span><span class="p">);</span>  
+  
+    <span class="k">try</span>  
+    <span class="p">{</span>  
+        <span class="kt">int</span> <span class="n">actual</span> <span class="p">=</span> <span class="n">target</span><span class="p">.</span><span class="nf">FireTorpedos</span><span class="p">(</span><span class="n">torpedoCount</span><span class="p">);</span>  
+        <span class="n">Assert</span><span class="p">.</span><span class="nf">AreEqual</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span> <span class="n">actual</span><span class="p">,</span> <span class="s">"FireTorpedos did not return the expected value."</span><span class="p">);</span>  
+    <span class="p">}</span>  
+    <span class="k">catch</span> <span class="p">(</span><span class="n">Exception</span> <span class="n">ex</span><span class="p">)</span>  
+    <span class="p">{</span>  
+        <span class="k">if</span> <span class="p">(!</span><span class="n">shouldFail</span><span class="p">)</span>  
+            <span class="n">Assert</span><span class="p">.</span><span class="nf">Fail</span><span class="p">(</span><span class="kt">string</span><span class="p">.</span><span class="nf">Format</span><span class="p">(</span><span class="s">"FireTorpedo threw exception {0}"</span><span class="p">,</span> <span class="n">ex</span><span class="p">.</span><span class="n">Message</span><span class="p">));</span>  
+   <span class="p">}</span>  
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>So, here we will grab the data from the current row, converting it as necessary to the appropriate types, output a test line just to prove that we executed the method more than once and then run the test.  The test will compare the result with the expected database result and output a failure if they aren’t the same.  If an exception is thrown, then the <strong>shouldFail</strong> must be true or that will be considered a failure.</p>
+
+<p>This approach allows me to run through different scenarios very easily and I can just store the Excel worksheet right with my unit tests - make sure it’s deployed to the target deployment directory (either through a <strong>DeploymentItem</strong> attribute, or through the test run configuration).  The size of my table here is about 14K, compared to the equivalent .MDF file which is over 2M for the same data.  If I didn’t want to hardcode the filenames and such, I can also use an <strong>app.config</strong> file for the unit test and put the information there - just as Kev details.</p>
+
+<p>Cool stuff indeed.</p>
+
+  </div><a class="u-url" href="/dotnet/2006/04/30/using-excel-for-vsts-data-driven-testing.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

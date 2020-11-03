@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Wrapping the TAPI 3.0 API with C++/CLI | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="Wrapping the TAPI 3.0 API with C++/CLI" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="New announcement - New .NET library for TAPI 3.x" />
+<meta property="og:description" content="New announcement - New .NET library for TAPI 3.x" />
+<link rel="canonical" href="http://localhost:4000/tapi/2006/03/02/wrapping-the-tapi-3-0-api-with-ccli.html" />
+<meta property="og:url" content="http://localhost:4000/tapi/2006/03/02/wrapping-the-tapi-3-0-api-with-ccli.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2006-03-02T18:00:00-06:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Wrapping the TAPI 3.0 API with C++/CLI" />
+<script type="application/ld+json">
+{"headline":"Wrapping the TAPI 3.0 API with C++/CLI","dateModified":"2006-03-02T18:00:00-06:00","datePublished":"2006-03-02T18:00:00-06:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/tapi/2006/03/02/wrapping-the-tapi-3-0-api-with-ccli.html"},"description":"New announcement - New .NET library for TAPI 3.x","url":"http://localhost:4000/tapi/2006/03/02/wrapping-the-tapi-3-0-api-with-ccli.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Wrapping the TAPI 3.0 API with C++/CLI</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2006-03-02T18:00:00-06:00" itemprop="datePublished">Mar 2, 2006
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h3 id="new-announcement---new-net-library-for-tapi-3x">New announcement - New .NET library for TAPI 3.x</h3>
+
+<p>Recently, I released the <a href="https://github.com/markjulmar/atapi.net">ATAPI.NET project</a> into the wild for people to be able to easily code up .NET applications that utilize TAPI.  That code is based on the C API exported from <strong>TAPI 2.1</strong> and so uses the older form of TAPI programming.</p>
+
+<p>With Windows 2000, Microsoft released a COM version of TAPI - dubbed <strong>TAPI 3.0</strong> that was designed to allow VB developers to access the telephony API.  However, as I noted in my previous post, Microsoft claims that the object model is too complex and that there are significant issues with accessing it from managed code.</p>
+
+<p>.NET has a built-in facility to access COM objects, it creates .NET “runtime-callable” wrappers (called RCW’s) around the COM interfaces and then allows you to call the COM object as if it were a .NET object.  That’s great until you need to mesh the COM style of cleanup (AddRef/Release) with the .NET style (GC).  Essentially, the COM object doesn’t get released until the managed wrapper gets collected.  In addition, if you have multiple wrappers for a single interface (TAPI returns the same interface through different methods), the interface won’t be released until <strong>all</strong> the wrappers are collected.</p>
+
+<p>Sometimes, this isn’t really a problem - so we keep a COM interface alive a little longer than normal.  In TAPI’s case however it can be a huge problem because some TAPI service providers will not let you create new calls unless the existing call interface has been released - even if it isn’t connected to anything.</p>
+
+<p>So, two options exist today:</p>
+
+<p>1) Don’t use TAPI 3.x - use TAPI 2.x where you have more control over the underlying TAPI call handle and can call <code class="language-plaintext highlighter-rouge">lineDeallocate</code> yourself.  In .NET this means using some wrapper like ATAPI.NET.  If you don’t need terminal and stream support, this is fine.  This is what the newsgroups typically will recommend to people.</p>
+
+<p>2) Call <code class="language-plaintext highlighter-rouge">Marshal.ReleaseCOMObject</code> on every outstanding interface.  Just plain ugly and extremely error-prone.</p>
+
+<p>Now, a new option exists.  I’ve been in conversations with Matthias Moetje - one of the TAPI MVPs and went back to my original TAPI3 wrapper which was written in MC++ (yuck) and ported it to C++/CLI (which, BTW, is very cool).  It has almost everything supported except agents and call center support.  It solves the above problem in a couple of steps:</p>
+
+<ol>
+  <li>It guarantees that the same interface will match 1:1 with a managed object as long as the object hasn’t been collected yet.  This means the object will only have one holding managed object.</li>
+  <li>It implements <code class="language-plaintext highlighter-rouge">IDisposable</code> on most of the wrappers allowing the client to get rid of interfaces immediately.</li>
+  <li>It “auto-disposes” calls when they hit the disconnected state.  This can be turned on or off depending on need through the <code class="language-plaintext highlighter-rouge">TTapi.AutoDestroyCall</code>s flag</li>
+</ol>
+
+<p>Instead of a <code class="language-plaintext highlighter-rouge">Register</code> function, each address has an <code class="language-plaintext highlighter-rouge">Open</code> and <code class="language-plaintext highlighter-rouge">Monitor</code> method and a <code class="language-plaintext highlighter-rouge">Close</code> method. Since you have to pass the address in anyway, I moved the function to that level and made it distinct rather than having you pass in two booleans to indicate intent.</p>
+
+<p>There are some shorthand functions: for example, the <code class="language-plaintext highlighter-rouge">TCall</code> object (which represents <code class="language-plaintext highlighter-rouge">ITBasicCallControl</code>, <code class="language-plaintext highlighter-rouge">ITCallInfo</code>, et.al.) has a <code class="language-plaintext highlighter-rouge">SelectDefaultTerminals</code> method which enumerates the streams and hooks up the default static/video terminals for each stream - basically the code that was in every TAPI sample provided by MS. There’s also a <code class="language-plaintext highlighter-rouge">FindTerminal</code> method on the <code class="language-plaintext highlighter-rouge">TStream</code> class which will locate a terminal of the proper media type/direction if it exists.</p>
+
+<p>The library and all source code is under the MIT open source license and available on GitHub <a href="https://github.com/markjulmar/itapi3">here</a>.</p>
+
+<p>The library itself follows the TAPI3 interfaces pretty closely - except it combines the various control interfaces together.  So for example:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>.NET Class</th>
+      <th>Wrapped Interfaces</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">TTapi</code></td>
+      <td><code class="language-plaintext highlighter-rouge">ITTapi</code>, <code class="language-plaintext highlighter-rouge">ITTapi2</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">TAddress</code></td>
+      <td><code class="language-plaintext highlighter-rouge">ITAddress</code>, <code class="language-plaintext highlighter-rouge">ITAddress2</code>, <code class="language-plaintext highlighter-rouge">ITAddressCapabilities</code>, <code class="language-plaintext highlighter-rouge">ITAddressTranslation</code>, <code class="language-plaintext highlighter-rouge">ITLegacyAddressMediaControl</code>, <code class="language-plaintext highlighter-rouge">ITLegacyAddressMediaControl2</code>, <code class="language-plaintext highlighter-rouge">ITMediaSupport</code>, <code class="language-plaintext highlighter-rouge">ITTerminalSupport</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">TCall</code></td>
+      <td><code class="language-plaintext highlighter-rouge">ITCallInfo</code>, <code class="language-plaintext highlighter-rouge">ITBasicCallControl</code>, <code class="language-plaintext highlighter-rouge">ITBasicCallControl2</code>, <code class="language-plaintext highlighter-rouge">ITStreamControl</code>, <code class="language-plaintext highlighter-rouge">ITLegacyCallMediaControl</code>, <code class="language-plaintext highlighter-rouge">ITLegacyCallMediaControl2</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>In each case, the same properties and methods are exposed by the reference class and it will do the underlying cast necessary to get to the functionality.  The downside of this, is that if the interface isn’t supported, the library must throw an exception - in this case a TapiException which holds a string message indicating the failure and an error code (the <code class="language-plaintext highlighter-rouge">HRESULT</code>).  The <code class="language-plaintext highlighter-rouge">TTapi</code> class exposes the <strong>TE_xxx</strong> events you generally registered a sink for.</p>
+
+<p>I didn’t bother to encapsulate the DirectShow library - instead each of the TAPI wrappers provides a QueryInterface method which you can use to get to an interface if necessary.  So, for example, if you want to get to the venerable <code class="language-plaintext highlighter-rouge">IVideoWindow</code> interface from DirectShow, you can include an interop reference to Quartz.DLL and then do the following on the <code class="language-plaintext highlighter-rouge">TTerminal</code> object:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">IVideoWindow</span> <span class="n">videoWindow</span> <span class="p">=</span> <span class="n">thisTerminal</span><span class="p">.</span><span class="nf">QueryInterface</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">IVideoWindow</span><span class="p">))</span> <span class="k">as</span> <span class="n">IVideoWindow</span><span class="p">;</span>  
+<span class="k">if</span> <span class="p">(</span><span class="n">videoWindow</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="p">...</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>So, here’s an example of using it - I think it’s much cleaner that the comparable RCW code, and it’s thread-aware and works around the general problem of TAPI3 under .NET through a <code class="language-plaintext highlighter-rouge">Dispose</code> mechanism and the <code class="language-plaintext highlighter-rouge">TTapi.AutoDestroyCalls</code> flag.</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">using</span> <span class="nn">System</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">System.Collections.Generic</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">System.Text</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">JulMar.Tapi3</span><span class="p">;</span>
+
+<span class="k">namespace</span> <span class="nn">TestTapi</span>
+<span class="p">{</span>
+    <span class="k">class</span> <span class="nc">Program</span>
+    <span class="p">{</span>
+        <span class="k">static</span> <span class="k">void</span> <span class="nf">Main</span><span class="p">(</span><span class="kt">string</span><span class="p">[]</span> <span class="n">args</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="n">TTapi</span> <span class="n">tapi</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">TTapi</span><span class="p">();</span>
+            <span class="n">TCall</span> <span class="n">call</span> <span class="p">=</span> <span class="k">null</span><span class="p">;</span>
+            <span class="n">TAddress</span> <span class="n">modemAddr</span> <span class="p">=</span> <span class="k">null</span><span class="p">;</span>
+
+            <span class="n">tapi</span><span class="p">.</span><span class="nf">Initialize</span><span class="p">();</span>
+
+            <span class="n">tapi</span><span class="p">.</span><span class="n">TE_CALLNOTIFICATION</span> <span class="p">+=</span> <span class="k">delegate</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">TapiCallNotificationEventArgs</span> <span class="n">e</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"New call {0} detected from {1}"</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">Call</span><span class="p">.</span><span class="nf">ToString</span><span class="p">(),</span> <span class="n">e</span><span class="p">.</span><span class="n">Event</span><span class="p">);</span>
+            <span class="p">};</span>
+
+            <span class="n">tapi</span><span class="p">.</span><span class="n">TE_CALLSTATE</span> <span class="p">+=</span> <span class="k">delegate</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">TapiCallStateEventArgs</span> <span class="n">e</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"{0}:{4} has changed state to {1} due to {2} - current={3}:{5}"</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">Call</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">State</span><span class="p">,</span>
+                    <span class="n">e</span><span class="p">.</span><span class="n">Cause</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">Call</span> <span class="p">==</span> <span class="n">call</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">Call</span><span class="p">.</span><span class="nf">GetHashCode</span><span class="p">(),</span> <span class="p">(</span><span class="n">call</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span> <span class="p">?</span> <span class="n">call</span><span class="p">.</span><span class="nf">GetHashCode</span><span class="p">()</span> <span class="p">:</span> <span class="m">0</span><span class="p">);</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">State</span> <span class="p">==</span> <span class="n">CALL_STATE</span><span class="p">.</span><span class="n">CS_INPROGRESS</span> <span class="p">&amp;&amp;</span> <span class="n">e</span><span class="p">.</span><span class="n">Call</span> <span class="p">==</span> <span class="n">call</span><span class="p">)</span>
+                <span class="p">{</span>
+                    <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Dropping call"</span><span class="p">);</span>
+                    <span class="n">e</span><span class="p">.</span><span class="n">Call</span><span class="p">.</span><span class="nf">Disconnect</span><span class="p">(</span><span class="n">DISCONNECT_CODE</span><span class="p">.</span><span class="n">DC_NORMAL</span><span class="p">);</span>
+                <span class="p">}</span>
+            <span class="p">};</span>
+
+            <span class="k">foreach</span> <span class="p">(</span><span class="n">TAddress</span> <span class="n">addr</span> <span class="k">in</span> <span class="n">tapi</span><span class="p">.</span><span class="n">Addresses</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">String</span><span class="p">.</span><span class="nf">Compare</span><span class="p">(</span><span class="n">addr</span><span class="p">.</span><span class="n">ServiceProviderName</span><span class="p">,</span> <span class="s">"unimdm.tsp"</span><span class="p">,</span> <span class="k">true</span><span class="p">)</span> <span class="p">==</span> <span class="m">0</span> <span class="p">&amp;&amp;</span>
+                    <span class="n">addr</span><span class="p">.</span><span class="nf">QueryMediaType</span><span class="p">(</span><span class="n">TAPIMEDIATYPES</span><span class="p">.</span><span class="n">AUDIO</span><span class="p">))</span>
+                    <span class="n">modemAddr</span> <span class="p">=</span> <span class="n">addr</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="n">modemAddr</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"{0} = {1} ({3}) [{2}]"</span><span class="p">,</span> <span class="n">modemAddr</span><span class="p">.</span><span class="n">AddressName</span><span class="p">,</span> <span class="n">modemAddr</span><span class="p">.</span><span class="n">State</span><span class="p">,</span>
+                    <span class="n">modemAddr</span><span class="p">.</span><span class="n">ServiceProviderName</span><span class="p">,</span> <span class="n">modemAddr</span><span class="p">.</span><span class="n">DialableAddress</span><span class="p">);</span>
+                <span class="n">modemAddr</span><span class="p">.</span><span class="nf">Monitor</span><span class="p">(</span><span class="n">TAPIMEDIATYPES</span><span class="p">.</span><span class="n">AUDIO</span><span class="p">);</span>
+                <span class="n">ConsoleKey</span> <span class="n">ki</span> <span class="p">=</span> <span class="n">ConsoleKey</span><span class="p">.</span><span class="n">A</span><span class="p">;</span>
+
+                <span class="k">while</span> <span class="p">(</span><span class="n">ki</span> <span class="p">!=</span> <span class="n">ConsoleKey</span><span class="p">.</span><span class="n">Q</span><span class="p">)</span>
+                <span class="p">{</span>
+                    <span class="c1">// Flip the auto-destroy flag if (ki == ConsoleKey.D)   </span>
+                    <span class="p">{</span>
+                        <span class="n">tapi</span><span class="p">.</span><span class="n">AutoDestroyCalls</span> <span class="p">=</span> <span class="p">!</span><span class="n">tapi</span><span class="p">.</span><span class="n">AutoDestroyCalls</span><span class="p">;</span>
+                        <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Set AutoDestroy to {0}"</span><span class="p">,</span> <span class="n">tapi</span><span class="p">.</span><span class="n">AutoDestroyCalls</span><span class="p">);</span>
+                    <span class="p">}</span> <span class="c1">// List existing calls  </span>
+                    <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">ki</span> <span class="p">==</span> <span class="n">ConsoleKey</span><span class="p">.</span><span class="n">L</span><span class="p">)</span>
+                    <span class="p">{</span>
+                        <span class="k">foreach</span> <span class="p">(</span><span class="n">TCall</span> <span class="n">_call</span> <span class="k">in</span> <span class="n">modemAddr</span><span class="p">.</span><span class="nf">EnumerateCalls</span><span class="p">())</span>
+                        <span class="p">{</span>
+                            <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Existing call found: {0}:{1}"</span><span class="p">,</span> <span class="n">_call</span><span class="p">,</span> <span class="n">_call</span><span class="p">.</span><span class="nf">GetHashCode</span><span class="p">());</span>
+                            <span class="n">_call</span><span class="p">.</span><span class="nf">Dispose</span><span class="p">();</span> <span class="c1">// Go ahead and dump it }  </span>
+                        <span class="p">}</span> <span class="c1">// Create a new call else {  </span>
+
+                        <span class="n">call</span> <span class="p">=</span> <span class="n">modemAddr</span><span class="p">.</span><span class="nf">CreateCall</span><span class="p">(</span><span class="s">"5551213"</span><span class="p">,</span> <span class="n">LINEADDRESSTYPES</span><span class="p">.</span><span class="n">PhoneNumber</span><span class="p">,</span> <span class="n">TAPIMEDIATYPES</span><span class="p">.</span><span class="n">DATAMODEM</span><span class="p">);</span>
+                        <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Created new call {0}:{1}"</span><span class="p">,</span> <span class="n">call</span><span class="p">,</span> <span class="n">call</span><span class="p">.</span><span class="nf">GetHashCode</span><span class="p">());</span>
+                        <span class="k">try</span>
+                        <span class="p">{</span>
+                            <span class="c1">// This will fail if existing call interface is still around (i.e. not disposed) call.Connect(false);  </span>
+                        <span class="p">}</span>
+                        <span class="k">catch</span> <span class="p">(</span><span class="n">TapiException</span> <span class="n">ex</span><span class="p">)</span>
+                        <span class="p">{</span>
+                            <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="n">ex</span><span class="p">.</span><span class="n">Message</span><span class="p">);</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+
+                    <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Press a key to try another call.. Q to quit"</span><span class="p">);</span>
+                    <span class="n">ki</span> <span class="p">=</span> <span class="n">Console</span><span class="p">.</span><span class="nf">ReadKey</span><span class="p">().</span><span class="n">Key</span><span class="p">;</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+
+            <span class="c1">// This will destroy any outstanding interfaces</span>
+            <span class="n">tapi</span><span class="p">.</span><span class="nf">Shutdown</span><span class="p">();</span>
+
+            <span class="c1">// Call should be disposed here.. state will be CS_UNKNOWN</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">call</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+                <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"{0} {1}"</span><span class="p">,</span> <span class="n">call</span><span class="p">,</span> <span class="n">call</span><span class="p">.</span><span class="n">CallState</span><span class="p">);</span>  
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+  </div><a class="u-url" href="/tapi/2006/03/02/wrapping-the-tapi-3-0-api-with-ccli.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

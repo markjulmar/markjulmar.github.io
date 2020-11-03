@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>MVVM: Binding RadioButton groups | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="MVVM: Binding RadioButton groups" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="A question I got recently was how to manage Radio Buttons with bindings – in this instance, the sample code was trying to map a single value to a set of Radio Buttons based on an enumeration set. The original implementation was using a Value Converter to compare the “bound” value with the enumeration value expected for that radio button choice – if it was equal then the converter returned true, otherwise false. Something like this:" />
+<meta property="og:description" content="A question I got recently was how to manage Radio Buttons with bindings – in this instance, the sample code was trying to map a single value to a set of Radio Buttons based on an enumeration set. The original implementation was using a Value Converter to compare the “bound” value with the enumeration value expected for that radio button choice – if it was equal then the converter returned true, otherwise false. Something like this:" />
+<link rel="canonical" href="http://localhost:4000/mvvm/2010/01/28/mvvm-binding-radiobutton-groups.html" />
+<meta property="og:url" content="http://localhost:4000/mvvm/2010/01/28/mvvm-binding-radiobutton-groups.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2010-01-28T18:00:00-06:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="MVVM: Binding RadioButton groups" />
+<script type="application/ld+json">
+{"headline":"MVVM: Binding RadioButton groups","dateModified":"2010-01-28T18:00:00-06:00","datePublished":"2010-01-28T18:00:00-06:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/mvvm/2010/01/28/mvvm-binding-radiobutton-groups.html"},"description":"A question I got recently was how to manage Radio Buttons with bindings – in this instance, the sample code was trying to map a single value to a set of Radio Buttons based on an enumeration set. The original implementation was using a Value Converter to compare the “bound” value with the enumeration value expected for that radio button choice – if it was equal then the converter returned true, otherwise false. Something like this:","url":"http://localhost:4000/mvvm/2010/01/28/mvvm-binding-radiobutton-groups.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">MVVM: Binding RadioButton groups</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2010-01-28T18:00:00-06:00" itemprop="datePublished">Jan 28, 2010
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>A question I got recently was how to manage Radio Buttons with bindings – in this instance, the sample code was trying to map a single value to a set of Radio Buttons based on an enumeration set.  The original implementation was using a Value Converter to compare the “bound” value with the enumeration value expected for that radio button choice – if it was equal then the converter returned true, otherwise false.  Something like this:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;RadioButton</span> <span class="na">Content=</span><span class="s">"Blue"</span>
+     <span class="na">IsChecked=</span><span class="s">"{Binding SelectedValue,
+     Converter={StaticResource CheckValueAgainst}, ConverterParameter=Blue"</span><span class="nt">/&gt;</span>  
+
+<span class="nt">&lt;RadioButton</span> <span class="na">Content=</span><span class="s">"Red"</span>
+     <span class="na">IsChecked=</span><span class="s">"{Binding SelectedValue,
+     Converter={StaticResource CheckValueAgainst}, ConverterParameter=Red"</span><span class="nt">/&gt;</span>  
+
+<span class="nt">&lt;RadioButton</span> <span class="na">Content=</span><span class="s">"Yellow"</span>
+     <span class="na">IsChecked=</span><span class="s">"{Binding SelectedValue,
+     Converter={StaticResource CheckValueAgainst}, ConverterParameter=Yellow"</span><span class="nt">/&gt;</span>  
+</code></pre></div></div>
+
+<p>Initially this seemed to work, but as you changed the current enumeration value, the radio buttons would “lose” the binding – and after a few times you would end up with none of them selected.</p>
+
+<p>Ultimately, this problem is really an expected behavior from WPF – when a set of Radio Buttons are placed together, they act as a <em>group</em> – where only one is expected to be checked and all the others are unchecked.  This happens because the selected Radio Button itself tells the group to uncheck all the others.  This has the effect of replacing the binding value for <strong>IsChecked</strong> with a local value of <strong>false</strong>.  See the problem?  Eventually, all of the buttons in the group have their value replaced and so we end up with all of them unchecked.  The solution was very easy – put each one into a separate group by defining a unique <strong>GroupName</strong> for each Radio Button.</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;RadioButton</span> <span class="err">**</span><span class="na">GroupName=</span><span class="s">"gBlue"</span><span class="err">**</span> <span class="na">Content=</span><span class="s">"Blue"</span>
+     <span class="na">IsChecked=</span><span class="s">"{Binding SelectedValue,
+     Converter={StaticResource CheckValueAgainst}, ConverterParameter=Blue"</span><span class="nt">/&gt;</span>  
+
+<span class="nt">&lt;RadioButton</span> <span class="err">**</span><span class="na">GroupName=</span><span class="s">"gRed"</span><span class="err">**</span> <span class="na">Content=</span><span class="s">"Red"</span>
+     <span class="na">IsChecked=</span><span class="s">"{Binding SelectedValue,
+     Converter={StaticResource CheckValueAgainst}, ConverterParameter=Red"</span><span class="nt">/&gt;</span>  
+
+<span class="nt">&lt;RadioButton</span> <span class="err">**</span><span class="na">GroupName=</span><span class="s">"gYellow"</span><span class="err">**</span> <span class="na">Content=</span><span class="s">"Yellow"</span>
+     <span class="na">IsChecked=</span><span class="s">"{Binding SelectedValue,
+     Converter={StaticResource CheckValueAgainst}, ConverterParameter=Yellow"</span><span class="nt">/&gt;</span>  
+</code></pre></div></div>
+
+<p>This solves the problem and required no real code changes, but of course, I didn’t want to stop there – I just had to whip up a quick MVVM version to show how I’d do this if I were responsible for the application!</p>
+
+<h4 id="sample-application-description">Sample Application Description</h4>
+
+<p>Our goal will be to display a list of children and their details to track their favorite games.  I started by sketching it out with SketchFlow to get a sense of what I wanted to visually create:</p>
+
+<p><img src="/images/image_4.png" alt="image" title="image" /></p>
+
+<p>The top list is a <strong>ListBox</strong>, showing each child and the bottom pane shows the details.  Note the <strong>RadioButtons</strong> used to represent Gender and Favorite Game.  Our goal will be to use a <strong>ListBox</strong> there as well – showing the list of Radio Buttons and bound to a ViewModel collection of data.  As a secondary goal, we want to separate the <strong>RadioButton</strong> <em>value</em> from the <em>text displayed</em>.</p>
+
+<blockquote>
+  <p><em>It turns out that anytime you need to display a list or sequence of something, a ListBox (or ItemsControl if you don’t need the selection capability) is almost always a good choice.  Let’s see if we can make it work here with the MVVM pattern.</em></p>
+</blockquote>
+
+<p>Now that I have an idea of what I want to build, I created a blank Windows WPF application and added the JulMar MVVM Helper library and created the directory structure I prefer (<strong>Views</strong>, <strong>ViewModels</strong> and <strong>Dependencies</strong>).  I moved the Window1.xaml and corresponding code behind into the Views folder and renamed it <strong>MainWindow.xaml</strong>.  This also required I adjust <strong>App.xaml</strong> to point to the correct <strong>StartupUri</strong> (ViewsMainWindow.xaml).  As a quick start you could also just use the JulMar MVVM project template and delete the XAML and view models.  Here’s what I ended up with in the solution:</p>
+
+<p><img src="/images/GamePrefSolution_thumb.jpg" alt="GamePrefSolution" title="GamePrefSolution" /></p>
+
+<p>Now, we’re ready to begin our data modeling.  In this case, I don’t have a real data model – I’m not going to store or manage any of the children in a persistent way so I’m just going to define the View Model definitions for the children and collection.  We’ll start with the child definition.  I created a class to manage the properties of the child I want to display: Name, Dob, Gender, and FavoriteGame.  For the Gender and Favorite Game, I will use <strong>Enums</strong> to model those as a known list.  I could have used a Boolean for Gender as well, but this serves my underlying goal so we’ll go with an enumeration.  Here’s what I came up with:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// Gender flag</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="k">public</span> <span class="k">enum</span> <span class="n">Gender</span>
+<span class="p">{</span>
+    <span class="n">Male</span><span class="p">,</span> <span class="n">Female</span><span class="p">,</span> <span class="n">Unknown</span>
+<span class="p">}</span>
+
+<span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// Game types</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="k">public</span> <span class="k">enum</span> <span class="n">GameType</span>
+<span class="p">{</span>
+    <span class="n">Webkinz</span><span class="p">,</span>
+    <span class="n">Playdoh</span><span class="p">,</span>
+    <span class="n">PbsKids</span><span class="p">,</span>
+    <span class="n">Wii</span>
+<span class="p">}</span>
+
+<span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// ViewModel to represent a single child.</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="k">public</span> <span class="k">class</span> <span class="nc">ChildViewModel</span> <span class="p">:</span> <span class="n">SimpleViewModel</span>
+<span class="p">{</span>
+    <span class="k">private</span> <span class="kt">string</span> <span class="n">_name</span><span class="p">;</span>
+    <span class="k">private</span> <span class="n">Gender</span> <span class="n">_gender</span><span class="p">;</span>
+    <span class="k">private</span> <span class="n">DateTime</span> <span class="n">_dob</span><span class="p">;</span>
+    <span class="k">private</span> <span class="n">GameType</span> <span class="n">_favoriteGame</span><span class="p">;</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Name</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="kt">string</span> <span class="n">Name</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_name</span><span class="p">;</span> <span class="p">}</span>
+        <span class="k">set</span> <span class="p">{</span> <span class="n">_name</span> <span class="p">=</span> <span class="k">value</span><span class="p">;</span> <span class="nf">OnPropertyChanged</span><span class="p">(</span><span class="s">"Name"</span><span class="p">,</span><span class="s">"Details"</span><span class="p">);</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Gender of child</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="n">Gender</span> <span class="n">Gender</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_gender</span><span class="p">;</span> <span class="p">}</span>
+        <span class="k">set</span> <span class="p">{</span> <span class="n">_gender</span> <span class="p">=</span> <span class="k">value</span><span class="p">;</span> <span class="nf">OnPropertyChanged</span><span class="p">(</span><span class="s">"Gender"</span><span class="p">,</span><span class="s">"Details"</span><span class="p">);</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Date of birth</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="n">DateTime</span> <span class="n">Dob</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_dob</span><span class="p">;</span> <span class="p">}</span>
+        <span class="k">set</span> <span class="p">{</span> <span class="n">_dob</span> <span class="p">=</span> <span class="k">value</span><span class="p">;</span> <span class="nf">OnPropertyChanged</span><span class="p">(</span><span class="s">"Dob"</span><span class="p">,</span><span class="s">"Details"</span><span class="p">);</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Game they like to play</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="n">GameType</span> <span class="n">FavoriteGame</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_favoriteGame</span><span class="p">;</span> <span class="p">}</span>
+        <span class="k">set</span> <span class="p">{</span> <span class="n">_favoriteGame</span> <span class="p">=</span> <span class="k">value</span><span class="p">;</span> <span class="nf">OnPropertyChanged</span><span class="p">(</span><span class="s">"FavoriteGame"</span><span class="p">,</span><span class="s">"Details"</span><span class="p">);</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Returns textual representation of child.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="c1">/// &lt;returns&gt;&lt;/returns&gt;</span>
+    <span class="k">public</span> <span class="kt">string</span> <span class="n">Details</span>
+    <span class="p">{</span>
+       <span class="k">get</span>
+       <span class="p">{</span>
+           <span class="k">return</span> <span class="kt">string</span><span class="p">.</span><span class="nf">Format</span><span class="p">(</span><span class="s">"{0} is a {1}, was born on {2:D} and loves to play {3}"</span><span class="p">,</span>
+                        <span class="n">Name</span><span class="p">,</span> <span class="n">Gender</span><span class="p">,</span> <span class="n">Dob</span><span class="p">,</span> <span class="n">FavoriteGame</span><span class="p">);</span>
+       <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Pretty standard stuff – we have field backed properties and raise the <strong>PropertyChange</strong> notification on each one.  For this case I don’t think we’ll need any additional services so I derive from the <strong>JulMar.Windows.Mvvm.SimpleViewModel</strong> class which just provides <strong>INotifyPropertyChanged</strong> support.  The one extra thing I’ve added here is a <strong>Details</strong> property which is a concatenation of all the other properties – we’ll use this to verify that the data binding is working properly as a secondary display of the same data.  We need to be sure to include that property invalidation when any of the other properties it depends on changes.  The <strong>OnPropertyChanged</strong> implementation allows you to pass multiple strings for this very purpose.</p>
+
+<p>Moving on, I want to display the generated Enumerations above as a list, so we need a way to encapsulate a value and the text used to represent the value together.  If I were using .NET4 I could use the uber-cool new <code class="language-plaintext highlighter-rouge">Tuple&lt;K,V&gt;</code> class but I want to target .NET 3.5 here so we’ll define a new <code class="language-plaintext highlighter-rouge">ValueAndText</code> class to hold this:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// This class wraps a value and string together.</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="c1">/// &lt;typeparam name="T"&gt;Type of value&lt;/typeparam&gt;</span>
+<span class="k">public</span> <span class="k">class</span> <span class="nc">ValueAndText</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;</span>
+<span class="p">{</span>
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Value to bind to</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="n">T</span> <span class="n">Value</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Text string to present</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="kt">string</span> <span class="n">Text</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Constructor</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="c1">/// &lt;param name="value"&gt;&lt;/param&gt;</span>
+    <span class="c1">/// &lt;param name="text"&gt;&lt;/param&gt;</span>
+    <span class="k">public</span> <span class="nf">ValueAndText</span><span class="p">(</span><span class="n">T</span> <span class="k">value</span><span class="p">,</span> <span class="kt">string</span> <span class="n">text</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">Value</span> <span class="p">=</span> <span class="k">value</span><span class="p">;</span>
+        <span class="n">Text</span> <span class="p">=</span> <span class="n">text</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Now, let’s turn to the actual glue – the MainViewModel that pulls it all together.</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// Main View Model that connects it all together.</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="k">public</span> <span class="k">class</span> <span class="nc">MainViewModel</span> <span class="p">:</span> <span class="n">SimpleViewModel</span>
+<span class="p">{</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Let’s use a SimpleViewModel here as well.  The first property we need is a collection for the children – we won’t be modifying the list (i.e. no adding or deleting) so the backing storage can just be a **List<T>**, as part of the constructor we’ll populate it with some sample data:</T></p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// Collection of children</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="k">public</span> <span class="n">IList</span><span class="p">&lt;</span><span class="n">ChildViewModel</span><span class="p">&gt;</span> <span class="n">Children</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+<span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// Constructor</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="k">public</span> <span class="nf">MainViewModel</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="c1">// Fill with sample data.</span>
+    <span class="n">Children</span> <span class="p">=</span> <span class="k">new</span> <span class="n">List</span><span class="p">&lt;</span><span class="n">ChildViewModel</span><span class="p">&gt;</span> <span class="p">{</span>
+      <span class="k">new</span> <span class="n">ChildViewModel</span>
+      <span class="p">{</span>
+         <span class="n">Name</span> <span class="p">=</span> <span class="s">"Jonathan"</span><span class="p">,</span>
+         <span class="n">Dob</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">DateTime</span><span class="p">(</span><span class="m">2006</span><span class="p">,</span> <span class="m">3</span><span class="p">,</span> <span class="m">14</span><span class="p">),</span>
+         <span class="n">FavoriteGame</span> <span class="p">=</span> <span class="n">GameType</span><span class="p">.</span><span class="n">PbsKids</span><span class="p">,</span>
+         <span class="n">Gender</span> <span class="p">=</span> <span class="n">Gender</span><span class="p">.</span><span class="n">Male</span>
+      <span class="p">},</span>
+      <span class="p">...</span>
+  <span class="p">};</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Next, we want a single child to be the “current” selected child.  This is just a property of type <strong>ChildViewModel</strong> exposed by the parent view model.</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">private</span> <span class="n">ChildViewModel</span> <span class="n">_currentChild</span><span class="p">;</span>
+
+<span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// The current (and only for now) child</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="k">public</span> <span class="n">ChildViewModel</span> <span class="n">CurrentChild</span>
+<span class="p">{</span>
+    <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_currentChild</span><span class="p">;</span> <span class="p">}</span>
+    <span class="k">set</span>
+    <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">_currentChild</span> <span class="p">!=</span> <span class="k">value</span><span class="p">)</span>
+      <span class="p">{</span>
+         <span class="n">_currentChild</span> <span class="p">=</span> <span class="k">value</span><span class="p">;</span>
+         <span class="nf">OnPropertyChanged</span><span class="p">(</span><span class="s">"CurrentChild"</span><span class="p">);</span>
+      <span class="p">}</span>
+   <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>We’ll also set the first child as the current child in the <strong>MainViewModel</strong> constructor after we populate the collection:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Set the first child as selected.</span>
+<span class="n">CurrentChild</span> <span class="p">=</span> <span class="n">Children</span><span class="p">[</span><span class="m">0</span><span class="p">];</span>
+</code></pre></div></div>
+
+<p>We want to have a bindable list of the gender values (and text) and a bindable list of the game types.  In this case, let’s take advantage of the ability to bind to any IEnumerable data source and just generate the list using the C# 2.0 iterator support:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// Gets the gender values</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="k">public</span> <span class="n">IEnumerable</span><span class="p">&lt;</span><span class="n">ValueAndText</span><span class="p">&lt;</span><span class="n">Gender</span><span class="p">&gt;&gt;</span> <span class="n">GenderValues</span>
+<span class="p">{</span>
+    <span class="k">get</span>
+    <span class="p">{</span>
+        <span class="k">yield</span> <span class="k">return</span> <span class="k">new</span> <span class="n">ValueAndText</span><span class="p">&lt;</span><span class="n">Gender</span><span class="p">&gt;(</span><span class="n">Gender</span><span class="p">.</span><span class="n">Male</span><span class="p">,</span> <span class="s">"Boy"</span><span class="p">);</span>
+        <span class="k">yield</span> <span class="k">return</span> <span class="k">new</span> <span class="n">ValueAndText</span><span class="p">&lt;</span><span class="n">Gender</span><span class="p">&gt;(</span><span class="n">Gender</span><span class="p">.</span><span class="n">Female</span><span class="p">,</span> <span class="s">"Girl"</span><span class="p">);</span>
+        <span class="k">yield</span> <span class="k">return</span> <span class="k">new</span> <span class="n">ValueAndText</span><span class="p">&lt;</span><span class="n">Gender</span><span class="p">&gt;(</span><span class="n">Gender</span><span class="p">.</span><span class="n">Unknown</span><span class="p">,</span> <span class="s">"Unknown"</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// Gets the game types</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="k">public</span> <span class="n">IEnumerable</span><span class="p">&lt;</span><span class="n">ValueAndText</span><span class="p">&lt;</span><span class="n">GameType</span><span class="p">&gt;&gt;</span> <span class="n">GameTypes</span>
+<span class="p">{</span>
+    <span class="k">get</span>
+    <span class="p">{</span>
+        <span class="k">yield</span> <span class="k">return</span> <span class="k">new</span> <span class="n">ValueAndText</span><span class="p">&lt;</span><span class="n">GameType</span><span class="p">&gt;(</span><span class="n">GameType</span><span class="p">.</span><span class="n">Webkinz</span><span class="p">,</span> <span class="s">"WebKinz (http://www.webkinz.com)"</span><span class="p">);</span>
+        <span class="k">yield</span> <span class="k">return</span> <span class="k">new</span> <span class="n">ValueAndText</span><span class="p">&lt;</span><span class="n">GameType</span><span class="p">&gt;(</span><span class="n">GameType</span><span class="p">.</span><span class="n">Playdoh</span><span class="p">,</span> <span class="s">"Loves Playdoh"</span><span class="p">);</span>
+        <span class="k">yield</span> <span class="k">return</span> <span class="k">new</span> <span class="n">ValueAndText</span><span class="p">&lt;</span><span class="n">GameType</span><span class="p">&gt;(</span><span class="n">GameType</span><span class="p">.</span><span class="n">PbsKids</span><span class="p">,</span> <span class="s">"PBS Kids (http://www.pbskids.com)"</span><span class="p">);</span>
+        <span class="k">yield</span> <span class="k">return</span> <span class="k">new</span> <span class="n">ValueAndText</span><span class="p">&lt;</span><span class="n">GameType</span><span class="p">&gt;(</span><span class="n">GameType</span><span class="p">.</span><span class="n">Wii</span><span class="p">,</span> <span class="s">"Wii and other console"</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>That should do it for our logic and data requirements, now let’s turn to the visualization for it.  We have the following properties defined on the <strong>MainViewModel</strong> to drive the view:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Property</th>
+      <th>Handles</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Children</strong></td>
+      <td>Collection of <strong>PersonViewModel</strong> objects with child details.</td>
+    </tr>
+    <tr>
+      <td><strong>CurrentChild</strong></td>
+      <td>Current (selected) child</td>
+    </tr>
+    <tr>
+      <td><strong>GenderValues</strong></td>
+      <td>Collection of <strong>ValueAndText</strong> objects to select child gender</td>
+    </tr>
+    <tr>
+      <td><strong>GameTypes</strong></td>
+      <td>Collection of <strong>ValueAndText</strong> objects to select the favorite game</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Using the SketchFlow prototype as an example, we’ll start with a <strong>DockPanel</strong> as the root element – locking a <strong>StatusBar</strong> at the bottom, a <strong>ListBox</strong> at the top and a <strong>Border</strong> (which will contain our details pane) as the fill content.  We’ll use the JulMar <strong>ViewModelCreator</strong> markup extension to tie this to the <strong>MainViewModel</strong>, and let’s push the initial focus into the children <strong>ListBox</strong> using the <strong>FocusManager.FocusedElement</strong> attached property on the window.</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;Window</span> <span class="na">x:Class=</span><span class="s">"RadioButtonBinding.Views.MainWindow"</span>
+   <span class="na">xmlns=</span><span class="s">"http://schemas.microsoft.com/winfx/2006/xaml/presentation"</span>
+   <span class="na">xmlns:x=</span><span class="s">"http://schemas.microsoft.com/winfx/2006/xaml"</span>
+   <span class="na">xmlns:julmar=</span><span class="s">"http://127.0.0.1:8080/wpfhelpers"</span>
+   <span class="na">xmlns:ViewModels=</span><span class="s">"clr-namespace:RadioButtonBinding.ViewModels"</span>
+   <span class="na">xmlns:Controls=</span><span class="s">"clr-namespace:Microsoft.Windows.Controls;assembly=WPFToolkit"</span>
+   <span class="na">DataContext=</span><span class="s">"{julmar:ViewModelCreator {x:Type ViewModels:MainViewModel}}"</span>
+   <span class="na">FocusManager.FocusedElement=</span><span class="s">"{Binding ElementName=lbChildren}"</span>
+   <span class="na">Title=</span><span class="s">"Game Preference Tracker"</span> <span class="na">Height=</span><span class="s">"400"</span> <span class="na">Width=</span><span class="s">"500"</span> <span class="na">Background=</span><span class="s">"OldLace"</span><span class="nt">&gt;</span>
+ <span class="nt">&lt;DockPanel&gt;</span>
+     <span class="c">&lt;!-- List of children we are tracking --&gt;</span>
+     <span class="nt">&lt;ListBox</span> <span class="na">x:Name=</span><span class="s">"lbChildren"</span> <span class="na">DockPanel.Dock=</span><span class="s">"Top"</span><span class="nt">&gt;</span>
+     <span class="nt">&lt;/ListBox&gt;</span>
+
+     <span class="c">&lt;!-- StatusBar just to make sure two-way binding is working properly --&gt;</span>
+     <span class="nt">&lt;StatusBar</span> <span class="na">DockPanel.Dock=</span><span class="s">"Bottom"</span> <span class="na">BorderBrush=</span><span class="s">"Black"</span> <span class="na">BorderThickness=</span><span class="s">"0,1,0,0"</span><span class="nt">&gt;</span>
+     <span class="nt">&lt;/StatusBar&gt;</span>
+
+     <span class="c">&lt;!-- Details pane --&gt;</span>
+     <span class="nt">&lt;Border</span> <span class="na">Margin=</span><span class="s">"5"</span> <span class="na">BorderBrush=</span><span class="s">"LightGray"</span> <span class="na">BorderThickness=</span><span class="s">"1"</span><span class="nt">&gt;</span>
+     <span class="nt">&lt;/Border&gt;</span>
+ <span class="nt">&lt;/DockPanel&gt;</span>
+<span class="nt">&lt;/Window&gt;</span>
+</code></pre></div></div>
+
+<p>Next, let’s fill in the top ListBox details.  We need to populate it with the list of children – this is the Children property off our ViewModel, so we’ll bind the <strong>ItemsSource</strong> property to that collection.  Next, we’ll set the <strong>SelectedItem</strong> to the <strong>CurrentChild</strong> property – making sure to use a two-way binding:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;ListBox</span> <span class="na">x:Name=</span><span class="s">"lbChildren"</span> <span class="na">DockPanel.Dock=</span><span class="s">"Top"</span> <span class="na">ItemsSource=</span><span class="s">"{Binding Children}"</span>
+                <span class="na">SelectedItem=</span><span class="s">"{Binding CurrentChild, Mode=TwoWay}"</span> <span class="nt">/&gt;</span>
+</code></pre></div></div>
+
+<p>This will generate a list of items, but won’t have any decent visualization – so we’ll use a <strong>DataTemplate</strong> to give us a basic visual, at the same time, let’s replace the default panel with a <strong>WrapPanel</strong> so it looks more like our SketchFlow:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;ListBox</span> <span class="na">x:Name=</span><span class="s">"lbChildren"</span> <span class="na">DockPanel.Dock=</span><span class="s">"Top"</span> <span class="na">ItemsSource=</span><span class="s">"{Binding Children}"</span>
+        <span class="na">SelectedItem=</span><span class="s">"{Binding CurrentChild, Mode=TwoWay}"</span>
+        <span class="na">ScrollViewer.HorizontalScrollBarVisibility=</span><span class="s">"Disabled"</span><span class="nt">&gt;</span>
+ <span class="nt">&lt;ListBox.ItemsPanel&gt;</span>
+     <span class="nt">&lt;ItemsPanelTemplate&gt;</span>
+         <span class="nt">&lt;WrapPanel</span> <span class="nt">/&gt;</span>
+     <span class="nt">&lt;/ItemsPanelTemplate&gt;</span>
+ <span class="nt">&lt;/ListBox.ItemsPanel&gt;</span>
+
+ <span class="nt">&lt;ListBox.ItemTemplate&gt;</span>
+     <span class="nt">&lt;DataTemplate&gt;</span>
+         <span class="nt">&lt;Border</span> <span class="na">BorderBrush=</span><span class="s">"DarkBlue"</span> <span class="na">BorderThickness=</span><span class="s">"2"</span>
+             <span class="na">Background=</span><span class="s">"SkyBlue"</span> <span class="na">CornerRadius=</span><span class="s">"5"</span><span class="nt">&gt;</span>
+             <span class="nt">&lt;StackPanel</span> <span class="na">Margin=</span><span class="s">"10"</span><span class="nt">&gt;</span>
+                 <span class="nt">&lt;TextBlock</span> <span class="na">FontWeight=</span><span class="s">"Bold"</span> <span class="na">FontSize=</span><span class="s">"12pt"</span> <span class="na">Text=</span><span class="s">"{Binding Name}"</span> <span class="nt">/&gt;</span>
+                 <span class="nt">&lt;TextBlock</span> <span class="na">Text=</span><span class="s">"{Binding FavoriteGame}"</span> <span class="nt">/&gt;</span>
+             <span class="nt">&lt;/StackPanel&gt;</span>
+         <span class="nt">&lt;/Border&gt;</span>
+     <span class="nt">&lt;/DataTemplate&gt;</span>
+ <span class="nt">&lt;/ListBox.ItemTemplate&gt;</span>
+<span class="nt">&lt;/ListBox&gt;</span>
+</code></pre></div></div>
+
+<p>Now, let’s turn our attention to displaying the current child details.  Remember the properties we created on the <strong>ChildViewModel</strong>:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Property</th>
+      <th>Defines</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Name</strong></td>
+      <td>Their name</td>
+    </tr>
+    <tr>
+      <td><strong>Gender</strong></td>
+      <td>Their gender – Male/Female/Unknown</td>
+    </tr>
+    <tr>
+      <td><strong>Dob</strong></td>
+      <td>The date of birth</td>
+    </tr>
+    <tr>
+      <td><strong>Details</strong></td>
+      <td>The string with all the details for this child.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>So let’s first use the details – we can bind a <strong>TextBlock</strong> in the <strong>StatusBar</strong> to the <strong>CurrentChild.Details</strong> property to display the selected child details:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">&lt;!-- StatusBar just to make sure two-way binding is working properly --&gt;</span>
+<span class="nt">&lt;StatusBar</span> <span class="na">DockPanel.Dock=</span><span class="s">"Bottom"</span> <span class="na">BorderBrush=</span><span class="s">"Black"</span> <span class="na">BorderThickness=</span><span class="s">"0,1,0,0"</span><span class="nt">&gt;</span>
+ <span class="nt">&lt;TextBlock</span> <span class="na">Text=</span><span class="s">"{Binding CurrentChild.Details}"</span> <span class="na">TextWrapping=</span><span class="s">"Wrap"</span> <span class="nt">/&gt;</span>
+<span class="nt">&lt;/StatusBar&gt;</span>
+</code></pre></div></div>
+
+<p>Now, let’s turn our attention to the details – we’ll use a Grid to lay it out within the Border, the Name and Date Of Birth are pretty easy to just drop in a set of Labels and TextBox/DatePicker – we’ll need the WPF Toolkit for this.  We’ll drop in two ListBox elements for the Radio Button list.</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;Border</span> <span class="na">Margin=</span><span class="s">"5"</span> <span class="na">BorderBrush=</span><span class="s">"LightGray"</span> <span class="na">BorderThickness=</span><span class="s">"1"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;Grid&gt;</span>
+    <span class="nt">&lt;Grid.Resources&gt;</span>
+      <span class="c">&lt;!-- Common style for header labels --&gt;</span>
+      <span class="nt">&lt;Style</span> <span class="na">TargetType=</span><span class="s">"Label"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;Setter</span> <span class="na">Property=</span><span class="s">"HorizontalAlignment"</span> <span class="na">Value=</span><span class="s">"Right"</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;Setter</span> <span class="na">Property=</span><span class="s">"VerticalAlignment"</span> <span class="na">Value=</span><span class="s">"Top"</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;Setter</span> <span class="na">Property=</span><span class="s">"FontWeight"</span> <span class="na">Value=</span><span class="s">"Bold"</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;Setter</span> <span class="na">Property=</span><span class="s">"Margin"</span> <span class="na">Value=</span><span class="s">"5,2"</span><span class="nt">/&gt;</span>
+      <span class="nt">&lt;/Style&gt;</span>
+    <span class="nt">&lt;/Grid.Resources&gt;</span>
+    <span class="nt">&lt;Grid.ColumnDefinitions&gt;</span>
+      <span class="nt">&lt;ColumnDefinition</span> <span class="na">Width=</span><span class="s">"Auto"</span><span class="nt">/&gt;</span>
+      <span class="nt">&lt;ColumnDefinition/&gt;</span>
+    <span class="nt">&lt;/Grid.ColumnDefinitions&gt;</span>
+    <span class="nt">&lt;Grid.RowDefinitions&gt;</span>
+      <span class="nt">&lt;RowDefinition</span> <span class="na">Height=</span><span class="s">"Auto"</span><span class="nt">/&gt;</span>
+      <span class="nt">&lt;RowDefinition</span> <span class="na">Height=</span><span class="s">"Auto"</span><span class="nt">/&gt;</span>
+      <span class="nt">&lt;RowDefinition</span> <span class="na">Height=</span><span class="s">"Auto"</span><span class="nt">/&gt;</span>
+      <span class="nt">&lt;RowDefinition</span> <span class="na">Height=</span><span class="s">"Auto"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;/Grid.RowDefinitions&gt;</span>
+    <span class="nt">&lt;Label</span> <span class="na">Grid.Row=</span><span class="s">"0"</span> <span class="na">Content=</span><span class="s">"Name:"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;TextBox</span> <span class="na">Grid.Row=</span><span class="s">"0"</span> <span class="na">Grid.Column=</span><span class="s">"1"</span> <span class="na">Margin=</span><span class="s">"5,2"</span> <span class="na">Text=</span><span class="s">"{Binding CurrentChild.Name}"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;Label</span> <span class="na">Grid.Row=</span><span class="s">"1"</span> <span class="na">Content=</span><span class="s">"Gender:"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;ListBox</span> <span class="na">Grid.Row=</span><span class="s">"1"</span> <span class="na">Grid.Column=</span><span class="s">"1"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;Label</span> <span class="na">Grid.Row=</span><span class="s">"2"</span> <span class="na">Content=</span><span class="s">"Date Of Birth:"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;Controls:DatePicker</span> <span class="na">Grid.Row=</span><span class="s">"2"</span> <span class="na">Grid.Column=</span><span class="s">"1"</span> <span class="na">Margin=</span><span class="s">"5,2"</span> <span class="na">SelectedDate=</span><span class="s">"{Binding CurrentChild.Dob}"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;Label</span> <span class="na">Grid.Row=</span><span class="s">"3"</span> <span class="na">Content=</span><span class="s">"Favorite Game:"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;ListBox</span> <span class="na">Grid.Row=</span><span class="s">"3"</span> <span class="na">Grid.Column=</span><span class="s">"1"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;/Grid&gt;</span>
+<span class="nt">&lt;/Border&gt;</span>```
+  
+Let’s focus on the Gender list first – the same concepts will apply to the game list.  We have an **IEnumerable** list of **ValueAndText** objects – each object has a Value property (corresponding to the underlying **enum** value tracked in the **ChildViewModel**) and a Text property which is what we want displayed in the **RadioButton** choice.  First, let’s set it up so we get a list of **RadioButtons** – we can do this by changing the **ControlTemplate** for each item in the list itself – that is, change the **ListBoxItem** control template. 
+
+As a bit of background, anytime you add an element to an **ItemsControl** (**ListBox**, **ComboBox**, **TreeView**, **Menu**, etc.) a special wrapper is internally created around your data to provide the special UI properties necessary to drive the functionality – things like focus, selection, mouse-over, etc. are all provided by this wrapper.  In the case of the **ListBox**, the created wrapper is a **ListBoxItem** class and we can control it’s properties by overriding the **ItemContainerStyle** on the **ListBox** itself.  So, to start off, we’ll create a new **Style** for the **ListBox**, set some basic properties and then override the **ListBoxItem** style inside that:
+
+```xml
+<span class="nt">&lt;Style</span> <span class="na">x:Key=</span><span class="s">"radioListBox"</span> <span class="na">TargetType=</span><span class="s">"ListBox"</span> <span class="na">BasedOn=</span><span class="s">"{StaticResource {x:Type ListBox}}"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;Setter</span> <span class="na">Property=</span><span class="s">"BorderThickness"</span> <span class="na">Value=</span><span class="s">"0"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;Setter</span> <span class="na">Property=</span><span class="s">"Margin"</span> <span class="na">Value=</span><span class="s">"5"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;Setter</span> <span class="na">Property=</span><span class="s">"Background"</span> <span class="na">Value=</span><span class="s">"{x:Null}"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;Setter</span> <span class="na">Property=</span><span class="s">"ItemContainerStyle"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;Setter.Value&gt;</span>
+      <span class="nt">&lt;Style</span> <span class="na">TargetType=</span><span class="s">"ListBoxItem"</span> <span class="na">BasedOn=</span><span class="s">"{StaticResource {x:Type ListBoxItem}}"</span><span class="nt">&gt;</span>
+
+ <span class="nt">&lt;/Style&gt;</span>
+    <span class="nt">&lt;/Setter.Value&gt;</span>
+  <span class="nt">&lt;/Setter&gt;</span>
+<span class="nt">&lt;/Style&gt;</span>
+</code></pre></div></div>
+
+<p>Since this is going to list a group of radio buttons, we’ll drop the border off the <strong>ListBox</strong> and the <strong>Background</strong> color as well so that our parent’s background shows through.  We’ll throw a <strong>Margin</strong> on there to give it a little spacing. Next, to change the visualization of the <strong>ListBoxItem</strong>, we’ll override it’s <strong>ControlTemplate</strong> (the thing that generates the visual tree for the item).  This, like all Controls in WPF, is done by overriding the <strong>Template</strong> property. What we want is put a Radio Button in there:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;Style</span> <span class="na">TargetType=</span><span class="s">"ListBoxItem"</span> <span class="na">BasedOn=</span><span class="s">"{StaticResource {x:Type ListBoxItem}}"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;Setter</span> <span class="na">Property=</span><span class="s">"Template"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;Setter.Value&gt;</span>
+      <span class="nt">&lt;ControlTemplate</span> <span class="na">TargetType=</span><span class="s">"ListBoxItem"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;RadioButton</span> <span class="na">IsChecked=</span><span class="s">"{TemplateBinding IsSelected}"</span><span class="nt">&gt;</span>
+          <span class="nt">&lt;ContentPresenter/&gt;</span>
+        <span class="nt">&lt;/RadioButton&gt;</span>
+      <span class="nt">&lt;/ControlTemplate&gt;</span>
+    <span class="nt">&lt;/Setter.Value&gt;</span>
+  <span class="nt">&lt;/Setter&gt;</span>
+<span class="nt">&lt;/Style&gt;</span>
+</code></pre></div></div>
+
+<p>In order to get the <strong>IsChecked</strong> state properly setup, we’ll bind it to the <strong>ListBoxItem.IsSelected</strong> property – so if the item is selected according to the ListBox, then the Radio Button will be checked.  We also drop a <strong>ContentPresenter</strong> into the <strong>RadioButton</strong> so it displays whatever the data bound value is – this will provide for any <strong>DataTemplate</strong> visualization if one is present.  This will achieve the visualization we desire, but it won’t work properly as we interact with it.  The problem is that the Radio button will override this state when it is clicked – exactly the problem we had originally!</p>
+
+<p>To fix this, let’s make the radio button invisible to the mouse and keyboard.. we can do this by setting the <strong>Focusable</strong> and <strong>IsHitTestable</strong> properties to false – however this makes them non-interactive and now we can’t select the <code class="language-plaintext highlighter-rouge">ListBoxItem</code> with the mouse.. so, let’s wrap it in something that is selectable – anything should work, so we’ll just throw it into a Grid.  Set the Grid.Background to transparent so you can click on it and we end up with:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;Style</span> <span class="na">TargetType=</span><span class="s">"ListBoxItem"</span> <span class="na">BasedOn=</span><span class="s">"{StaticResource {x:Type ListBoxItem}}"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;Setter</span> <span class="na">Property=</span><span class="s">"Template"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;Setter.Value&gt;</span>
+      <span class="nt">&lt;ControlTemplate</span> <span class="na">TargetType=</span><span class="s">"ListBoxItem"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;Grid</span> <span class="na">Background=</span><span class="s">"Transparent"</span><span class="nt">&gt;</span>
+          <span class="nt">&lt;RadioButton</span> <span class="na">Focusable=</span><span class="s">"False"</span> <span class="na">IsHitTestVisible=</span><span class="s">"False"</span> <span class="na">IsChecked=</span><span class="s">"{TemplateBinding IsSelected}"</span><span class="nt">&gt;</span>
+            <span class="nt">&lt;ContentPresenter/&gt;</span>
+          <span class="nt">&lt;/RadioButton&gt;</span>
+        <span class="nt">&lt;/Grid&gt;</span>
+      <span class="nt">&lt;/ControlTemplate&gt;</span>
+    <span class="nt">&lt;/Setter.Value&gt;</span>
+  <span class="nt">&lt;/Setter&gt;</span>
+<span class="nt">&lt;/Style&gt;</span>
+</code></pre></div></div>
+
+<p>This does exactly what we want – clicking on the radio button changes the selection in the <strong>ListBox</strong> and, in turn, checks or unchecks the radio button in question.  Now, let’s wire it up to our data – remember we have a Value and Text.  We want to bind to the Value but display the Text.  It turns out the <strong>ListBox</strong> already has this feature backed in – there is a <strong>SelectedItem</strong> property we normally use, but there is also a <strong>SelectedValue</strong> property that makes the distinction between the item in the collection and the value used to select it.  There is also a <strong>DisplayMemberPath</strong> and <strong>SelectedValuePath</strong> property used for data binding purposes when generating the content from an <strong>ItemsSource</strong> supplied value.  Pulling these things together we can do this:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;ListBox</span> <span class="na">Grid.Row=</span><span class="s">"1"</span> <span class="na">Grid.Column=</span><span class="s">"1"</span>
+    <span class="na">Style=</span><span class="s">"{StaticResource radioListBox}"</span>
+    <span class="na">DisplayMemberPath=</span><span class="s">"Text"</span>
+    <span class="na">SelectedValuePath=</span><span class="s">"Value"</span>
+    <span class="na">ItemsSource=</span><span class="s">"{Binding GenderValues}"</span>
+    <span class="na">SelectedValue=</span><span class="s">"{Binding CurrentChild.Gender}"</span> <span class="nt">/&gt;</span>
+</code></pre></div></div>
+
+<p>Testing this, it works perfectly!  Since the <strong>DisplayMemberPath/SelectedValuePath</strong> are the same for the two lists, we can move that to our radioListBox style, leaving us with the two <strong>ListBox</strong> definitions being:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;ListBox</span> <span class="na">Grid.Row=</span><span class="s">"1"</span> <span class="na">Grid.Column=</span><span class="s">"1"</span> <span class="na">Style=</span><span class="s">"{StaticResource radioListBox}"</span>
+    <span class="na">ItemsSource=</span><span class="s">"{Binding GenderValues}"</span>
+    <span class="na">SelectedValue=</span><span class="s">"{Binding CurrentChild.Gender}"</span> <span class="nt">/&gt;</span>
+...
+
+<span class="nt">&lt;ListBox</span> <span class="na">Grid.Row=</span><span class="s">"3"</span> <span class="na">Grid.Column=</span><span class="s">"1"</span> <span class="na">Style=</span><span class="s">"{StaticResource radioListBox}"</span>
+    <span class="na">ItemsSource=</span><span class="s">"{Binding GameTypes}"</span>
+    <span class="na">SelectedValue=</span><span class="s">"{Binding CurrentChild.FavoriteGame}"</span> <span class="nt">/&gt;</span>
+</code></pre></div></div>
+
+<p>And the completed application looks like:</p>
+
+<p><img src="/images/image_thumb_3.png" alt="image" title="image" /></p>
+
+<p>You can download the completed project here: <a href="/samples/RadioButtonBinding.zip">RadioButtonBinding Test</a></p>
+
+  </div><a class="u-url" href="/mvvm/2010/01/28/mvvm-binding-radiobutton-groups.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

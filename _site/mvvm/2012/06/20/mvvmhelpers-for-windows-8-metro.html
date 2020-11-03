@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>MVVMHelpers for Windows 8 Metro | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="MVVMHelpers for Windows 8 Metro" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="I’ve been doing some Windows 8 Metro programming lately and to help with building more testable applications have ported the MVVMHelpers library over to Metro/.NET 4.5. This post is intended to introduce the functionality and show it off a little." />
+<meta property="og:description" content="I’ve been doing some Windows 8 Metro programming lately and to help with building more testable applications have ported the MVVMHelpers library over to Metro/.NET 4.5. This post is intended to introduce the functionality and show it off a little." />
+<link rel="canonical" href="http://localhost:4000/mvvm/2012/06/20/mvvmhelpers-for-windows-8-metro.html" />
+<meta property="og:url" content="http://localhost:4000/mvvm/2012/06/20/mvvmhelpers-for-windows-8-metro.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2012-06-20T19:00:00-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="MVVMHelpers for Windows 8 Metro" />
+<script type="application/ld+json">
+{"headline":"MVVMHelpers for Windows 8 Metro","dateModified":"2012-06-20T19:00:00-05:00","datePublished":"2012-06-20T19:00:00-05:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/mvvm/2012/06/20/mvvmhelpers-for-windows-8-metro.html"},"description":"I’ve been doing some Windows 8 Metro programming lately and to help with building more testable applications have ported the MVVMHelpers library over to Metro/.NET 4.5. This post is intended to introduce the functionality and show it off a little.","url":"http://localhost:4000/mvvm/2012/06/20/mvvmhelpers-for-windows-8-metro.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">MVVMHelpers for Windows 8 Metro</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2012-06-20T19:00:00-05:00" itemprop="datePublished">Jun 20, 2012
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>I’ve been doing some Windows 8 Metro programming lately and to help with building more testable applications have ported the <a href="https://github.com/markjulmar/mvvmhelpers">MVVMHelpers library</a> over to Metro/.NET 4.5.  This post is intended to introduce the functionality and show it off a little.</p>
+
+<p>First, we’ll create a new Metro-based Blank application using Visual Studio:</p>
+
+<p><a href="/images/NewProjectDialog-300x207.png" title="NewProjectDialog"></a></p>
+
+<p>Next, let’s add references to the MVVM library - we’ll use NuGet, but you can also downloads the source from GitHub. Make sure you include pre-release assemblies as this is currently marked as 1.0.0-rc. The package you want is MVVMHelpers.Metro:</p>
+
+<p><img src="/images/NugetDialog-300x200.png" alt="" title="NugetDialog" /></p>
+
+<p>This will also add a reference to MEF - which is now shipped out via NuGet.  I seriously considered removing my dependency against it, but since Nuget will pull it down automatically, I have kept it for now.</p>
+
+<p>Most of the core classes and converters are present - there are a few breaking changes however.  First, there are a few renamed properties and types - mostly for clarity and convention with other libraries.  I changed <strong>DelegatingCommand</strong> to be <strong>DelegateCommand</strong> and the <strong>SimpleViewModel.OnPropertyChanged</strong> method to now be <strong>RaisePropertyChanged.</strong> The converters do not derive from <strong>MarkupExtension</strong> since Metro doesn’t support that, and none of the Blend behaviors are present - however I did port the <strong>EventCommander</strong> which was already supported as an attached property - so you can wire up events to commands.  Once Blend behaviors are introduced, I plan to port all the relevant behaviors over as well.  Here’s the definitive list from the Object Browser:</p>
+
+<p><img src="/images/ObjectBrowser.png" alt="" title="ObjectBrowser" /></p>
+
+<p>As a test, let’s create a simple UI with a button, rectangle and TextBlock all within the grid.</p>
+
+<p><img src="/images/Win8Test-1024x640.png" alt="" title="Win8Test" /></p>
+
+<p>Next, let’s add a new ViewModel - we’ll name it <strong>MainViewModel.</strong> Derive it from <strong>JulMar.Windows.MVVM.ViewModel</strong> and add two properties: Color and Text and a command ShowPrompt.  You will also need to make the class public so it’s data bindable.</p>
+
+<p>Here’s my implementation:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">class</span> <span class="nc">MainViewModel</span> <span class="p">:</span> <span class="n">ViewModel</span>
+<span class="p">{</span>
+    <span class="k">private</span> <span class="kt">string</span> <span class="n">_color</span><span class="p">;</span>
+    <span class="k">private</span> <span class="kt">string</span> <span class="n">_text</span><span class="p">;</span>
+
+    <span class="k">public</span> <span class="kt">string</span> <span class="n">Color</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_color</span><span class="p">;</span> <span class="p">}</span>
+        <span class="k">set</span> <span class="p">{</span> <span class="nf">SetPropertyValue</span><span class="p">(</span><span class="k">ref</span> <span class="n">_color</span><span class="p">,</span> <span class="k">value</span><span class="p">);</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">public</span> <span class="kt">string</span> <span class="n">Text</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_text</span><span class="p">;</span> <span class="p">}</span>
+        <span class="k">set</span> <span class="p">{</span> <span class="nf">SetPropertyValue</span><span class="p">(</span><span class="k">ref</span> <span class="n">_text</span><span class="p">,</span> <span class="k">value</span><span class="p">);</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">public</span> <span class="n">IDelegateCommand</span> <span class="n">ShowPrompt</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="k">public</span> <span class="nf">MainViewModel</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="n">ShowPrompt</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">DelegateCommand</span><span class="p">(</span><span class="n">OnShowPrompt</span><span class="p">);</span>
+        <span class="n">Color</span> <span class="p">=</span> <span class="s">"Red"</span><span class="p">;</span>
+        <span class="n">Text</span> <span class="p">=</span> <span class="s">"Windows 8 Loves MVVM"</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="k">private</span> <span class="k">void</span> <span class="nf">OnShowPrompt</span><span class="p">()</span>
+    <span class="p">{</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>We’ll data-bind the properties and command to the UI elements and set the data context to a new instance of the <code class="language-plaintext highlighter-rouge">MainViewModel</code>.</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;Page</span> <span class="err">...</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;Page.DataContext&gt;</span>
+        <span class="nt">&lt;TestMvvm:MainViewModel</span> <span class="nt">/&gt;</span>
+    <span class="nt">&lt;/Page.DataContext&gt;</span>
+
+    <span class="nt">&lt;Grid</span> <span class="na">Background=</span><span class="s">"{StaticResource ApplicationPageBackgroundThemeBrush}"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;Grid.RowDefinitions&gt;</span>
+            <span class="nt">&lt;RowDefinition</span> <span class="na">Height=</span><span class="s">"*"</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;RowDefinition</span> <span class="na">Height=</span><span class="s">"Auto"</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/Grid.RowDefinitions&gt;</span>
+
+        <span class="nt">&lt;Button</span> <span class="na">Content=</span><span class="s">"Show Text"</span> <span class="na">HorizontalAlignment=</span><span class="s">"Center"</span> <span class="na">VerticalAlignment=</span><span class="s">"Top"</span> 
+                <span class="na">Grid.Row=</span><span class="s">"1"</span> <span class="na">Margin=</span><span class="s">"20"</span> <span class="na">Padding=</span><span class="s">"10,5"</span>
+                <span class="na">Command=</span><span class="s">"{Binding ShowPrompt}"</span> <span class="nt">/&gt;</span>
+
+        <span class="nt">&lt;Rectangle</span> <span class="na">Margin=</span><span class="s">"50"</span> <span class="na">Fill=</span><span class="s">"{Binding Color}"</span> <span class="na">Stroke=</span><span class="s">"White"</span> <span class="na">StrokeThickness=</span><span class="s">"1"</span> <span class="na">Width=</span><span class="s">"200"</span> <span class="na">Height=</span><span class="s">"200"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;/Rectangle&gt;</span>
+
+        <span class="nt">&lt;TextBlock</span> <span class="na">HorizontalAlignment=</span><span class="s">"Center"</span> <span class="na">VerticalAlignment=</span><span class="s">"Top"</span> 
+                   <span class="na">FontSize=</span><span class="s">"48"</span> <span class="na">Margin=</span><span class="s">"20"</span>
+                   <span class="na">Foreground=</span><span class="s">"White"</span> <span class="na">Text=</span><span class="s">"{Binding Text}"</span> <span class="nt">/&gt;</span>
+
+    <span class="nt">&lt;/Grid&gt;</span>
+<span class="nt">&lt;/Page&gt;</span>
+</code></pre></div></div>
+
+<p>Running the app should produce a red rectangle with the text “Windows 8 Loves MVVM”. Now, let’s add some behavior to it - we’ll use the <strong>IMessageVisualizer</strong> class to display a prompt. It has a slightly different signature than in the WPF world as it must be asynchronous. Under the covers, the implementation is using the Windows 8 <strong>MessageDialog</strong> class to display the prompt. Here’s the code:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">private</span> <span class="k">async</span> <span class="k">void</span> <span class="nf">OnShowPrompt</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="n">IMessageVisualizer</span> <span class="n">messageVisualizer</span> <span class="p">=</span> <span class="nf">Resolve</span><span class="p">();</span>
+    <span class="n">IUICommand</span> <span class="n">result</span> <span class="p">=</span> <span class="k">await</span> <span class="n">messageVisualizer</span><span class="p">.</span><span class="nf">ShowAsync</span><span class="p">(</span><span class="s">"Would you like to change the text?"</span><span class="p">,</span>
+        <span class="s">"Windows 8 Loves MVVM"</span><span class="p">,</span> <span class="k">new</span> <span class="nf">MessageVisualizerOptions</span><span class="p">(</span><span class="n">UICommand</span><span class="p">.</span><span class="n">YesNoCancel</span><span class="p">));</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">result</span> <span class="p">==</span> <span class="n">UICommand</span><span class="p">.</span><span class="n">Yes</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">Text</span> <span class="p">=</span> <span class="s">"Windows 8 REALLY loves MVVM!"</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>A few things to note - first, the <strong>IMessageVisualizer</strong> is being retrieved through the normal service Resolve method off the ViewModel base class. You can also create a public property and mark it with [Import] to have it injected via MEF (it must be public however so this isn’t quite as nice as the WPF varient).</p>
+
+<p>Next, it returns a <strong>Task</strong> instead of just a <strong>IUICommand</strong> like I do in the WPF world. This is due to the asynchronous nature of Windows 8 - so here is a nice usage of the <strong>async</strong> / <strong>await</strong> keywords which are new to C#5.</p>
+
+<p>Much like the latest WPF version of MVVMHelpers, you pass in a list of <strong>IUICommands</strong> - you can write your own implementation, or use the built-in <strong>UICommand</strong> type. It also has a set of static properties to build the most common button types: <strong>OK</strong>, <strong>Cancel</strong>, <strong>Yes</strong>, <strong>No</strong>, <strong>Allow</strong>, <strong>Deny</strong>. And a set of static properties to group them: <strong>OkCancel</strong>, <strong>YesNo</strong>, <strong>YesNoCancel</strong>, <strong>AllowDeny</strong>. The latest MVVMHelpers for WPF (4.10) use this same approach - primarily because I had already started this with Metro and felt it was more flexible than the <strong>MessageBox</strong> variant found in earlier versions.</p>
+
+<p>The return result is a <strong>IUICommand</strong> which dismissed the dialog, or null if it was closed through some other means (close button in WPF for example). Here, we compare that against the <strong>Yes</strong> command and if it’s a match, we change the text.</p>
+
+<p>Next, let’s try out the event commander - add two new commands to the view model, one called <strong>MouseEnter</strong> and other called <strong>MouseLeave</strong>, go ahead and back them with <strong>AsyncDelegateCommand</strong> types to do some async work and create two dummy methods.  We’ll use these to change the color of the rectangle from code behind.</p>
+
+<blockquote>
+  <p><strong>Note:</strong></p>
+
+  <p>This is not a great example - really we should trip an animation to change the color, but this is just a sample to show off this feature so I’ll stick with it._</p>
+</blockquote>
+
+<p>Here’s the code I used:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="n">IDelegateCommand</span> <span class="n">ShowPrompt</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+<span class="k">public</span> <span class="n">IDelegateCommand</span> <span class="n">MouseEnter</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+<span class="k">public</span> <span class="n">IDelegateCommand</span> <span class="n">MouseLeave</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+<span class="k">public</span> <span class="nf">MainViewModel</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="n">ShowPrompt</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">DelegateCommand</span><span class="p">(</span><span class="n">OnShowPrompt</span><span class="p">);</span>
+    <span class="n">MouseEnter</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">AsyncDelegateCommand</span><span class="p">(</span><span class="n">OnMouseEnter</span><span class="p">,</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="p">!</span><span class="n">_changingColor</span><span class="p">,</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">_changingColor</span> <span class="p">=</span> <span class="k">false</span><span class="p">);</span>
+    <span class="n">MouseLeave</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">AsyncDelegateCommand</span><span class="p">(</span><span class="n">OnMouseLeave</span><span class="p">,</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="p">!</span><span class="n">_changingColor</span><span class="p">,</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">_changingColor</span> <span class="p">=</span> <span class="k">false</span><span class="p">);</span>
+
+    <span class="n">Color</span> <span class="p">=</span> <span class="s">"Red"</span><span class="p">;</span>
+    <span class="n">Text</span> <span class="p">=</span> <span class="s">"Windows 8 Loves MVVM"</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">private</span> <span class="k">void</span> <span class="nf">OnMouseEnter</span><span class="p">()</span>
+<span class="p">{</span>
+<span class="p">}</span>
+
+<span class="k">private</span> <span class="k">void</span> <span class="nf">OnMouseLeave</span><span class="p">()</span>
+<span class="p">{</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Next, I added a color array to drive through, and a boolean we’ll use when we are changing the colors:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">private</span> <span class="kt">bool</span> <span class="n">_changingColor</span><span class="p">;</span>
+<span class="k">private</span> <span class="kt">string</span><span class="p">[]</span> <span class="n">_colors</span> <span class="p">=</span> <span class="p">{</span><span class="s">"Red"</span><span class="p">,</span> <span class="s">"Orange"</span><span class="p">,</span> <span class="s">"Yellow"</span><span class="p">,</span> <span class="s">"Green"</span><span class="p">,</span> <span class="s">"Blue"</span><span class="p">,</span> <span class="s">"Indigo"</span><span class="p">,</span> <span class="s">"Violet"</span><span class="p">};</span>
+</code></pre></div></div>
+
+<p>Finally, the logic will just change the rectangle color:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">private</span> <span class="k">async</span> <span class="k">void</span> <span class="nf">OnMouseEnter</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="n">_changingColor</span> <span class="p">=</span> <span class="k">true</span><span class="p">;</span>
+
+    <span class="k">foreach</span> <span class="p">(</span><span class="kt">string</span> <span class="n">color</span> <span class="k">in</span> <span class="n">_colors</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">Color</span> <span class="p">=</span> <span class="n">color</span><span class="p">;</span>
+        <span class="k">await</span> <span class="n">Task</span><span class="p">.</span><span class="nf">Delay</span><span class="p">(</span><span class="m">250</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">private</span> <span class="k">async</span> <span class="k">void</span> <span class="nf">OnMouseLeave</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="n">_changingColor</span> <span class="p">=</span> <span class="k">true</span><span class="p">;</span>
+
+    <span class="k">foreach</span> <span class="p">(</span><span class="kt">string</span> <span class="n">color</span> <span class="k">in</span> <span class="n">_colors</span><span class="p">.</span><span class="nf">Reverse</span><span class="p">())</span>
+    <span class="p">{</span>
+        <span class="n">Color</span> <span class="p">=</span> <span class="n">color</span><span class="p">;</span>
+        <span class="k">await</span> <span class="n">Task</span><span class="p">.</span><span class="nf">Delay</span><span class="p">(</span><span class="m">250</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Note that we will pause for 1/4 second as part of the loop - using again the async / await keywords.</p>
+
+<p>Last but not least, wire it up to the <strong>Rectangle</strong> <strong>PointerEntered</strong> and <strong>PointerExited</strong> events using the <strong>EventCommander</strong> behavior. This is done by adding the attached property to the rectangle.</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;Rectangle</span> <span class="na">Margin=</span><span class="s">"50"</span> <span class="na">Fill=</span><span class="s">"{Binding Color}"</span> <span class="na">Stroke=</span><span class="s">"White"</span> <span class="na">StrokeThickness=</span><span class="s">"1"</span> <span class="na">Width=</span><span class="s">"200"</span> <span class="na">Height=</span><span class="s">"200"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;Behaviors:EventCommander.Mappings&gt;</span>
+        <span class="nt">&lt;Behaviors:CommandEvent</span> <span class="na">Command=</span><span class="s">"{Binding MouseEnter}"</span> <span class="na">Event=</span><span class="s">"PointerEntered"</span> <span class="nt">/&gt;</span>
+        <span class="nt">&lt;Behaviors:CommandEvent</span> <span class="na">Command=</span><span class="s">"{Binding MouseLeave}"</span> <span class="na">Event=</span><span class="s">"PointerExited"</span> <span class="nt">/&gt;</span>
+    <span class="nt">&lt;/Behaviors:EventCommander.Mappings&gt;</span>
+<span class="nt">&lt;/Rectangle&gt;</span>
+</code></pre></div></div>
+
+<p>Run the app and you should see the rectangle change colors when you move over it, and then backwards when you mouse out of the shape.</p>
+
+<p>More to come - but this at least gives some indication of the basic framework capabilities. Happy coding!</p>
+
+<p>The sample can be found at: <a href="/samples/TestMvvm.Win8_.zip">TestMvvm.Win8</a></p>
+
+  </div><a class="u-url" href="/mvvm/2012/06/20/mvvmhelpers-for-windows-8-metro.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

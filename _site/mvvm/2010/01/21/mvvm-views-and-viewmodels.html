@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>MVVM: Views and ViewModels | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="MVVM: Views and ViewModels" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="In the previous post, I provided a link to the project template you can use to start a new MVVM project using the JulMar MVVM library. Here’s the two links in case you didn’t get them before:" />
+<meta property="og:description" content="In the previous post, I provided a link to the project template you can use to start a new MVVM project using the JulMar MVVM library. Here’s the two links in case you didn’t get them before:" />
+<link rel="canonical" href="http://localhost:4000/mvvm/2010/01/21/mvvm-views-and-viewmodels.html" />
+<meta property="og:url" content="http://localhost:4000/mvvm/2010/01/21/mvvm-views-and-viewmodels.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2010-01-21T18:00:00-06:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="MVVM: Views and ViewModels" />
+<script type="application/ld+json">
+{"headline":"MVVM: Views and ViewModels","dateModified":"2010-01-21T18:00:00-06:00","datePublished":"2010-01-21T18:00:00-06:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/mvvm/2010/01/21/mvvm-views-and-viewmodels.html"},"description":"In the previous post, I provided a link to the project template you can use to start a new MVVM project using the JulMar MVVM library. Here’s the two links in case you didn’t get them before:","url":"http://localhost:4000/mvvm/2010/01/21/mvvm-views-and-viewmodels.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">MVVM: Views and ViewModels</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2010-01-21T18:00:00-06:00" itemprop="datePublished">Jan 21, 2010
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>In the previous post, I provided a link to the project template you can use to start a new MVVM project using the JulMar MVVM library. Here’s the two links in case you didn’t get them before:</p>
+
+<p><a href="https://github.com/markjulmar/mvvmhelpers">MVVM Helpers</a><br />
+<a href="/samples/WpfMvvmApplication.zip">Project Template</a></p>
+
+<p>Copy the project template into your Visual Studio templates directory located off your user documents. Ok, so once you have these installed, what can you do with them? Well, for starters, you can now generate a starter project that provides a nice template for an MVVM application. The starter template creates a simple “Explorer” like program - it looks like this:</p>
+
+<p><img src="/images/mvvm-views-and-viewmodels-sample-run1.jpg" alt="" /></p>
+
+<p>Notice there are two sections - a <strong>TreeView</strong> listing all the directories, and a <strong>ListView</strong> showing all the files in the selected directory. Let’s look a little closer at the project structure. There are four directories in the solution:</p>
+
+<ul>
+  <li><strong>Converters</strong>: This has a simple ValueConverter that takes a filename and returns an icon as an <strong>ImageSource</strong>.</li>
+  <li><strong>Dependencies</strong>: This is the binary dependencies the project requires, specifically it contains the JulMar MVVM libraries and Blend action libraries.</li>
+  <li><strong>ViewModels</strong>: This directory contains all the business logic in the form of ViewModels.</li>
+  <li><strong>Views</strong>: Finally, this directory contains all the UI (XAML) for the application.</li>
+</ul>
+
+<h4 id="views">Views</h4>
+
+<p>Let’s start with the last folder - the Views. Views are the UI presentation of data - in the case of a WPF/Silverlight application this is most commonly the XAML and XAML code behind files (they are considered a single element together). We want to have UI-specific code and designer elements present in these files. Generally we prefer to place business logic and testable elements into the ViewModel area.</p>
+
+<p>In this starter project, we have a single view <strong>MainWindow.xaml</strong>. This is what presents the main UI shown above. The code behind file contains the required boilerplate code (essentially a constructor and call to <strong>InitializeComponent</strong>).</p>
+
+<p>If you open the view (note that the designer will choke on it until you compile the project), you will find fairly straightforward XAML that creates the UI, let’s break it down as we go:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;Window</span> <span class="na">x:Class=</span><span class="s">"WpfMVVMApplication1.Views.MainWindow"</span>
+    <span class="na">xmlns=</span><span class="s">"http://schemas.microsoft.com/winfx/2006/xaml/presentation"</span>
+    <span class="na">xmlns:x=</span><span class="s">"http://schemas.microsoft.com/winfx/2006/xaml"</span>
+    <span class="na">xmlns:julmar=</span><span class="s">"http://127.0.0.1:8080/wpfhelpers"</span>
+    <span class="na">xmlns:ViewModels=</span><span class="s">"clr-namespace:WpfMVVMApplication1.ViewModels"</span>
+    <span class="na">xmlns:Converters=</span><span class="s">"clr-namespace:WpfMVVMApplication1.Converters"</span>
+    <span class="na">DataContext=</span><span class="s">"{julmar:ViewModelCreator {x:Type ViewModels:MainViewModel}}"</span>
+    <span class="na">Title=</span><span class="s">"File Explorer"</span> <span class="na">Height=</span><span class="s">"400"</span> <span class="na">Width=</span><span class="s">"500"</span><span class="nt">&gt;</span>
+</code></pre></div></div>
+
+<p>First, notice how the <strong>DataContext</strong> is established – through a custom <strong>MarkupExtension</strong> called <strong>ViewModelCreator</strong>.  This extension is responsible for creating an associated ViewModel for this view (where our testable business logic should go) and also wiring up a couple of special event handlers that will allow the ViewModel to activate the view and close the view respectively.</p>
+
+<p>Next, let’s check out the resources:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;Window.Resources&gt;</span>
+  <span class="c">&lt;!-- Bindable commands sit in resources and allow keyboard input to target ViewModel commands --&gt;</span>
+  <span class="nt">&lt;julmar:BindableCommand</span> <span class="na">x:Key=</span><span class="s">"CloseCommand"</span> <span class="na">Command=</span><span class="s">"{Binding CloseAppCommand}"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;Converters:FilenameToIconConverter</span> <span class="na">x:Key=</span><span class="s">"iconConverter"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;HierarchicalDataTemplate</span> <span class="na">x:Key=</span><span class="s">"DirectoryTemplate"</span> <span class="na">ItemsSource=</span><span class="s">"{Binding Subdirectories}"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;StackPanel</span> <span class="na">Orientation=</span><span class="s">"Horizontal"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;Image</span> <span class="na">Width=</span><span class="s">"16"</span> <span class="na">Height=</span><span class="s">"16"</span> <span class="na">Source=</span><span class="s">"{Binding FullName,  Converter={StaticResource iconConverter}}"</span><span class="nt">/&gt;</span>
+      <span class="nt">&lt;TextBlock</span> <span class="na">x:Name=</span><span class="s">"tb"</span> <span class="na">Margin=</span><span class="s">"5,0"</span> <span class="na">Text=</span><span class="s">"{Binding Name}"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;/StackPanel&gt;</span>
+    <span class="nt">&lt;HierarchicalDataTemplate.Triggers&gt;</span>
+      <span class="nt">&lt;DataTrigger</span> <span class="na">Binding=</span><span class="s">"{Binding IsSelected}"</span> <span class="na">Value=</span><span class="s">"True"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;Setter</span> <span class="na">TargetName=</span><span class="s">"tb"</span> <span class="na">Property=</span><span class="s">"FontWeight"</span> <span class="na">Value=</span><span class="s">"Bold"</span><span class="nt">/&gt;</span>
+      <span class="nt">&lt;/DataTrigger&gt;</span>
+    <span class="nt">&lt;/HierarchicalDataTemplate.Triggers&gt;</span>
+  <span class="nt">&lt;/HierarchicalDataTemplate&gt;</span>
+<span class="nt">&lt;/Window.Resources&gt;</span>
+</code></pre></div></div>
+
+<p>Here we find three defined resources – first we have a JulMar MVVM <strong>BindableCommand</strong>.  This is a special <strong>ICommand</strong> instance that can be data bound and forwards to the specified binding.  We use this a bit later in the keyboard accelerator to close the application.  Next, there is the converter that takes a filename and converts it to an icon – that’s the source code in the <strong>Converters</strong> folder mentioned earlier.  I use a converter here because this is very UI-centric and not very testable – so the converter will data bind to a string (filename) property of the ViewModel and retrieve the icon for the UI to display.  That way, my ViewModel sticks with base (non-WPF) types.  This isn’t a hard rule – but it’s a good one to try to follow.</p>
+
+<p>Finally, there is a <strong>DataTemplate</strong> that is used to display the directory structure – this is what the <strong>TreeView</strong> uses to display it’s data.  Notice it data binds to a couple of properties – <strong>FullName</strong>, Name and <strong>IsSelected</strong>.  All of these, as you will see, exist in our ViewModel definition.  The View takes the data from the ViewModel and displays it onto the UI for the user to interact with.</p>
+
+<p>Next in the XAML is the input bindings – this is where we define keyboard and mouse gesture accelerators, and it’s where I use the bindable command I defined earlier:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;Window.InputBindings&gt;</span>
+    <span class="nt">&lt;KeyBinding</span> <span class="na">Key=</span><span class="s">"X"</span> <span class="na">Modifiers=</span><span class="s">"ALT"</span> <span class="na">Command=</span><span class="s">"{StaticResource CloseCommand}"</span> <span class="nt">/&gt;</span>
+<span class="nt">&lt;/Window.InputBindings&gt;</span>
+</code></pre></div></div>
+
+<p>Here you can see that instead of trying to bind to the command, we use <strong>{StaticResource}</strong> to get it from the resources.  This is necessary under WPF 3.5 because the <strong>KeyBinding</strong> will not inherit the <strong>DataContext</strong> and so cannot bind directly to the command – but resources can, and specifically Freezable resources can – that’s what the <strong>BindableCommand</strong> provides – a Freezable resource that forwards the <strong>ICommand</strong> implementation onto a command defined in the DataContext ViewModel.  This is not necessary under WPF4 – this is actually one of the new features they’ve added: to inherit the DataContext in your input bindings!</p>
+
+<p>The remainder of the view is fairly traditional – we use bindings to connect the UI up to the ViewModel definitions, so let’s go look at what those are.</p>
+
+<h4 id="viewmodels">ViewModels</h4>
+
+<p>The ViewModel folder contains three source code files – <strong>DirectoryViewModel.cs</strong>, <strong>FileViewModel.cs</strong>, and <strong>MainViewModel.cs</strong>.  If you recall from above, <strong>MainViewModel</strong> is the primary ViewModel that is data bound to the view.  The other two are child view models used to represent the files and folders respectively.  Let’s look at FileViewModel as an example:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">class</span> <span class="nc">FileViewModel</span> <span class="p">:</span> <span class="n">SimpleViewModel</span>
+<span class="p">{</span>
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Marker file that signals expansion of the tree.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">internal</span> <span class="k">static</span> <span class="n">FileViewModel</span> <span class="n">MarkerFile</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">FileViewModel</span><span class="p">();</span>
+    <span class="k">private</span> <span class="k">readonly</span> <span class="n">FileInfo</span> <span class="n">_data</span><span class="p">;</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// File name</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="kt">string</span> <span class="n">Name</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_data</span><span class="p">.</span><span class="n">Name</span><span class="p">;</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Full path + filename</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="kt">string</span> <span class="n">FullPath</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_data</span><span class="p">.</span><span class="n">FullName</span><span class="p">;</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Size of the file in bytes</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="kt">long</span> <span class="n">Size</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_data</span><span class="p">.</span><span class="n">Length</span><span class="p">;</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Private constructor used to create marker file.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="nf">FileViewModel</span><span class="p">()</span>
+    <span class="p">{</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Public constructor that captures a list of files.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="c1">/// &lt;param name="fi"&gt;FileInfo to grab file information from&lt;/param&gt;</span>
+    <span class="k">public</span> <span class="nf">FileViewModel</span><span class="p">(</span><span class="n">FileInfo</span> <span class="n">fi</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">_data</span> <span class="p">=</span> <span class="n">fi</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>As you can see, it is <em>very</em> simple – it is simply a wrapper around a piece of data, a <strong>FileInfo</strong> that represents a file on disk.  It exposes properties that are data bindable.  There is one element (<strong>MarkerFile</strong>) that I want you to ignore for a moment – we’ll get to it in a second.  Notice that it extends <strong>SimpleViewModel</strong>.  This is one of three primary VM classes in the MVVM helper library.  <strong>SimpleViewModel</strong> is intended for cases where you need the bare minimum support – specifically support for <strong>INotifyPropertyChanged</strong>.  No other services are provided by this base class, and as such it is very light.  Let’s look at the directory class next:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// Sample ViewModel that wraps a Directory.</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="k">public</span> <span class="k">class</span> <span class="nc">DirectoryViewModel</span> <span class="p">:</span> <span class="n">ViewModel</span>
+<span class="p">{</span>
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// String used to send message to main view model about directory selection.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">internal</span> <span class="k">const</span> <span class="kt">string</span> <span class="n">SelectedDirectoryChangedMessage</span> <span class="p">=</span> <span class="s">@"SelectedDirectoryChanged"</span><span class="p">;</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Marker directory that signals expansion of the tree.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">internal</span> <span class="k">static</span> <span class="n">DirectoryViewModel</span> <span class="n">MarkerDirectory</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">DirectoryViewModel</span><span class="p">();</span>
+
+    <span class="k">private</span> <span class="kt">bool</span> <span class="n">_isSelected</span><span class="p">,</span> <span class="n">_isExpanded</span><span class="p">;</span>
+    <span class="k">private</span> <span class="k">readonly</span> <span class="n">DirectoryInfo</span> <span class="n">_data</span><span class="p">;</span>
+    <span class="k">private</span> <span class="k">readonly</span> <span class="n">ObservableCollection</span><span class="p">&lt;</span><span class="n">FileViewModel</span><span class="p">&gt;</span> <span class="n">_files</span><span class="p">;</span>
+    <span class="k">private</span> <span class="k">readonly</span> <span class="n">ObservableCollection</span><span class="p">&lt;</span><span class="n">DirectoryViewModel</span><span class="p">&gt;</span> <span class="n">_subdirs</span><span class="p">;</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Name of the directory</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="kt">string</span> <span class="n">Name</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_data</span><span class="p">.</span><span class="n">Name</span><span class="p">;</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Full path + name of the directory</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="kt">string</span> <span class="n">FullName</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_data</span><span class="p">.</span><span class="n">FullName</span><span class="p">;</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// True/False whether the directory is selected (i.e. current).</span>
+    <span class="c1">/// Selecting the directory causes it to populate it's file collection.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="kt">bool</span> <span class="n">IsSelected</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_isSelected</span><span class="p">;</span> <span class="p">}</span>
+        <span class="k">set</span>
+        <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">_isSelected</span> <span class="p">!=</span> <span class="k">value</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="n">_isSelected</span> <span class="p">=</span> <span class="k">value</span><span class="p">;</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">_isSelected</span><span class="p">)</span>
+                <span class="p">{</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">_files</span><span class="p">.</span><span class="n">Count</span> <span class="p">==</span> <span class="m">1</span> <span class="p">&amp;&amp;</span> <span class="n">_files</span><span class="p">[</span><span class="m">0</span><span class="p">]</span> <span class="p">==</span> <span class="n">FileViewModel</span><span class="p">.</span><span class="n">MarkerFile</span><span class="p">)</span>
+                    <span class="p">{</span>
+                        <span class="n">_files</span><span class="p">.</span><span class="nf">Clear</span><span class="p">();</span>
+                        <span class="n">_data</span><span class="p">.</span><span class="nf">GetFiles</span><span class="p">()</span>
+                            <span class="p">.</span><span class="nf">Where</span><span class="p">(</span><span class="n">f</span> <span class="p">=&gt;</span> <span class="p">(</span><span class="n">f</span><span class="p">.</span><span class="n">Attributes</span> <span class="p">&amp;</span> <span class="p">(</span><span class="n">FileAttributes</span><span class="p">.</span><span class="n">Hidden</span> <span class="p">|</span> <span class="n">FileAttributes</span><span class="p">.</span><span class="n">System</span><span class="p">))</span> <span class="p">==</span> <span class="m">0</span><span class="p">)</span>
+                            <span class="p">.</span><span class="nf">ForEach</span><span class="p">(</span><span class="n">f</span> <span class="p">=&gt;</span> <span class="n">_files</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="k">new</span> <span class="nf">FileViewModel</span><span class="p">(</span><span class="n">f</span><span class="p">)));</span>
+
+                        <span class="nf">OnPropertyChanged</span><span class="p">(</span><span class="s">"TotalFiles"</span><span class="p">,</span> <span class="s">"TotalFileSize"</span><span class="p">);</span>
+                    <span class="p">}</span>
+                    <span class="nf">SendMessage</span><span class="p">(</span><span class="n">SelectedDirectoryChangedMessage</span><span class="p">,</span> <span class="k">this</span><span class="p">);</span>
+                <span class="p">}</span>
+                <span class="k">else</span>
+                <span class="p">{</span>
+                    <span class="n">_files</span><span class="p">.</span><span class="nf">Clear</span><span class="p">();</span>
+                    <span class="n">_files</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="n">FileViewModel</span><span class="p">.</span><span class="n">MarkerFile</span><span class="p">);</span>
+                <span class="p">}</span>
+                <span class="nf">OnPropertyChanged</span><span class="p">(</span><span class="s">"IsSelected"</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// True/False if the directory is expanded. Expanding the directory causes it</span>
+    <span class="c1">/// to fill it's subdirectory collection.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="kt">bool</span> <span class="n">IsExpanded</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_isExpanded</span><span class="p">;</span> <span class="p">}</span>
+        <span class="k">set</span>
+        <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">_isExpanded</span> <span class="p">!=</span> <span class="k">value</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="n">_isExpanded</span> <span class="p">=</span> <span class="k">value</span><span class="p">;</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">_isExpanded</span><span class="p">)</span>
+                <span class="p">{</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">_subdirs</span><span class="p">.</span><span class="n">Count</span> <span class="p">==</span> <span class="m">1</span> <span class="p">&amp;&amp;</span> <span class="n">_subdirs</span><span class="p">[</span><span class="m">0</span><span class="p">]</span> <span class="p">==</span> <span class="n">DirectoryViewModel</span><span class="p">.</span><span class="n">MarkerDirectory</span><span class="p">)</span>
+                    <span class="p">{</span>
+                        <span class="n">_subdirs</span><span class="p">.</span><span class="nf">Clear</span><span class="p">();</span>
+                        <span class="n">_data</span><span class="p">.</span><span class="nf">GetDirectories</span><span class="p">()</span>
+                            <span class="p">.</span><span class="nf">Where</span><span class="p">(</span><span class="n">d</span> <span class="p">=&gt;</span> <span class="p">(</span><span class="n">d</span><span class="p">.</span><span class="n">Attributes</span> <span class="p">&amp;</span> <span class="p">(</span><span class="n">FileAttributes</span><span class="p">.</span><span class="n">Hidden</span> <span class="p">|</span> <span class="n">FileAttributes</span><span class="p">.</span><span class="n">System</span><span class="p">))</span> <span class="p">==</span> <span class="m">0</span><span class="p">)</span>
+                            <span class="p">.</span><span class="nf">ForEach</span><span class="p">(</span><span class="n">d</span> <span class="p">=&gt;</span> <span class="n">_subdirs</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="k">new</span> <span class="nf">DirectoryViewModel</span><span class="p">(</span><span class="n">d</span><span class="p">)));</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+                <span class="c1">// Throw them away to recollect later - implements a refresh.</span>
+                <span class="k">else</span>
+                <span class="p">{</span>
+                    <span class="n">_subdirs</span><span class="p">.</span><span class="nf">Clear</span><span class="p">();</span>
+                    <span class="n">_subdirs</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="n">DirectoryViewModel</span><span class="p">.</span><span class="n">MarkerDirectory</span><span class="p">);</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="nf">OnPropertyChanged</span><span class="p">(</span><span class="s">"IsExpanded"</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// List of files in this directory.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="n">IList</span><span class="p">&lt;</span><span class="n">FileViewModel</span><span class="p">&gt;</span> <span class="n">Files</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_files</span><span class="p">;</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// List of subdirectories in this directory.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="n">IList</span><span class="p">&lt;</span><span class="n">DirectoryViewModel</span><span class="p">&gt;</span> <span class="n">Subdirectories</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_subdirs</span><span class="p">;</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Count of files in this directory.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="kt">int</span> <span class="n">TotalFiles</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_files</span><span class="p">.</span><span class="n">Count</span><span class="p">;</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Total size of all files in this directory.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="kt">long</span> <span class="n">TotalFileSize</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_files</span><span class="p">.</span><span class="nf">Sum</span><span class="p">(</span><span class="n">file</span> <span class="p">=&gt;</span> <span class="n">file</span><span class="p">.</span><span class="n">Size</span><span class="p">);</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Constructor for the marker directory.  This is used to detect an expansion.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">private</span> <span class="nf">DirectoryViewModel</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="n">_data</span> <span class="p">=</span> <span class="k">null</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Public constructor</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="c1">/// &lt;param name="di"&gt;DirectoryInfo to pull information from&lt;/param&gt;</span>
+    <span class="k">public</span> <span class="nf">DirectoryViewModel</span><span class="p">(</span><span class="n">DirectoryInfo</span> <span class="n">di</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">di</span> <span class="p">==</span> <span class="k">null</span><span class="p">)</span>
+            <span class="k">throw</span> <span class="k">new</span> <span class="nf">ArgumentNullException</span><span class="p">(</span><span class="s">"di"</span><span class="p">);</span>
+        <span class="n">_data</span> <span class="p">=</span> <span class="n">di</span><span class="p">;</span>
+        <span class="n">_files</span> <span class="p">=</span> <span class="k">new</span> <span class="n">ObservableCollection</span><span class="p">&lt;</span><span class="n">FileViewModel</span><span class="p">&gt;</span> <span class="p">{</span><span class="n">FileViewModel</span><span class="p">.</span><span class="n">MarkerFile</span><span class="p">};</span>
+        <span class="n">_subdirs</span> <span class="p">=</span> <span class="k">new</span> <span class="n">ObservableCollection</span><span class="p">&lt;</span><span class="n">DirectoryViewModel</span><span class="p">&gt;</span> <span class="p">{</span><span class="n">DirectoryViewModel</span><span class="p">.</span><span class="n">MarkerDirectory</span><span class="p">};</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>This file is a bit more complicated – like the <strong>FileViewModel</strong>, this wraps a simple data object (a <strong>DirectoryInfo</strong> in this case).  Notice that it too exposes properties to provide access to various bits of information.  Here you can see that it is creating new properties such as <strong>TotalFileSize</strong> which is the sum of all the files sizes in this directory.  That’s one of the jobs of the ViewModel – to provide easily bindable properties for the bits of information we want to display.  In this case, the <strong>TotalFiles</strong> and <strong>TotalFileSize</strong> gets displayed in the <strong>StatusBar</strong> of the window when the directory has files.</p>
+
+<p>Notice that the directory exposes files and subdirectories in <strong>ObservableCollections</strong> – but they are delay populated.  This is done so that the <strong>TreeView</strong> comes up quickly and we don’t have to enumerate the entire disk to retrieve the directories and files!  When you expand and collapse the nodes in the tree, it is populating the data.  This is done through the <strong>IsExpanded</strong> property – if you look back in the View, you will see that the <strong>TreeView</strong> actually binds the <strong>TreeViewItem.IsExpanded</strong> to this property:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;TreeView</span> <span class="na">Grid.Column=</span><span class="s">"0"</span> <span class="na">ItemsSource=</span><span class="s">"{Binding RootDirectory}"</span>
+        <span class="na">ItemTemplate=</span><span class="s">"{StaticResource DirectoryTemplate}"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;TreeView.ItemContainerStyle&gt;</span>
+        <span class="nt">&lt;Style</span> <span class="na">TargetType=</span><span class="s">"TreeViewItem"</span><span class="nt">&gt;</span>
+            <span class="nt">&lt;Setter</span> <span class="na">Property=</span><span class="s">"IsSelected"</span> <span class="na">Value=</span><span class="s">"{Binding IsSelected, Mode=TwoWay}"</span> <span class="nt">/&gt;</span>
+            <span class="nt">&lt;Setter</span> <span class="na">Property=</span><span class="s">"IsExpanded"</span> <span class="na">Value=</span><span class="s">"{Binding IsExpanded, Mode=TwoWay}"</span> <span class="nt">/&gt;</span>
+        <span class="nt">&lt;/Style&gt;</span>
+    <span class="nt">&lt;/TreeView.ItemContainerStyle&gt;</span>
+<span class="nt">&lt;/TreeView&gt;</span>
+</code></pre></div></div>
+
+<p>Notice it also binds up the <strong>IsSelected</strong> property – this is when we populate the files collection.  Since they are observable, they will force the UI to update when new items are added or removed and we see the Explorer effect we desire.</p>
+
+<p>Lastly, before we leave this file, notice that when a directory is selected, it makes a method call to a function called <strong>SendMessage</strong>:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">SendMessage</span><span class="p">(</span><span class="n">SelectedDirectoryChangedMessage</span><span class="p">,</span> <span class="k">this</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>It passes a string (the key) and an object (the data).  This is a built-in service of the <strong>ViewModel</strong> base class and it’s the reason why this ViewModel does not derive from <strong>SimpleViewModel</strong>, but instead from <strong>ViewModel</strong> which is the full version.  One of the services provided is a <em>Message Mediator</em>.  This service basically allows you to loosely couple various objects together – we’ll see how the target registers, but for now, just notice the sender – it passes a string key and an object.  Any target registered for the given key will receive the object.  There are several overrides for the message mediator which I’ll detail in a later post.</p>
+
+<p>Ok, let’s switch to the final file – the MainViewModel:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">class</span> <span class="nc">MainViewModel</span> <span class="p">:</span> <span class="n">ViewModel</span>
+<span class="p">{</span>
+    <span class="k">private</span> <span class="n">DirectoryViewModel</span> <span class="n">_selectedDirectory</span><span class="p">;</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Root directory - can be bound to an ItemsControl on the UI.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="n">DirectoryViewModel</span><span class="p">[]</span> <span class="n">RootDirectory</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Selected (active) directory</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="n">DirectoryViewModel</span> <span class="n">SelectedDirectory</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_selectedDirectory</span><span class="p">;</span> <span class="p">}</span>
+        <span class="k">set</span>
+        <span class="p">{</span>
+            <span class="n">_selectedDirectory</span> <span class="p">=</span> <span class="k">value</span><span class="p">;</span>
+            <span class="nf">OnPropertyChanged</span><span class="p">(</span><span class="s">"SelectedDirectory"</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Command to display the About Box.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="n">ICommand</span> <span class="n">DisplayAboutCommand</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Command to end the application</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="n">ICommand</span> <span class="n">CloseAppCommand</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Main constructor</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="nf">MainViewModel</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="c1">// Register this instance with the message mediator so it can receive</span>
+        <span class="c1">// messages from other views/viewmodels.</span>
+        <span class="nf">RegisterWithMessageMediator</span><span class="p">();</span>
+
+        <span class="c1">// Create our commands</span>
+        <span class="n">DisplayAboutCommand</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">DelegatingCommand</span><span class="p">(</span><span class="n">OnShowAbout</span><span class="p">);</span>
+        <span class="n">CloseAppCommand</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">DelegatingCommand</span><span class="p">(</span><span class="n">OnCloseApp</span><span class="p">);</span>
+
+        <span class="c1">// Fill in the root directory from C:</span>
+        <span class="n">RootDirectory</span> <span class="p">=</span> <span class="k">new</span><span class="p">[]</span> <span class="p">{</span><span class="k">new</span> <span class="nf">DirectoryViewModel</span><span class="p">(</span><span class="k">new</span> <span class="nf">DirectoryInfo</span><span class="p">(</span><span class="s">@"C:"</span><span class="p">))</span> <span class="p">{</span><span class="n">IsSelected</span> <span class="p">=</span> <span class="k">true</span><span class="p">}};</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// This method closes the application window.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">private</span> <span class="k">void</span> <span class="nf">OnCloseApp</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="c1">// Ask the view to close.</span>
+        <span class="nf">RaiseCloseRequest</span><span class="p">();</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// This method displays the About Box.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">private</span> <span class="k">void</span> <span class="nf">OnShowAbout</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="c1">// Get the message visualizer service from the service resolver.</span>
+        <span class="c1">// All services can be replaced, so make sure to check if we have something</span>
+        <span class="c1">// registered.</span>
+        <span class="n">IMessageVisualizer</span> <span class="n">messageVisualizer</span> <span class="p">=</span> <span class="n">Resolve</span><span class="p">&lt;</span><span class="n">IMessageVisualizer</span><span class="p">&gt;();</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">messageVisualizer</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="c1">// Show a message box.</span>
+            <span class="n">messageVisualizer</span><span class="p">.</span><span class="nf">Show</span><span class="p">(</span><span class="s">"About File Explorer Sample"</span><span class="p">,</span> <span class="s">"File Explorer Sample 1.0"</span><span class="p">,</span> <span class="n">MessageButtons</span><span class="p">.</span><span class="n">OK</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// This method is invoked by the message mediator when a DirectoryViewModel is selected.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="c1">/// &lt;param name="newDirectory"&gt;DirectoryViewModel that is now active&lt;/param&gt;</span>
+    <span class="p">[</span><span class="nf">MessageMediatorTarget</span><span class="p">(</span><span class="n">DirectoryViewModel</span><span class="p">.</span><span class="n">SelectedDirectoryChangedMessage</span><span class="p">)]</span>
+    <span class="k">private</span> <span class="k">void</span> <span class="nf">OnCurrentDirectoryChanged</span><span class="p">(</span><span class="n">DirectoryViewModel</span> <span class="n">newDirectory</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">SelectedDirectory</span> <span class="p">=</span> <span class="n">newDirectory</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Here you can see the same basic principle – it exposes properties the UI binds to.  In particular here we see Commands being exposed as properties.  Commands is what drives a UI – it allows a UI to trigger actions in the ViewModel.  We are using two basic commands here – <strong>CloseAppCommand</strong> and <strong>DisplayAboutCommand</strong>.  If you look at the constructor, you will see they are backed by a <strong>DelegatingCommand</strong> object.  This is a common pattern found in almost every MVVM framework out there, but it’s essentially a pair of delegates that are called when the command is checked and when it is invoked.  In our cases here, we always allow the command to execute so we only provide the execution handler (a second parameter would define the typical <strong>CanExecute</strong> handler).  There are a couple of overrides for this object as well – one that provides type safety for the parameter and one that always uses object and allows for any object as data.  Again here we are being simple and not using any parameters so our bound methods are both no-parameter methods.</p>
+
+<p>The <strong>CloseAppCommand</strong> command invokes the <strong>OnCloseApp</strong> method – which in turn calls <strong>RaiseCloseRequest</strong>.  This JulMar ViewModel method will close the view associated with the ViewModel <em>if you associated the two using the <strong>ViewModelCreator</strong></em>.</p>
+
+<p>The <strong>OnShowAbout</strong> method is called by the <strong>DisplayAboutCommand.</strong> It uses another registered service in the library called <strong>IMessageVisualizer</strong>.  The message visualizer is used to display a simple message box from the ViewModel.  Here we use it to display an about box.  There are several other services I’ll talk about in the next post.</p>
+
+<p>Notice that the <strong>RootDirectory</strong> property which is data bound to the <strong>TreeView.ItemsSource</strong> is exposes as an array – this is because the <strong>TreeView</strong> always expects a collection of items even though we always have a single root item.  So we wrap a single <strong>DirectoryViewModel</strong> into a collection and return it as the property.</p>
+
+<p>If you look at the end of the file you will find our message mediator target – <strong>OnCurrentDirectoryChanged</strong>.  We use this as a way to see when a new directory has been selected in the tree.  For a <strong>ListBox</strong>, we could  have just data bound the <strong>SelectedItem</strong> to the property, but <strong>TreeView</strong> isn’t a selector and doesn’t expose a <strong>SelectedItem</strong> property.  Instead you either have to catch an event (I’ll show how you can do that in a future blog entry about the MVVM helpers library) or use this little mediator trick.</p>
+
+<p>The <strong>[MessageMediatorTarget]</strong> attribute is the secret sauce here – it tells the message mediator to wire this method up to the passed string key.  When that key is used in a <strong>SendMessage</strong> call <em>and</em> the parameter type is a <strong>DirectoryViewModel</strong> (or derived type), the mediator will invoke this method.  This all happens without any direct linkage between the <strong>DirectoryViewModel</strong> and the <strong>MainViewModel</strong>.  The delegate instance is held in a weak reference so there’s no concern for memory leaks.</p>
+
+<p>The second part of the magic is in the constructor – the message mediator is an opt-in service, so notice the call to <strong>RegisterWithMessageMediator()</strong>.  This is what causes this instance to be noticed by the mediator.  There is a balancing <strong>UnregisterWithMessageMediator</strong> if you ever want to unhook the instance.  You can also use methods to directly wire up handlers (without attributes).  This is useful when you are dynamically linking things together at runtime vs. compile time.</p>
+
+<p>Well, that covers the basics of the framework Views + ViewModels.  In the next post, I will detail the service registration and basic service mechanism that’s built into the framework for you to use.  Until then, ciao!</p>
+
+  </div><a class="u-url" href="/mvvm/2010/01/21/mvvm-views-and-viewmodels.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

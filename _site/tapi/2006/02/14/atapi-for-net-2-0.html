@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>ATAPI for .NET 2.0 | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="ATAPI for .NET 2.0" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Ok, ok so it’s been a while. I’ve been very busy with two tasks – first, I spent the last few weeks doing a Guerrilla .NET for DevelopMentor with Rich Blewitt. We had a blast together and it was great to hang out with him. I also spent a day sitting in on DM’s new C++/CLI class being taught by the very capable Marcus Heege - incredible stuff which every C++ guy on the Microsoft platform should get into." />
+<meta property="og:description" content="Ok, ok so it’s been a while. I’ve been very busy with two tasks – first, I spent the last few weeks doing a Guerrilla .NET for DevelopMentor with Rich Blewitt. We had a blast together and it was great to hang out with him. I also spent a day sitting in on DM’s new C++/CLI class being taught by the very capable Marcus Heege - incredible stuff which every C++ guy on the Microsoft platform should get into." />
+<link rel="canonical" href="http://localhost:4000/tapi/2006/02/14/atapi-for-net-2-0.html" />
+<meta property="og:url" content="http://localhost:4000/tapi/2006/02/14/atapi-for-net-2-0.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2006-02-14T18:00:00-06:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="ATAPI for .NET 2.0" />
+<script type="application/ld+json">
+{"headline":"ATAPI for .NET 2.0","dateModified":"2006-02-14T18:00:00-06:00","datePublished":"2006-02-14T18:00:00-06:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/tapi/2006/02/14/atapi-for-net-2-0.html"},"description":"Ok, ok so it’s been a while. I’ve been very busy with two tasks – first, I spent the last few weeks doing a Guerrilla .NET for DevelopMentor with Rich Blewitt. We had a blast together and it was great to hang out with him. I also spent a day sitting in on DM’s new C++/CLI class being taught by the very capable Marcus Heege - incredible stuff which every C++ guy on the Microsoft platform should get into.","url":"http://localhost:4000/tapi/2006/02/14/atapi-for-net-2-0.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">ATAPI for .NET 2.0</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2006-02-14T18:00:00-06:00" itemprop="datePublished">Feb 14, 2006
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>Ok, ok so it’s been a while.  I’ve been very busy with two tasks – first, I spent the last few weeks doing a Guerrilla .NET for <strong>DevelopMentor</strong> with Rich Blewitt.  We had a blast together and it was great to hang out with him.  I also spent a day sitting in on DM’s new C++/CLI class being taught by the very capable Marcus Heege - incredible stuff which every C++ guy on the Microsoft platform should get into.</p>
+
+<p>The other thing I’ve been working with is resurrecting an old project of mine - ATAPI which was originally setup to wrap the TAPI 2.x API in an “easy to use” set of C++ classes.  I’d ported it to .NET a few years ago but was not really happy with the results.  I had the chance to revisit it because of a client’s requirement to integrate TAPI into their .NET platform code.  So, I spent a couple of weeks working on the codebase again under .NET 2.0 and this time around I’m pretty pleased with the architecture.  I wanted something very easy to use, and I think I’ve achieved that even though it isn’t a complete wrapper.</p>
+
+<p>For example, to walk through all the lines and dump out the device classes available - you can simply do this:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">using</span> <span class="nn">System</span><span class="p">;</span>  
+<span class="k">using</span> <span class="nn">System.Collections.Generic</span><span class="p">;</span>  
+<span class="k">using</span> <span class="nn">System.Text</span><span class="p">;</span>  
+<span class="k">using</span> <span class="nn">JulMar.Atapi</span><span class="p">;</span>
+
+<span class="k">namespace</span> <span class="nn">EnumDevices</span>  
+<span class="p">{</span>  
+    <span class="k">class</span> <span class="nc">Program</span>  
+    <span class="p">{</span>  
+        <span class="k">static</span> <span class="k">void</span> <span class="nf">Main</span><span class="p">(</span><span class="kt">string</span><span class="p">[]</span> <span class="n">args</span><span class="p">)</span>  
+        <span class="p">{</span>  
+            <span class="n">TapiManager</span> <span class="n">mgr</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">TapiManager</span><span class="p">(</span><span class="s">"EnumDevices"</span><span class="p">);</span>  
+            <span class="n">mgr</span><span class="p">.</span><span class="nf">Initialize</span><span class="p">();</span> <span class="c1">// Start up Tapi</span>
+
+            <span class="k">foreach</span> <span class="p">(</span><span class="n">TapiLine</span> <span class="n">line</span> <span class="k">in</span> <span class="n">mgr</span><span class="p">.</span><span class="n">Lines</span><span class="p">)</span>  
+            <span class="p">{</span>  
+                <span class="k">foreach</span> <span class="p">(</span><span class="kt">string</span> <span class="n">s</span> <span class="k">in</span> <span class="n">line</span><span class="p">.</span><span class="n">Capabilities</span><span class="p">.</span><span class="n">AvailableDeviceClasses</span><span class="p">)</span>  
+                    <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"{0} - {1}"</span><span class="p">,</span> <span class="n">line</span><span class="p">.</span><span class="n">Name</span><span class="p">,</span> <span class="n">s</span><span class="p">);</span>  
+            <span class="p">}</span>
+            <span class="n">mgr</span><span class="p">.</span><span class="nf">Shutdown</span><span class="p">();</span>  
+        <span class="p">}</span>  
+    <span class="p">}</span>  
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><em>So much easier than the C/C++ version!</em></p>
+
+<h3 id="tapi-30">TAPI 3.0</h3>
+
+<p>So.. why not use the TAPI3 COM API you ask?  Well, as it turns out, it doesn’t work that well with the runtime-callable wrapper (RCW) infrastructure in .NET – check out <a href="http://support.microsoft.com/kb/841712/en-us">this support article</a> where Microsoft basically says “TAPI3 is too complicated”.. like I needed someone to tell me that!</p>
+
+<p>The ATAPI.NET source code and samples are available <a href="https://github.com/markjulmar/atapi.net">here</a>.</p>
+
+<p>enjoy.</p>
+
+  </div><a class="u-url" href="/tapi/2006/02/14/atapi-for-net-2-0.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

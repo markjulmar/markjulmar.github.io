@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>(Possibly) better validations in WPF | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="(Possibly) better validations in WPF" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="I’ve never cared much for the built-in validation mechanisms provided by WPF. I just don’t think any of them feel natural to the way we build WPF applications today. Basically, there are essentially three mechanisms built into WPF for validations:" />
+<meta property="og:description" content="I’ve never cared much for the built-in validation mechanisms provided by WPF. I just don’t think any of them feel natural to the way we build WPF applications today. Basically, there are essentially three mechanisms built into WPF for validations:" />
+<link rel="canonical" href="http://localhost:4000/wpf/2008/08/24/possibly-better-validations-in-wpf.html" />
+<meta property="og:url" content="http://localhost:4000/wpf/2008/08/24/possibly-better-validations-in-wpf.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2008-08-24T19:00:00-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="(Possibly) better validations in WPF" />
+<script type="application/ld+json">
+{"headline":"(Possibly) better validations in WPF","dateModified":"2008-08-24T19:00:00-05:00","datePublished":"2008-08-24T19:00:00-05:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/wpf/2008/08/24/possibly-better-validations-in-wpf.html"},"description":"I’ve never cared much for the built-in validation mechanisms provided by WPF. I just don’t think any of them feel natural to the way we build WPF applications today. Basically, there are essentially three mechanisms built into WPF for validations:","url":"http://localhost:4000/wpf/2008/08/24/possibly-better-validations-in-wpf.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">(Possibly) better validations in WPF</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2008-08-24T19:00:00-05:00" itemprop="datePublished">Aug 24, 2008
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>I’ve never cared much for the built-in validation mechanisms provided by WPF.  I just don’t think any of them feel natural to the way we build WPF applications today.  Basically, there are essentially three mechanisms built into WPF for validations:</p>
+
+<ol>
+  <li>Validation Rules</li>
+  <li>Exceptions</li>
+  <li><code class="language-plaintext highlighter-rouge">IDataErrorInfo</code></li>
+</ol>
+
+<p>Validation rules are checked prior to transferring the value from the bound control to your source (typically the business object).  Exceptions are a form of validation rule - if the property setter throws an exception, it fails validation.  Finally, <strong>IDataErrorInfo</strong> was added with WPF 3.5 to support validations inside the business objects directly.  Often, you will use one or several of these validation techniques in your WPF application to check the input.</p>
+
+<p>It’s this last scenario (<strong>IDataErrorInfo</strong>) I want to focus on in this post.  I actually like having validations in the business object -I think it makes the most sense in most scenarios.  However, the interface itself feels clunky to me - it looks like this:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">interface</span> <span class="nc">IDataErrorInfo</span>  
+<span class="p">{</span>  
+    <span class="kt">string</span> <span class="n">Error</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="p">}</span>  
+    <span class="kt">string</span> <span class="k">this</span><span class="p">[</span><span class="kt">string</span> <span class="n">columnName</span><span class="p">];</span>  
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>It’s a weird one for sure.  I think the thing I dislike about it is the indexer - it forces your validation code to look like the old 90’s style switch statements for Win32 message processing.  WPF calls the indexer just after applying the value to the bound property - the validation method is responsible for checking the value and returning a string indicating the failure, or null/empty if no failure occurred.</p>
+
+<p>In building WPF applications, I’ve used the above interface many times to validate business objects and I found myself writing the same code over and over - most validations are pretty common:</p>
+
+<ol>
+  <li>Something must be there</li>
+  <li>It’s a certain required length</li>
+  <li>It’s a certain required pattern</li>
+  <li>It’s a certain range (numeric)</li>
+</ol>
+
+<p>And I thought to myself, “surely there’s a better way!”  And so I came up with an attribute-based validation system.  It piggy-backs onto the <strong>IDataErrorInfo</strong> interface, but delegates off to a helper class which looks for attributes applied to the properties.  The attributes them provide the validation for you.  Here’s the idea:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">interface</span> <span class="nc">IValidator</span>  
+<span class="p">{</span>  
+    <span class="kt">string</span> <span class="nf">Validate</span><span class="p">(</span><span class="kt">string</span> <span class="n">name</span><span class="p">,</span> <span class="kt">object</span> <span class="k">value</span><span class="p">);</span>  
+<span class="p">}</span>  
+  
+<span class="k">public</span> <span class="k">abstract</span> <span class="k">class</span> <span class="nc">ValidatorBase</span> <span class="p">:</span> <span class="n">Attribute</span><span class="p">,</span> <span class="n">IValidator</span>  
+<span class="p">{</span>  
+    <span class="k">public</span> <span class="k">abstract</span> <span class="kt">string</span> <span class="nf">Validate</span><span class="p">(</span><span class="kt">string</span> <span class="n">name</span><span class="p">,</span> <span class="kt">object</span> <span class="k">value</span><span class="p">);</span>  
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The <strong>IValidator</strong> interface represents the validation to occur.  It gets passed the name of the property and the current value.  We wrap that in an abstract class called ValidatorBase for most attributes to derive from.  Here’s a couple of examples:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">class</span> <span class="nc">RequiredAttribute</span> <span class="p">:</span> <span class="n">ValidatorBase</span>  
+<span class="p">{</span>  
+    <span class="k">public</span> <span class="k">override</span> <span class="kt">string</span> <span class="nf">Validate</span><span class="p">(</span><span class="kt">string</span> <span class="n">name</span><span class="p">,</span> <span class="kt">object</span> <span class="k">value</span><span class="p">)</span>  
+    <span class="p">{</span>  
+        <span class="k">return</span> <span class="k">value</span> <span class="p">==</span> <span class="k">null</span> <span class="p">||</span> <span class="k">value</span><span class="p">.</span><span class="nf">ToString</span><span class="p">().</span><span class="n">Length</span> <span class="p">==</span> <span class="m">0</span> <span class="p">?</span> <span class="n">name</span> <span class="p">+</span> <span class="s">" must be supplied."</span> <span class="p">:</span> <span class="k">null</span><span class="p">;</span>  
+    <span class="p">}</span>  
+<span class="p">}</span>  
+  
+<span class="k">public</span> <span class="k">class</span> <span class="nc">RequiredLengthAttribute</span> <span class="p">:</span> <span class="n">ValidatorBase</span>  
+<span class="p">{</span>  
+    <span class="k">public</span> <span class="kt">int</span> <span class="n">Minimum</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>  
+    <span class="k">public</span> <span class="kt">int</span> <span class="n">Maximum</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>  
+
+    <span class="k">public</span> <span class="k">override</span> <span class="kt">string</span> <span class="nf">Validate</span><span class="p">(</span><span class="kt">string</span> <span class="n">name</span><span class="p">,</span> <span class="kt">object</span> <span class="k">value</span><span class="p">)</span>  
+    <span class="p">{</span>  
+        <span class="k">if</span> <span class="p">(</span><span class="k">value</span> <span class="p">==</span> <span class="k">null</span><span class="p">)</span>  
+            <span class="k">return</span> <span class="k">null</span><span class="p">;</span>  
+
+        <span class="kt">int</span> <span class="n">len</span> <span class="p">=</span> <span class="k">value</span><span class="p">.</span><span class="nf">ToString</span><span class="p">().</span><span class="n">Length</span><span class="p">;</span>  
+        <span class="k">return</span> <span class="p">(</span><span class="n">len</span> <span class="p">&gt;=</span> <span class="n">Minimum</span> <span class="p">&amp;&amp;</span> <span class="n">len</span> <span class="p">&lt;=</span> <span class="n">Maximum</span><span class="p">)</span>  
+                    <span class="p">?</span> <span class="k">null</span>  
+                    <span class="p">:</span> <span class="kt">string</span><span class="p">.</span><span class="nf">Format</span><span class="p">(</span><span class="s">"Length of {0} must be between {1} and {2}."</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">Minimum</span><span class="p">,</span> <span class="n">Maximum</span><span class="p">);</span>  
+    <span class="p">}</span>  
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>You could get as complicated as you like - I have in my toolbox a bunch more (Regex validator, range validator, etc.)  Next, we use a validation manager class to do the validations for us, this is what will implement the logic for <strong>IDataErrorInfo</strong>:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">static</span> <span class="k">class</span> <span class="nc">ValidationManager</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="k">static</span> <span class="kt">string</span> <span class="nf">Validate</span><span class="p">(</span><span class="kt">string</span> <span class="n">name</span><span class="p">,</span> <span class="kt">object</span> <span class="n">instance</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">instance</span> <span class="p">==</span> <span class="k">null</span><span class="p">)</span>
+            <span class="k">throw</span> <span class="k">new</span> <span class="nf">ArgumentNullException</span><span class="p">(</span><span class="s">"instance"</span><span class="p">);</span>
+
+        <span class="n">Type</span> <span class="n">type</span> <span class="p">=</span> <span class="n">instance</span><span class="p">.</span><span class="nf">GetType</span><span class="p">();</span>
+        <span class="kt">var</span> <span class="n">errorList</span> <span class="p">=</span> <span class="k">new</span> <span class="n">List</span><span class="p">&lt;</span><span class="kt">string</span><span class="p">&gt;();</span>
+
+        <span class="k">if</span> <span class="p">(!</span><span class="kt">string</span><span class="p">.</span><span class="nf">IsNullOrEmpty</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+        <span class="p">{</span>
+            <span class="nf">ValidateProperty</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="n">errorList</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="k">else</span>
+        <span class="p">{</span>
+            <span class="k">foreach</span> <span class="p">(</span><span class="n">PropertyInfo</span> <span class="n">pi</span> <span class="k">in</span> <span class="n">type</span><span class="p">.</span><span class="nf">GetProperties</span><span class="p">(</span><span class="n">BindingFlags</span><span class="p">.</span><span class="n">Public</span> <span class="p">|</span> <span class="n">BindingFlags</span><span class="p">.</span><span class="n">Instance</span><span class="p">))</span>
+                <span class="nf">ValidateProperty</span><span class="p">(</span><span class="n">pi</span><span class="p">.</span><span class="n">Name</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="n">errorList</span><span class="p">);</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="kt">string</span><span class="p">.</span><span class="nf">Join</span><span class="p">(</span><span class="n">Environment</span><span class="p">.</span><span class="n">NewLine</span><span class="p">,</span> <span class="n">errorList</span><span class="p">.</span><span class="nf">ToArray</span><span class="p">());</span>
+    <span class="p">}</span>
+
+    <span class="k">static</span> <span class="k">void</span> <span class="nf">ValidateProperty</span><span class="p">(</span><span class="kt">string</span> <span class="n">name</span><span class="p">,</span> <span class="kt">object</span> <span class="n">instance</span><span class="p">,</span> <span class="n">ICollection</span><span class="p">&lt;</span><span class="kt">string</span><span class="p">&gt;</span> <span class="n">errorList</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">Type</span> <span class="n">type</span> <span class="p">=</span> <span class="n">instance</span><span class="p">.</span><span class="nf">GetType</span><span class="p">();</span>
+        <span class="n">PropertyInfo</span> <span class="n">pi</span> <span class="p">=</span> <span class="n">type</span><span class="p">.</span><span class="nf">GetProperty</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">BindingFlags</span><span class="p">.</span><span class="n">Public</span> <span class="p">|</span> <span class="n">BindingFlags</span><span class="p">.</span><span class="n">Instance</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">pi</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="kt">object</span> <span class="k">value</span> <span class="p">=</span> <span class="n">pi</span><span class="p">.</span><span class="nf">GetValue</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="k">null</span><span class="p">);</span>
+            <span class="k">foreach</span> <span class="p">(</span><span class="n">Attribute</span> <span class="n">att</span> <span class="k">in</span> <span class="n">pi</span><span class="p">.</span><span class="nf">GetCustomAttributes</span><span class="p">(</span><span class="k">true</span><span class="p">))</span>
+            <span class="p">{</span>
+                <span class="kt">var</span> <span class="n">iv</span> <span class="p">=</span> <span class="n">att</span> <span class="k">as</span> <span class="n">IValidator</span><span class="p">;</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">iv</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+                <span class="p">{</span>
+                    <span class="kt">string</span> <span class="n">err</span> <span class="p">=</span> <span class="n">iv</span><span class="p">.</span><span class="nf">Validate</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="k">value</span><span class="p">);</span>
+                    <span class="k">if</span> <span class="p">(!</span><span class="kt">string</span><span class="p">.</span><span class="nf">IsNullOrEmpty</span><span class="p">(</span><span class="n">err</span><span class="p">))</span>
+                        <span class="n">errorList</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="n">err</span><span class="p">);</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>It’s pretty simple - it just uses reflection to walk through the properties and look for the <strong>IValidator</strong> interface on any attributes.  If it finds any, it executes the Validate logic and returns a string indicating the failure(s).</p>
+
+<p>To use the above code, you add the attributes to your business object properties.  For example, here is a simple Person object which uses the two validators for it’s name property:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">class</span> <span class="nc">Person</span> <span class="p">:</span> <span class="n">INotifyPropertyChanged</span><span class="p">,</span> <span class="n">IDataErrorInfo</span>
+<span class="p">{</span>
+    <span class="k">private</span> <span class="kt">string</span> <span class="n">_name</span><span class="p">;</span>
+
+    <span class="p">[</span><span class="n">Required</span><span class="p">]</span>
+    <span class="p">[</span><span class="nf">RequiredLength</span><span class="p">(</span><span class="n">Minimum</span> <span class="p">=</span> <span class="m">2</span><span class="p">,</span> <span class="n">Maximum</span> <span class="p">=</span> <span class="m">10</span><span class="p">)]</span>
+    <span class="k">public</span> <span class="kt">string</span> <span class="n">Name</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_name</span><span class="p">;</span> <span class="p">}</span>
+        <span class="k">set</span>
+        <span class="p">{</span>
+            <span class="n">_name</span> <span class="p">=</span> <span class="k">value</span><span class="p">;</span>
+            <span class="nf">OnPropertyChanged</span><span class="p">(</span><span class="s">"Name"</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="p">...</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Finally, you implement the IDataErrorInfo by utilizing the ValidationManager class.  If you have a base class for your business objects, it could be done directly in the base class and then propagate throughout your hierarchy:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#region IDataErrorInfo Members  
+</span><span class="kt">string</span> <span class="n">IDataErrorInfo</span><span class="p">.</span><span class="n">Error</span>  
+<span class="p">{</span>  
+   <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">ValidationManager</span><span class="p">.</span><span class="nf">Validate</span><span class="p">(</span><span class="k">null</span><span class="p">,</span> <span class="k">this</span><span class="p">);</span> <span class="p">}</span>  
+<span class="p">}</span>  
+  
+<span class="kt">string</span> <span class="n">IDataErrorInfo</span><span class="p">.</span><span class="k">this</span><span class="p">[</span><span class="kt">string</span> <span class="n">columnName</span><span class="p">]</span>  
+<span class="p">{</span>  
+   <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">ValidationManager</span><span class="p">.</span><span class="nf">Validate</span><span class="p">(</span><span class="n">columnName</span><span class="p">,</span> <span class="k">this</span><span class="p">);</span> <span class="p">}</span>  
+<span class="p">}</span>  
+<span class="cp">#endregion  
+</span></code></pre></div></div>
+
+<p>That’s it!  Now, you have an extensible validation mechanism which is reusable and easy to apply.  Plus, it makes it much more obvious what the validation rules are for the business object - and code clarity is important in large projects with multiple devs.  Feel free to use the above code in your own projects, if you create any really cool validators, please share!</p>
+
+  </div><a class="u-url" href="/wpf/2008/08/24/possibly-better-validations-in-wpf.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>MVVM: Rename TreeView nodes | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="MVVM: Rename TreeView nodes" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="I know I said I was going to cover some services next, but I got a request last night to show how to rename TreeView nodes (ala Explorer) using the MVVM pattern in WPF. The solution is quite easy and elegant and I thought I’d share it here." />
+<meta property="og:description" content="I know I said I was going to cover some services next, but I got a request last night to show how to rename TreeView nodes (ala Explorer) using the MVVM pattern in WPF. The solution is quite easy and elegant and I thought I’d share it here." />
+<link rel="canonical" href="http://localhost:4000/mvvm/2010/01/27/mvvm-rename-treeview-nodes.html" />
+<meta property="og:url" content="http://localhost:4000/mvvm/2010/01/27/mvvm-rename-treeview-nodes.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2010-01-27T18:00:00-06:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="MVVM: Rename TreeView nodes" />
+<script type="application/ld+json">
+{"headline":"MVVM: Rename TreeView nodes","dateModified":"2010-01-27T18:00:00-06:00","datePublished":"2010-01-27T18:00:00-06:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/mvvm/2010/01/27/mvvm-rename-treeview-nodes.html"},"description":"I know I said I was going to cover some services next, but I got a request last night to show how to rename TreeView nodes (ala Explorer) using the MVVM pattern in WPF. The solution is quite easy and elegant and I thought I’d share it here.","url":"http://localhost:4000/mvvm/2010/01/27/mvvm-rename-treeview-nodes.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">MVVM: Rename TreeView nodes</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2010-01-27T18:00:00-06:00" itemprop="datePublished">Jan 27, 2010
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>I know I said I was going to cover some services next, but I got a request last night to show how to rename TreeView nodes (ala Explorer) using the MVVM pattern in WPF.  The solution is quite easy and elegant and I thought I’d share it here.</p>
+
+<p>First, the idea is we want to be able to double-click on the text portion of the <code class="language-plaintext highlighter-rouge">TreeViewItem</code> and have it allow us to type in a new name, replacing the current text.  This involves changing the visual template out (from a <code class="language-plaintext highlighter-rouge">TextBlock</code> to a <code class="language-plaintext highlighter-rouge">TextBox</code>) and then detecting that the edit is complete.</p>
+
+<p>I started with the <a href="https://github.com/markjulmar/mvvmhelpers">MVVM project template</a>, creating the default File Explorer view.  The <strong>TreeView</strong> on the left is displaying folders – so I opened the <strong>DirectoryViewModel.cs</strong> that drives the data.</p>
+
+<p>First, let’s add a property to indicate whether we are in “editing” mode or not.  This is a simple field-backed property that raises the PropertyChange notification:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// True/False whether we are changing the name of the directory</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="k">public</span> <span class="kt">bool</span> <span class="n">IsEditingName</span>
+<span class="p">{</span>
+    <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_isEditingName</span><span class="p">;</span> <span class="p">}</span>
+    <span class="k">set</span> <span class="p">{</span> <span class="n">_isEditingName</span> <span class="p">=</span> <span class="k">value</span><span class="p">;</span> <span class="nf">OnPropertyChanged</span><span class="p">(</span><span class="s">"IsEditingName"</span><span class="p">);</span> <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>I also added the private field (<code class="language-plaintext highlighter-rouge">_isEditingName</code>) into the class.  Next, locate the <code class="language-plaintext highlighter-rouge">Name</code> property that is being used to display the name.  Here we need to add a setter that renames the directory.  We want it to be robust, so we do some upfront checks and make sure to catch any I/O exceptions that occur:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// Name of the directory</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="k">public</span> <span class="kt">string</span> <span class="n">Name</span>
+<span class="p">{</span>
+    <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_data</span><span class="p">.</span><span class="n">Name</span><span class="p">;</span> <span class="p">}</span>
+    <span class="c1">// Code to rename directory</span>
+    <span class="k">set</span>
+    <span class="p">{</span>
+        <span class="kt">string</span> <span class="n">newValue</span> <span class="p">=</span> <span class="k">value</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(!</span><span class="kt">string</span><span class="p">.</span><span class="nf">IsNullOrEmpty</span><span class="p">(</span><span class="n">newValue</span><span class="p">))</span>
+        <span class="p">{</span>
+            <span class="c1">// Remove any trailing backslash.</span>
+            <span class="kt">string</span> <span class="n">fullName</span> <span class="p">=</span> <span class="n">_data</span><span class="p">.</span><span class="n">FullName</span><span class="p">.</span><span class="nf">TrimEnd</span><span class="p">(</span><span class="n">Path</span><span class="p">.</span><span class="n">DirectorySeparatorChar</span><span class="p">);</span>
+            <span class="c1">// Determine the new directory name</span>
+            <span class="kt">string</span> <span class="n">directoryPath</span> <span class="p">=</span> <span class="n">fullName</span><span class="p">.</span><span class="nf">Substring</span><span class="p">(</span><span class="m">0</span><span class="p">,</span> <span class="n">fullName</span><span class="p">.</span><span class="n">Length</span> <span class="p">-</span> <span class="n">_data</span><span class="p">.</span><span class="n">Name</span><span class="p">.</span><span class="n">Length</span><span class="p">);</span>
+            <span class="k">if</span> <span class="p">(!</span><span class="kt">string</span><span class="p">.</span><span class="nf">IsNullOrEmpty</span><span class="p">(</span><span class="n">directoryPath</span><span class="p">)</span> <span class="p">&amp;&amp;</span> <span class="n">directoryPath</span> <span class="p">!=</span> <span class="n">fullName</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="kt">string</span> <span class="n">newFullName</span> <span class="p">=</span> <span class="n">Path</span><span class="p">.</span><span class="nf">Combine</span><span class="p">(</span><span class="n">directoryPath</span><span class="p">,</span> <span class="n">newValue</span><span class="p">);</span>
+                <span class="k">try</span>
+                <span class="p">{</span>
+                    <span class="n">_data</span><span class="p">.</span><span class="nf">MoveTo</span><span class="p">(</span><span class="n">newFullName</span><span class="p">);</span>
+                <span class="p">}</span>
+                <span class="k">catch</span> <span class="p">(</span><span class="n">IOException</span> <span class="n">ex</span><span class="p">)</span>
+                <span class="p">{</span>
+                    <span class="kt">var</span> <span class="n">errorVisualizer</span> <span class="p">=</span> <span class="n">Resolve</span><span class="p">&lt;</span><span class="n">IErrorVisualizer</span><span class="p">&gt;();</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">errorVisualizer</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+                    <span class="p">{</span>
+                        <span class="n">errorVisualizer</span><span class="p">.</span><span class="nf">Show</span><span class="p">(</span><span class="s">"Cannot rename directory"</span><span class="p">,</span> <span class="n">ex</span><span class="p">.</span><span class="n">Message</span><span class="p">);</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="c1">// Tell WPF the name has changed.  Note if the same control</span>
+        <span class="c1">// is being used to display vs. edit then the</span>
+        <span class="c1">// binding will need to force WPF3x to re-read the property value. </span>
+        <span class="c1">// This is done by using a RefreshValueConverter;</span>
+        <span class="c1">// under .NET4 this won't be necessary.</span>
+        <span class="nf">OnPropertyChanged</span><span class="p">(</span><span class="s">"Name"</span><span class="p">);</span>
+        <span class="c1">// Flip off the editing bit</span>
+        <span class="n">IsEditingName</span> <span class="p">=</span> <span class="k">false</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Notice how changes the editing flag at the end – we assume that once the rename has occurred we are out of editing mode.  Finally, we need a way to transition from “normal” to “edit” mode and back.  In the VM these kinds of things are driven with commands – so, let’s define an <code class="language-plaintext highlighter-rouge">ICommand</code> that takes us in and out of edit mode:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// Command used to switch to editing mode</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="k">public</span> <span class="n">ICommand</span> <span class="n">SwitchToEditingMode</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+</code></pre></div></div>
+
+<p>And then finally initialize it in the default constructor – we also now need to chain to that constructor from the parameterized version since we always want this initialization to happen (you could also do the initialization in both, but I prefer this approach):</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// Constructor for the marker directory.  This is used to detect an expansion.</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="k">private</span> <span class="nf">DirectoryViewModel</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="c1">// Command that switches us into editing mode.</span>
+    <span class="n">SwitchToEditingMode</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">DelegatingCommand</span><span class="p">(</span>
+                     <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">IsEditingName</span> <span class="p">=</span> <span class="p">!</span><span class="n">IsEditingName</span><span class="p">,</span>
+                 <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">_data</span><span class="p">.</span><span class="n">FullName</span> <span class="p">!=</span> <span class="n">_data</span><span class="p">.</span><span class="n">Name</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// Public constructor</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="c1">/// &lt;param name="di"&gt;DirectoryInfo to pull information from&lt;/param&gt;</span>
+<span class="k">public</span> <span class="nf">DirectoryViewModel</span><span class="p">(</span><span class="n">DirectoryInfo</span> <span class="n">di</span><span class="p">)</span> <span class="p">:</span> <span class="k">this</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="p">...</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>That’s all the code changes we need for this – now let’s switch to the View and see how we will wire this up!  Open the <strong>MainWindow.xaml</strong> file and look at the <strong>DataTemplate</strong> used by the <strong>TreeView</strong>.  All of our changes will go into this template. First, we need to add a <strong>TextBox</strong> into the template that sits in the same space as the <strong>TextBlock</strong> that displays the name.  Then we need some way to switch between these two elements – I use Visibility here, you could also swap out the entire template.  We’ll use a <strong>DataTrigger</strong> and drive it off our new <strong>IsEditingName</strong> property:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;HierarchicalDataTemplate</span> <span class="na">x:Key=</span><span class="s">"DirectoryTemplate"</span> <span class="na">ItemsSource=</span><span class="s">"{Binding Subdirectories}"</span><span class="nt">&gt;</span>
+     <span class="nt">&lt;StackPanel</span> <span class="na">Orientation=</span><span class="s">"Horizontal"</span><span class="nt">&gt;</span>
+         <span class="nt">&lt;Image</span> <span class="na">Width=</span><span class="s">"16"</span> <span class="na">Height=</span><span class="s">"16"</span>
+                 <span class="na">Source=</span><span class="s">"{Binding FullName, Converter={StaticResource iconConverter}}"</span> <span class="nt">/&gt;</span>
+         <span class="nt">&lt;Grid</span> <span class="na">Margin=</span><span class="s">"5,0"</span><span class="nt">&gt;</span>
+                 <span class="nt">&lt;TextBlock</span> <span class="na">x:Name=</span><span class="s">"tb"</span> <span class="na">Text=</span><span class="s">"{Binding Name}"</span> <span class="nt">/&gt;</span>
+                 <span class="c">&lt;!-- Editing text box --&gt;</span>
+                 <span class="nt">&lt;TextBox</span> <span class="na">x:Name=</span><span class="s">"etb"</span> <span class="na">Visibility=</span><span class="s">"Collapsed"</span> <span class="na">MinWidth=</span><span class="s">"100"</span>
+                         <span class="na">Text=</span><span class="s">"{Binding Name, UpdateSourceTrigger=LostFocus,
+                         Converter={julmar:RefreshValueConverter}}"</span> <span class="nt">/&gt;</span>
+        <span class="nt">&lt;/Grid&gt;</span>
+    <span class="nt">&lt;/StackPanel&gt;</span>
+    <span class="nt">&lt;HierarchicalDataTemplate.Triggers&gt;</span>
+        <span class="nt">&lt;DataTrigger</span> <span class="na">Binding=</span><span class="s">"{Binding IsSelected}"</span> <span class="na">Value=</span><span class="s">"True"</span><span class="nt">&gt;</span>
+            <span class="nt">&lt;Setter</span> <span class="na">TargetName=</span><span class="s">"tb"</span> <span class="na">Property=</span><span class="s">"FontWeight"</span> <span class="na">Value=</span><span class="s">"Bold"</span> <span class="nt">/&gt;</span>
+        <span class="nt">&lt;/DataTrigger&gt;</span>
+        <span class="c">&lt;!-- When editing mode is turned on, get rid of the TextBlock and make the TextBlock visible. --&gt;</span>
+        <span class="nt">&lt;DataTrigger</span> <span class="na">Binding=</span><span class="s">"{Binding IsEditingName}"</span> <span class="na">Value=</span><span class="s">"True"</span><span class="nt">&gt;</span>
+            <span class="nt">&lt;Setter</span> <span class="na">TargetName=</span><span class="s">"tb"</span> <span class="na">Property=</span><span class="s">"Visibility"</span> <span class="na">Value=</span><span class="s">"Collapsed"</span> <span class="nt">/&gt;</span>
+            <span class="nt">&lt;Setter</span> <span class="na">TargetName=</span><span class="s">"etb"</span> <span class="na">Property=</span><span class="s">"Visibility"</span> <span class="na">Value=</span><span class="s">"Visible"</span> <span class="nt">/&gt;</span>
+        <span class="nt">&lt;/DataTrigger&gt;</span>
+    <span class="nt">&lt;/HierarchicalDataTemplate.Triggers&gt;</span>
+<span class="nt">&lt;/HierarchicalDataTemplate&gt;</span>
+</code></pre></div></div>
+
+<p>The other thing we need to do is set the <strong>TextBox</strong> binding (which also uses the <strong>Name</strong> property) to apply any changes when the control loses focus – that way we don’t rename as the user types!  This is done by changing the <strong>UpdateSourceTrigger</strong> on the binding to “<strong>LostFocus</strong>”. This happens to be the default setting for WPF – but not for Silverlight, so I tend to be deliberate when I want to ensure a specific behavior.  I’ve also added a converter onto the binding above – the RefreshValueConverter.  This is a no-op converter, but it forces WPF to re-read the property value after the setter is called, without it, the <strong>TextBox</strong> will have stale data if the rename fails.  Note that this is unnecessary in WPF4 which now always re-reads the property values automatically.  Since this targets WPF3.5, this converter will ensure proper behavior.</p>
+
+<p>The final thing we need to do is somehow get in and out of editing mode.  We want this to happen when we double-click on the text element – so let’s add a JulMar behavior and action to the <strong>TextBlock</strong>:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;TextBlock</span> <span class="na">x:Name=</span><span class="s">"tb"</span> <span class="na">Text=</span><span class="s">"{Binding Name}"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;Interactivity:Interaction.Triggers&gt;</span>
+        <span class="c">&lt;!-- DoubleClick activates editing mode --&gt;</span>
+        <span class="nt">&lt;julmar:DoubleClickTrigger&gt;</span>
+        <span class="nt">&lt;julmar:InvokeCommand</span> <span class="na">Command=</span><span class="s">"{Binding SwitchToEditingMode}"</span> <span class="nt">/&gt;</span>
+        <span class="nt">&lt;/julmar:DoubleClickTrigger&gt;</span>
+    <span class="nt">&lt;/Interactivity:Interaction.Triggers&gt;</span>
+<span class="nt">&lt;/TextBlock&gt;</span>
+</code></pre></div></div>
+
+<p>This also requires you define the proper namespace on the Window element:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xmlns:Interactivity="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
+</code></pre></div></div>
+
+<p>I’d also like to drop <em>out</em> of editing mode when you press ENTER in the <strong>TextBox</strong>. To accomplish this, let’s add an <strong>InputBinding</strong> to the <strong>TextBox</strong> for the ENTER key that invokes our <strong>SwitchToEditingMode</strong> command – in WPF 3.5 we need to go through a resource-based binding helper to get access to the ViewModel (which is our <strong>DataContext</strong>).  So, let’s defined a <strong>BindableCommand</strong> in the <strong>Grid</strong> resources (so we get the <strong>DirectoryViewModel</strong> as the DataContext) and then bind the input command to that:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;Grid.Resources&gt;</span>
+    <span class="c">&lt;!-- Put here so it inherits the data context properly.  We want the command to execute on directory view model --&gt;</span>
+    <span class="nt">&lt;julmar:BindableCommand</span> <span class="na">x:Key=</span><span class="s">"EditingModeCommand"</span>
+         <span class="na">Command=</span><span class="s">"{Binding SwitchToEditingMode}"</span> <span class="nt">/&gt;</span>
+<span class="nt">&lt;/Grid.Resources&gt;</span>
+
+...
+
+<span class="nt">&lt;TextBox</span> <span class="na">x:Name=</span><span class="s">"etb"</span> <span class="na">Visibility=</span><span class="s">"Collapsed"</span> <span class="na">MinWidth=</span><span class="s">"100"</span>
+        <span class="na">Text=</span><span class="s">"{Binding Name, UpdateSourceTrigger=LostFocus, Converter={julmar:RefreshValueConverter}}"</span><span class="nt">&gt;</span>
+ <span class="c">&lt;!-- Pressing ENTER in the TextBox turns off editing mode. 
+ Tab or clicking away will do the same thing --&gt;</span>
+    <span class="nt">&lt;TextBox.InputBindings&gt;</span>
+        <span class="nt">&lt;KeyBinding</span> <span class="na">Key=</span><span class="s">"Enter"</span> <span class="na">Command=</span><span class="s">"{StaticResource EditingModeCommand}"</span> <span class="nt">/&gt;</span>
+    <span class="nt">&lt;/TextBox.InputBindings&gt;</span>
+<span class="nt">&lt;/TextBox&gt;</span>
+</code></pre></div></div>
+
+<p>And that’s it!  If you run the app and double-click on a directory name (except the root) you can rename it!</p>
+
+<p><img src="/images/RenameTreeNodePic_thumb.jpg" alt="RenameTreeNodePic" title="RenameTreeNodePic" /></p>
+
+<p>Here’s the finished solution: <a href="/samples/RenameTreeNode.zip">RenameTreeNode.zip</a></p>
+
+  </div><a class="u-url" href="/mvvm/2010/01/27/mvvm-rename-treeview-nodes.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

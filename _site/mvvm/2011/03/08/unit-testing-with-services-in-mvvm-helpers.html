@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Unit Testing with services in MVVM Helpers | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="Unit Testing with services in MVVM Helpers" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="In the previous post I showed how you can easily replace services within your application to fit whatever your goals are. This is also a requirement when you would like to unit test your application, but there’s a slightly different twist to it." />
+<meta property="og:description" content="In the previous post I showed how you can easily replace services within your application to fit whatever your goals are. This is also a requirement when you would like to unit test your application, but there’s a slightly different twist to it." />
+<link rel="canonical" href="http://localhost:4000/mvvm/2011/03/08/unit-testing-with-services-in-mvvm-helpers.html" />
+<meta property="og:url" content="http://localhost:4000/mvvm/2011/03/08/unit-testing-with-services-in-mvvm-helpers.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2011-03-08T18:00:00-06:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Unit Testing with services in MVVM Helpers" />
+<script type="application/ld+json">
+{"headline":"Unit Testing with services in MVVM Helpers","dateModified":"2011-03-08T18:00:00-06:00","datePublished":"2011-03-08T18:00:00-06:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/mvvm/2011/03/08/unit-testing-with-services-in-mvvm-helpers.html"},"description":"In the previous post I showed how you can easily replace services within your application to fit whatever your goals are. This is also a requirement when you would like to unit test your application, but there’s a slightly different twist to it.","url":"http://localhost:4000/mvvm/2011/03/08/unit-testing-with-services-in-mvvm-helpers.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Unit Testing with services in MVVM Helpers</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2011-03-08T18:00:00-06:00" itemprop="datePublished">Mar 8, 2011
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>In the previous post I showed how you can easily replace services within your application to fit whatever your goals are.  This is also a requirement when you would like to unit test your application, but there’s a slightly different twist to it.</p>
+
+<p>As a simple example, let’s use the little demo app we built to play with service replacement.  In this case, our <strong>CalculatePi</strong> method in the <strong>MainViewModel</strong> ended up with the following code:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">private</span> <span class="k">void</span> <span class="nf">OnCalculatePi</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="n">IMessageVisualizer</span> <span class="n">messageVisualizer</span> <span class="p">=</span> <span class="n">Resolve</span><span class="p">&lt;</span><span class="n">IMessageVisualizer</span><span class="p">&gt;();</span>
+    <span class="kt">var</span> <span class="n">result</span> <span class="p">=</span> <span class="n">messageVisualizer</span><span class="p">.</span><span class="nf">Show</span><span class="p">(</span><span class="s">"Calculating Pi"</span><span class="p">,</span>
+            <span class="s">"This operation takes a long time. Are you sure you want to proceed?"</span><span class="p">,</span>
+            <span class="n">MessageButtons</span><span class="p">.</span><span class="n">YesNo</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">result</span> <span class="p">==</span> <span class="n">MessageResult</span><span class="p">.</span><span class="n">Yes</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="n">IDisposable</span> <span class="n">waitNotify</span> <span class="p">=</span> <span class="n">Resolve</span><span class="p">&lt;</span><span class="n">INotificationVisualizer</span><span class="p">&gt;().</span><span class="nf">BeginWait</span><span class="p">(</span><span class="s">"Working"</span><span class="p">,</span>
+                    <span class="s">"Calculating Pi.. Please Wait"</span><span class="p">);</span>
+            <span class="n">Task</span><span class="p">.</span><span class="n">Factory</span><span class="p">.</span><span class="nf">StartNew</span><span class="p">(()</span> <span class="p">=&gt;</span>
+            <span class="p">{</span>
+                <span class="n">Thread</span><span class="p">.</span><span class="nf">Sleep</span><span class="p">(</span><span class="m">5000</span><span class="p">);</span>
+                <span class="n">PiText</span> <span class="p">=</span> <span class="n">Math</span><span class="p">.</span><span class="n">PI</span><span class="p">.</span><span class="nf">ToString</span><span class="p">();</span>
+            <span class="p">}).</span><span class="nf">ContinueWith</span><span class="p">(</span><span class="n">t</span> <span class="p">=&gt;</span> <span class="n">waitNotify</span><span class="p">.</span><span class="nf">Dispose</span><span class="p">(),</span>
+                <span class="n">TaskScheduler</span><span class="p">.</span><span class="nf">FromCurrentSynchronizationContext</span><span class="p">());</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Notice we depend on two things – <strong>IMessageVisualizer</strong> and <strong>IUIVisualizer</strong>.  When unit testing, we need to either provide these dependencies in some way, or provide alternatives to them.  As a starting point, let’s use Visual Studio to generate a unit test (this is <strong>not</strong> TDD, just basic unit testing as we’ve already written the method!)  If you right click on the method, you should find a <strong>Create Unit Tests…</strong> option:</p>
+
+<p><img src="/images/unit-testing-with-services-in-mvvm-helpers-image_thumb.png" alt="image" title="image" /></p>
+
+<p>In the resulting dialog, you can choose what you’d like to test.  You can test internal (private) methods, or just the public interfaces – however deep you’d like to go.  In this case, I’ll choose to test the command and the text produced:</p>
+
+<p><img src="/images/unit-testing-with-services-in-mvvm-helpers-image_thumb_1.png" alt="image" title="image" /></p>
+
+<p>We’ll just quickly make a call to the command, and then verify the text is set to our expected value:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// A test for CalculatePi</span>
+<span class="c1">///&lt;/summary&gt;</span>
+<span class="p">[</span><span class="nf">TestMethod</span><span class="p">()]</span>
+<span class="k">public</span> <span class="k">void</span> <span class="nf">CalculatePiTest</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="n">MainViewModel_Accessor</span> <span class="n">target</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">MainViewModel_Accessor</span><span class="p">();</span>
+    <span class="n">target</span><span class="p">.</span><span class="n">CalculatePi</span><span class="p">.</span><span class="nf">Execute</span><span class="p">(</span><span class="k">null</span><span class="p">);</span>
+    <span class="n">Assert</span><span class="p">.</span><span class="nf">AreEqual</span><span class="p">(</span><span class="n">Math</span><span class="p">.</span><span class="n">PI</span><span class="p">.</span><span class="nf">ToString</span><span class="p">(),</span> <span class="n">target</span><span class="p">.</span><span class="n">PiText</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Now, we have a bit of a problem currently – right now we are relying on the UI services to present a message box and then provide a notification.  We clearly cannot use these services when unit testing.  So we need some way to replace them specifically for this run – in this case we don’t want to use the <strong>[ExportService]</strong> attribute, we want to be very explicit.</p>
+
+<p>In this case, what we really want are <em>mock</em> implementations of these services – implementations that track what has been called and return canned responses rather than prompting the user for them.  There are several very nice libraries for doing this (see Rhino Mock for my favorite), but to make this clear, let’s provide an actual mocked class for both:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">class</span> <span class="nc">MockNotificationVisualizer</span> <span class="p">:</span> <span class="n">INotificationVisualizer</span><span class="p">,</span> <span class="n">IDisposable</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="n">DateTime</span><span class="p">?</span> <span class="n">LastBeginCall</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+    <span class="k">public</span> <span class="n">DateTime</span><span class="p">?</span> <span class="n">LastDisposeCall</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+    <span class="k">public</span> <span class="n">IDisposable</span> <span class="nf">BeginWait</span><span class="p">(</span><span class="kt">string</span> <span class="n">title</span><span class="p">,</span> <span class="kt">string</span> <span class="n">message</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">LastBeginCall</span> <span class="p">=</span> <span class="n">DateTime</span><span class="p">.</span><span class="n">Now</span><span class="p">;</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="k">public</span> <span class="k">void</span> <span class="nf">Dispose</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="n">LastDisposeCall</span> <span class="p">=</span> <span class="n">DateTime</span><span class="p">.</span><span class="n">Now</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">public</span> <span class="k">class</span> <span class="nc">MockMessageVisualizer</span> <span class="p">:</span> <span class="n">IMessageVisualizer</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="n">MessageResult</span> <span class="n">Response</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+    <span class="k">public</span> <span class="n">MessageResult</span> <span class="nf">Show</span><span class="p">(</span><span class="kt">string</span> <span class="n">title</span><span class="p">,</span> <span class="kt">string</span> <span class="n">message</span><span class="p">,</span> <span class="n">MessageButtons</span> <span class="n">buttons</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Notice that we are simply tracking the calls for the notification visualizer – we want to ensure <strong>BeginWait</strong> and <strong>Dispose</strong> are both called – and we track when they are called so we can test for ordering. The message visualizer service is mocked out to return a specific response – this let’s us control the code path taken.</p>
+
+<p>Now that we have these implementations we can register them explicitly as part of our test – you can use the <strong>[TestInitialize]</strong> or <strong>[ClassInitialize]</strong> if you like, but I prefer to do it on each test so I have access to the underlying fields for other tests. To replace the services, we simply register these mocked objects for the interfaces they are implementing:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="nf">TestMethod</span><span class="p">()]</span>
+<span class="k">public</span> <span class="k">void</span> <span class="nf">CalculatePiTest</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="n">MainViewModel_Accessor</span> <span class="n">target</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">MainViewModel_Accessor</span><span class="p">();</span>
+    <span class="n">MockNotificationVisualizer</span> <span class="n">notifyVisualizer</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">MockNotificationVisualizer</span><span class="p">();</span>
+    <span class="n">MockMessageVisualizer</span> <span class="n">messageVisualizer</span> <span class="p">=</span> <span class="k">new</span> <span class="n">MockMessageVisualizer</span> <span class="p">{</span> <span class="n">Response</span> <span class="p">=</span> <span class="n">MessageResult</span><span class="p">.</span><span class="n">Yes</span> <span class="p">};</span>
+
+    <span class="n">ViewModel</span><span class="p">.</span><span class="n">ServiceProvider</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">INotificationVisualizer</span><span class="p">),</span> <span class="n">notifyVisualizer</span><span class="p">);</span>
+    <span class="n">ViewModel</span><span class="p">.</span><span class="n">ServiceProvider</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">IMessageVisualizer</span><span class="p">),</span> <span class="n">messageVisualizer</span><span class="p">);</span>
+
+    <span class="n">target</span><span class="p">.</span><span class="n">CalculatePi</span><span class="p">.</span><span class="nf">Execute</span><span class="p">(</span><span class="k">null</span><span class="p">);</span>
+    <span class="n">Assert</span><span class="p">.</span><span class="nf">AreEqual</span><span class="p">(</span><span class="n">Math</span><span class="p">.</span><span class="n">PI</span><span class="p">.</span><span class="nf">ToString</span><span class="p">(),</span> <span class="n">target</span><span class="p">.</span><span class="n">PiText</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>This will add the services to the service resolver (the default one is tracked by the static <strong>ViewModel.ServiceProvider</strong> property but you can also get it through MEF through an import for the <strong>IServiceProvider</strong> or <strong>IServiceProviderEx</strong> interface). Once the test is complete, we can remove the service:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">ViewModel</span><span class="p">.</span><span class="n">ServiceProvider</span><span class="p">.</span><span class="nf">Remove</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">INotificationVisualizer</span><span class="p">));</span>
+<span class="n">ViewModel</span><span class="p">.</span><span class="n">ServiceProvider</span><span class="p">.</span><span class="nf">Remove</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">IMessageVisualizer</span><span class="p">));</span>
+</code></pre></div></div>
+
+<p>Now, we can use these implementations to provide testing directives – for example we can ensure <code class="language-plaintext highlighter-rouge">BeginWait</code> and <code class="language-plaintext highlighter-rouge">Dispose</code> are both called and done in the expected order:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Assert</span><span class="p">.</span><span class="nf">IsTrue</span><span class="p">(</span><span class="n">notifyVisualizer</span><span class="p">.</span><span class="n">LastBeginCall</span> <span class="p">!=</span> <span class="k">null</span><span class="p">);</span>
+<span class="n">Assert</span><span class="p">.</span><span class="nf">IsTrue</span><span class="p">(</span><span class="n">notifyVisualizer</span><span class="p">.</span><span class="n">LastDisposeCall</span> <span class="p">!=</span> <span class="k">null</span><span class="p">);</span>
+<span class="n">Assert</span><span class="p">.</span><span class="nf">IsTrue</span><span class="p">(</span><span class="n">notifyVisualizer</span><span class="p">.</span><span class="n">LastDisposeCall</span> <span class="p">&gt;</span> <span class="n">notifyVisualizer</span><span class="p">.</span><span class="n">LastBeginCall</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>We can also use the message visualizer to force a “No” response – and then ensure the text isn’t set through another test method:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="nf">TestMethod</span><span class="p">()]</span>
+<span class="k">public</span> <span class="k">void</span> <span class="nf">DoNot_CalculatePiTest</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="n">MainViewModel_Accessor</span> <span class="n">target</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">MainViewModel_Accessor</span><span class="p">();</span>
+    <span class="n">MockNotificationVisualizer</span> <span class="n">notifyVisualizer</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">MockNotificationVisualizer</span><span class="p">();</span>
+    <span class="n">MockMessageVisualizer</span> <span class="n">messageVisualizer</span> <span class="p">=</span> <span class="k">new</span> <span class="n">MockMessageVisualizer</span> <span class="p">{</span> <span class="n">Response</span> <span class="p">=</span> <span class="n">MessageResult</span><span class="p">.</span><span class="n">No</span> <span class="p">};</span>
+
+    <span class="n">ViewModel</span><span class="p">.</span><span class="n">ServiceProvider</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">INotificationVisualizer</span><span class="p">),</span> <span class="n">notifyVisualizer</span><span class="p">);</span>
+    <span class="n">ViewModel</span><span class="p">.</span><span class="n">ServiceProvider</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">IMessageVisualizer</span><span class="p">),</span> <span class="n">messageVisualizer</span><span class="p">);</span>
+    <span class="n">target</span><span class="p">.</span><span class="n">PiText</span> <span class="p">=</span> <span class="kt">string</span><span class="p">.</span><span class="n">Empty</span><span class="p">;</span>    <span class="n">target</span><span class="p">.</span><span class="n">CalculatePi</span><span class="p">.</span><span class="nf">Execute</span><span class="p">(</span><span class="k">null</span><span class="p">);</span>
+
+    <span class="n">Assert</span><span class="p">.</span><span class="nf">AreEqual</span><span class="p">(</span><span class="kt">string</span><span class="p">.</span><span class="n">Empty</span><span class="p">,</span> <span class="n">target</span><span class="p">.</span><span class="n">PiText</span><span class="p">);</span>
+    <span class="n">Assert</span><span class="p">.</span><span class="nf">IsTrue</span><span class="p">(</span><span class="n">notifyVisualizer</span><span class="p">.</span><span class="n">LastBeginCall</span> <span class="p">==</span> <span class="k">null</span><span class="p">);</span>
+    <span class="n">Assert</span><span class="p">.</span><span class="nf">IsTrue</span><span class="p">(</span><span class="n">notifyVisualizer</span><span class="p">.</span><span class="n">LastDisposeCall</span> <span class="p">==</span> <span class="k">null</span><span class="p">);</span>
+
+    <span class="n">ViewModel</span><span class="p">.</span><span class="n">ServiceProvider</span><span class="p">.</span><span class="nf">Remove</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">INotificationVisualizer</span><span class="p">));</span>
+    <span class="n">ViewModel</span><span class="p">.</span><span class="n">ServiceProvider</span><span class="p">.</span><span class="nf">Remove</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">IMessageVisualizer</span><span class="p">));</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>If you are actually following along in code, you might notice that the first test actually fails with an exception – because we have another dependency we haven’t provided for: <strong>SynchronizationContext</strong>.  This is being used in our method to ensure we execute the dispose on the UI thread.  The unit testing framework makes no guarantee of the Synchronization Context being present however – unlike WPF. So, we need to provide one for the testing framework to use.  Here’s the one I generally use – it has more functionality than what is necessary for this test (in that it supports Posted operations):</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">class</span> <span class="nc">MockSynchronizationContext</span> <span class="p">:</span> <span class="n">SynchronizationContext</span>
+<span class="p">{</span>
+    <span class="k">readonly</span> <span class="n">List</span><span class="p">&lt;</span><span class="n">Tuple</span><span class="p">&lt;</span><span class="n">SendOrPostCallback</span><span class="p">,</span><span class="kt">object</span><span class="p">&gt;&gt;</span> <span class="n">_postedCallbacks</span> <span class="p">=</span> <span class="k">new</span> <span class="n">List</span><span class="p">&lt;</span><span class="n">Tuple</span><span class="p">&lt;</span><span class="n">SendOrPostCallback</span><span class="p">,</span> <span class="kt">object</span><span class="p">&gt;&gt;();</span>
+
+    <span class="k">public</span> <span class="k">override</span> <span class="k">void</span> <span class="nf">Send</span><span class="p">(</span><span class="n">SendOrPostCallback</span> <span class="n">d</span><span class="p">,</span> <span class="kt">object</span> <span class="n">state</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="nf">d</span><span class="p">(</span><span class="n">state</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">public</span> <span class="k">override</span> <span class="k">void</span> <span class="nf">Post</span><span class="p">(</span><span class="n">SendOrPostCallback</span> <span class="n">d</span><span class="p">,</span> <span class="kt">object</span> <span class="n">state</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="k">lock</span> <span class="p">(</span><span class="n">_postedCallbacks</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="n">_postedCallbacks</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="n">Tuple</span><span class="p">.</span><span class="nf">Create</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">state</span><span class="p">));</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">public</span> <span class="k">void</span> <span class="nf">ExecutePostedCallbacks</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="k">lock</span> <span class="p">(</span><span class="n">_postedCallbacks</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="n">_postedCallbacks</span><span class="p">.</span><span class="nf">ForEach</span><span class="p">(</span><span class="n">t</span> <span class="p">=&gt;</span> <span class="n">t</span><span class="p">.</span><span class="nf">Item1</span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="n">Item2</span><span class="p">));</span>
+            <span class="n">_postedCallbacks</span><span class="p">.</span><span class="nf">Clear</span><span class="p">();</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Next, to add it we save off the original value and then restore it:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">SynchronizationContext</span> <span class="n">savedContext</span> <span class="p">=</span> <span class="n">SynchronizationContext</span><span class="p">.</span><span class="n">Current</span><span class="p">;</span><span class="n">MockSynchronizationContext</span> <span class="n">mockContext</span> <span class="p">=</span> 
+        <span class="k">new</span> <span class="nf">MockSynchronizationContext</span><span class="p">();</span><span class="n">SynchronizationContext</span><span class="p">.</span><span class="nf">SetSynchronizationContext</span><span class="p">(</span><span class="n">mockContext</span><span class="p">);</span>
+<span class="n">target</span><span class="p">.</span><span class="n">CalculatePi</span><span class="p">.</span><span class="nf">Execute</span><span class="p">(</span><span class="k">null</span><span class="p">);</span>
+
+<span class="n">Assert</span><span class="p">.</span><span class="nf">AreEqual</span><span class="p">(</span><span class="n">Math</span><span class="p">.</span><span class="n">PI</span><span class="p">.</span><span class="nf">ToString</span><span class="p">(),</span> <span class="n">target</span><span class="p">.</span><span class="n">PiText</span><span class="p">);</span>
+<span class="n">Assert</span><span class="p">.</span><span class="nf">IsTrue</span><span class="p">(</span><span class="n">notifyVisualizer</span><span class="p">.</span><span class="n">LastBeginCall</span> <span class="p">!=</span> <span class="k">null</span><span class="p">);</span>
+<span class="n">Assert</span><span class="p">.</span><span class="nf">IsTrue</span><span class="p">(</span><span class="n">notifyVisualizer</span><span class="p">.</span><span class="n">LastDisposeCall</span> <span class="p">!=</span> <span class="k">null</span><span class="p">);</span>
+<span class="n">Assert</span><span class="p">.</span><span class="nf">IsTrue</span><span class="p">(</span><span class="n">notifyVisualizer</span><span class="p">.</span><span class="n">LastDisposeCall</span> <span class="p">&gt;</span> <span class="n">notifyVisualizer</span><span class="p">.</span><span class="n">LastBeginCall</span><span class="p">);</span>
+
+<span class="n">ViewModel</span><span class="p">.</span><span class="n">ServiceProvider</span><span class="p">.</span><span class="nf">Remove</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">INotificationVisualizer</span><span class="p">));</span>
+<span class="n">ViewModel</span><span class="p">.</span><span class="n">ServiceProvider</span><span class="p">.</span><span class="nf">Remove</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">IMessageVisualizer</span><span class="p">));</span>
+
+<span class="n">SynchronizationContext</span><span class="p">.</span><span class="nf">SetSynchronizationContext</span><span class="p">(</span><span class="n">savedContext</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>Again, you could place this code into the test initialization or even the class initialization to remove it from each test.  Running the test again solves the exception, but it fails:</p>
+
+<p><img src="/images/unit-testing-with-services-in-mvvm-helpers-image_thumb_2.png" alt="image" title="image" /></p>
+
+<p>It might not be obvious why it fails here – recall (look at the implementation code) that the CalculatePi uses a background task to do the work.  This returns <em>immediately</em> back to the unit test, which then tries to get the current value for PI – and gets null because the task hasn’t completed yet!  Here we want to wait for the Dispose to be called to get the value, or wait for our synchronization context to call back any posted methods.  To do that, we’ll modify our mocked implementation slightly to provide a wait method (with timeout) that manages the synchronization context for us:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">class</span> <span class="nc">MockNotificationVisualizer</span> <span class="p">:</span> <span class="n">INotificationVisualizer</span><span class="p">,</span> <span class="n">IDisposable</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="n">DateTime</span><span class="p">?</span> <span class="n">LastBeginCall</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+    <span class="k">public</span> <span class="n">DateTime</span><span class="p">?</span> <span class="n">LastDisposeCall</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+    <span class="k">readonly</span> <span class="n">ManualResetEventSlim</span> <span class="n">_waitEvent</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">ManualResetEventSlim</span><span class="p">(</span><span class="k">false</span><span class="p">);</span>
+
+    <span class="k">public</span> <span class="n">IDisposable</span> <span class="nf">BeginWait</span><span class="p">(</span><span class="kt">string</span> <span class="n">title</span><span class="p">,</span> <span class="kt">string</span> <span class="n">message</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">LastBeginCall</span> <span class="p">=</span> <span class="n">DateTime</span><span class="p">.</span><span class="n">Now</span><span class="p">;</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="k">public</span> <span class="k">void</span> <span class="nf">Dispose</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="n">LastDisposeCall</span> <span class="p">=</span> <span class="n">DateTime</span><span class="p">.</span><span class="n">Now</span><span class="p">;</span>
+        <span class="n">_waitEvent</span><span class="p">.</span><span class="nf">Set</span><span class="p">();</span>
+    <span class="p">}</span>
+
+    <span class="k">public</span> <span class="kt">bool</span> <span class="nf">WaitForDispose</span><span class="p">(</span><span class="n">TimeSpan</span> <span class="n">waitTime</span><span class="p">,</span> <span class="n">MockSynchronizationContext</span> <span class="n">context</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">DateTime</span> <span class="n">start</span> <span class="p">=</span> <span class="n">DateTime</span><span class="p">.</span><span class="n">Now</span><span class="p">;</span>
+        <span class="k">while</span> <span class="p">(</span><span class="n">DateTime</span><span class="p">.</span><span class="n">Now</span> <span class="p">-</span> <span class="n">start</span> <span class="p">&lt;</span> <span class="n">waitTime</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">_waitEvent</span><span class="p">.</span><span class="nf">Wait</span><span class="p">(</span><span class="m">1</span><span class="p">))</span>
+                <span class="k">return</span> <span class="k">true</span><span class="p">;</span>
+            <span class="n">context</span><span class="p">.</span><span class="nf">ExecutePostedCallbacks</span><span class="p">();</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="k">false</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>And then add the support to our test:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">target</span><span class="p">.</span><span class="n">CalculatePi</span><span class="p">.</span><span class="nf">Execute</span><span class="p">(</span><span class="k">null</span><span class="p">);</span>
+<span class="n">Assert</span><span class="p">.</span><span class="nf">IsTrue</span><span class="p">(</span><span class="n">notifyVisualizer</span><span class="p">.</span><span class="nf">WaitForDispose</span><span class="p">(</span><span class="n">TimeSpan</span><span class="p">.</span><span class="nf">FromSeconds</span><span class="p">(</span><span class="m">10</span><span class="p">),</span> <span class="n">mockContext</span><span class="p">));</span>
+<span class="n">Assert</span><span class="p">.</span><span class="nf">AreEqual</span><span class="p">(</span><span class="n">Math</span><span class="p">.</span><span class="n">PI</span><span class="p">.</span><span class="nf">ToString</span><span class="p">(),</span> <span class="n">target</span><span class="p">.</span><span class="n">PiText</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>Now, running the tests produces the expected results:</p>
+
+<p><img src="/images/unit-testing-with-services-in-mvvm-helpers-image_thumb_3.png" alt="image" title="image" /></p>
+
+<p>The final solution is available <a href="/samples/ServiceReplacementWithTests.zip">here</a>.</p>
+
+<p>Happy Coding!</p>
+
+  </div><a class="u-url" href="/mvvm/2011/03/08/unit-testing-with-services-in-mvvm-helpers.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

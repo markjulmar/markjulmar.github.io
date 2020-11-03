@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Synchronizing Collections in Windows Store Apps | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="Synchronizing Collections in Windows Store Apps" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="One issue that often comes up when building WSAs is managing selection in your filled/snapped/full screen views. The goal, of course, is to provide a reasonable view as the user snaps your application which is often done by providing two UIs within the page - one with a GridView for filled or full screen and the second with a ListView for snapped view. You hide and show the two views using the Visual State Manager when using the normal templates." />
+<meta property="og:description" content="One issue that often comes up when building WSAs is managing selection in your filled/snapped/full screen views. The goal, of course, is to provide a reasonable view as the user snaps your application which is often done by providing two UIs within the page - one with a GridView for filled or full screen and the second with a ListView for snapped view. You hide and show the two views using the Visual State Manager when using the normal templates." />
+<link rel="canonical" href="http://localhost:4000/mvvm/2013/05/05/synchronizing-collections-in-windows-store-apps.html" />
+<meta property="og:url" content="http://localhost:4000/mvvm/2013/05/05/synchronizing-collections-in-windows-store-apps.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2013-05-05T19:00:00-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Synchronizing Collections in Windows Store Apps" />
+<script type="application/ld+json">
+{"headline":"Synchronizing Collections in Windows Store Apps","dateModified":"2013-05-05T19:00:00-05:00","datePublished":"2013-05-05T19:00:00-05:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/mvvm/2013/05/05/synchronizing-collections-in-windows-store-apps.html"},"description":"One issue that often comes up when building WSAs is managing selection in your filled/snapped/full screen views. The goal, of course, is to provide a reasonable view as the user snaps your application which is often done by providing two UIs within the page - one with a GridView for filled or full screen and the second with a ListView for snapped view. You hide and show the two views using the Visual State Manager when using the normal templates.","url":"http://localhost:4000/mvvm/2013/05/05/synchronizing-collections-in-windows-store-apps.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Synchronizing Collections in Windows Store Apps</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2013-05-05T19:00:00-05:00" itemprop="datePublished">May 5, 2013
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>One issue that often comes up when building WSAs is managing selection in your filled/snapped/full screen views.  The goal, of course, is to provide a reasonable view as the user snaps your application which is often done by providing two UIs within the page - one with a <strong>GridView</strong> for filled or full screen and the second with a <strong>ListView</strong> for snapped view.  You hide and show the two views using the Visual State Manager when using the normal templates.</p>
+
+<p>If selection is provided, then ideally it would be carried over when changing views - this actually isn’t hard - it can certainly be done manually and if you only allow a single selection it’s dead easy even with MVVM.  Multi-selection is a bit trickier.  Enter the <strong>SynchronizedCollectionBehavior</strong> in MVVMHelpers.  It allows the UI to bind a collection of “selected items” to a collection in the ViewModel - so the ViewModel can track and alter the selection, but more importantly you can bind it to multiple UI things and they all track the same selection automatically.</p>
+
+<p>There are two ways to activate the behavior - first is through the normal Blend framework -</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;ListView</span> <span class="na">ItemsSource=</span><span class="s">"{Binding Names}"</span> <span class="na">SelectionMode=</span><span class="s">"Multiple"</span> <span class="na">HorizontalAlignment=</span><span class="s">"Stretch"</span> <span class="na">Margin=</span><span class="s">"20"</span><span class="nt">&gt;</span>
+    ...
+    <span class="nt">&lt;Interactivity:Interaction.Behaviors&gt;</span>
+        <span class="nt">&lt;Interactivity1:SynchronizedCollectionBehavior</span> <span class="na">Collection=</span><span class="s">"{Binding SelectedNames}"</span> <span class="nt">/&gt;</span>
+    <span class="nt">&lt;/Interactivity:Interaction.Behaviors&gt;</span>
+<span class="nt">&lt;/ListView&gt;</span>
+</code></pre></div></div>
+
+<p>Here the ViewModel is exposing an <code class="language-plaintext highlighter-rouge">ObservableCollection</code> of names (called SelectedNames) to manage the selected items. The actual collection (also <code class="language-plaintext highlighter-rouge">string</code> names) is just Names:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="n">IReadOnlyList</span><span class="p">&lt;</span><span class="kt">string</span><span class="p">&gt;</span> <span class="n">Names</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+<span class="k">public</span> <span class="n">IList</span><span class="p">&lt;</span><span class="kt">string</span><span class="p">&gt;</span> <span class="n">SelectedNames</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+<span class="k">public</span> <span class="nf">MainViewModel</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="n">Names</span> <span class="p">=</span> <span class="k">new</span> <span class="n">List</span><span class="p">&lt;</span><span class="kt">string</span><span class="p">&gt;</span> <span class="p">{</span>
+        <span class="s">"Alice"</span><span class="p">,</span> <span class="s">"Bob"</span><span class="p">,</span> <span class="s">"Carol"</span><span class="p">,</span> <span class="s">"David"</span><span class="p">,</span> <span class="s">"Edgar"</span><span class="p">,</span> <span class="s">"Frank"</span><span class="p">,</span> <span class="s">"Georgia"</span><span class="p">,</span>
+        <span class="s">"Hank"</span><span class="p">,</span> <span class="s">"India"</span><span class="p">,</span> <span class="s">"Jack"</span><span class="p">,</span> <span class="s">"Karen"</span><span class="p">,</span> <span class="s">"Larry"</span><span class="p">,</span> <span class="s">"Mike"</span><span class="p">,</span> <span class="s">"Nate"</span><span class="p">,</span> <span class="s">"Oscar"</span><span class="p">,</span>
+        <span class="s">"Peter"</span><span class="p">,</span> <span class="s">"Quix"</span><span class="p">,</span> <span class="s">"Russ"</span><span class="p">,</span> <span class="s">"Steve"</span><span class="p">,</span> <span class="s">"Tonya"</span><span class="p">,</span> <span class="s">"Uma"</span><span class="p">,</span> <span class="s">"Violet"</span><span class="p">,</span> <span class="s">"Walter"</span><span class="p">,</span>
+        <span class="s">"Xi"</span><span class="p">,</span> <span class="s">"Yvonne"</span><span class="p">,</span> <span class="s">"Zed"</span>
+    <span class="p">};</span>
+
+    <span class="n">SelectedNames</span> <span class="p">=</span> <span class="k">new</span> <span class="n">ObservableCollection</span><span class="p">&lt;</span><span class="kt">string</span><span class="p">&gt;();</span>
+    <span class="p">...</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The second activation mechanism is through a normal attached property -</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;GridView</span> <span class="na">ItemsSource=</span><span class="s">"{Binding Names}"</span> <span class="na">Grid.Column=</span><span class="s">"1"</span> <span class="na">Grid.Row=</span><span class="s">"1"</span> 
+           <span class="na">SelectionMode=</span><span class="s">"Extended"</span> <span class="na">HorizontalAlignment=</span><span class="s">"Stretch"</span> <span class="na">Margin=</span><span class="s">"20"</span>
+            <span class="na">Interactivity1:SynchronizedCollectionBehavior.IsEnabled=</span><span class="s">"{Binding SelectedNames}"</span><span class="nt">&gt;</span>
+</code></pre></div></div>
+
+<p>This performs exactly the same action but allows it to be done as an attribute.</p>
+
+<p><a href="/samples/SynchronizedList.zip">Here is a test program</a> which shows connecting it up to multiple <code class="language-plaintext highlighter-rouge">ItemsControls</code> and even changing the selection styles between them.</p>
+
+  </div><a class="u-url" href="/mvvm/2013/05/05/synchronizing-collections-in-windows-store-apps.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

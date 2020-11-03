@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Creating popup windows in XBAP applications | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="Creating popup windows in XBAP applications" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="A colleague at DevelopMentor recently asked me about creating popup windows in XAML browser applications (XBAP). Normally this is not allowed - if you try to create a top-level window you will get a SecurityException because WPF asks for UIPermission which is strictly prohibited when hosted in the browser." />
+<meta property="og:description" content="A colleague at DevelopMentor recently asked me about creating popup windows in XAML browser applications (XBAP). Normally this is not allowed - if you try to create a top-level window you will get a SecurityException because WPF asks for UIPermission which is strictly prohibited when hosted in the browser." />
+<link rel="canonical" href="http://localhost:4000/wpf/2008/04/02/creating-popup-windows-in-xbap-applications.html" />
+<meta property="og:url" content="http://localhost:4000/wpf/2008/04/02/creating-popup-windows-in-xbap-applications.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2008-04-02T19:00:00-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Creating popup windows in XBAP applications" />
+<script type="application/ld+json">
+{"headline":"Creating popup windows in XBAP applications","dateModified":"2008-04-02T19:00:00-05:00","datePublished":"2008-04-02T19:00:00-05:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/wpf/2008/04/02/creating-popup-windows-in-xbap-applications.html"},"description":"A colleague at DevelopMentor recently asked me about creating popup windows in XAML browser applications (XBAP). Normally this is not allowed - if you try to create a top-level window you will get a SecurityException because WPF asks for UIPermission which is strictly prohibited when hosted in the browser.","url":"http://localhost:4000/wpf/2008/04/02/creating-popup-windows-in-xbap-applications.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Creating popup windows in XBAP applications</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2008-04-02T19:00:00-05:00" itemprop="datePublished">Apr 2, 2008
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>A colleague at <strong>DevelopMentor</strong> recently asked me about creating popup windows in XAML browser applications (XBAP). Normally this is not allowed - if you try to create a top-level window you will get a <code class="language-plaintext highlighter-rouge">SecurityException</code> because WPF asks for <code class="language-plaintext highlighter-rouge">UIPermission</code> which is strictly prohibited when hosted in the browser.</p>
+
+<p>It turns out, however, that you <em>can</em> get a popup window - there’s a hidden little gem in the <code class="language-plaintext highlighter-rouge">System.Windows.Controls.Primitive</code> namespace that is your friend: <code class="language-plaintext highlighter-rouge">Popup</code>.</p>
+
+<p>It’s the same underlying class that ToolTip, Menu, and ComboBox use to display drop-down menus and overlays and it is browser-hosting aware! It’s pretty limited in functionality - I’m not sure you can get it to move around with the mouse for example, but for simple cases it works great. Here’s a code snippet - wire this up to a button in an XBAP:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">void</span> <span class="nf">OnClick</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">EventArgs</span> <span class="n">e</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">Popup</span> <span class="n">window</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">Popup</span><span class="p">();</span>
+
+    <span class="n">StackPanel</span> <span class="n">sp</span> <span class="p">=</span> <span class="k">new</span> <span class="n">StackPanel</span> <span class="p">{</span> <span class="n">Margin</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">Thickness</span><span class="p">(</span><span class="m">5</span><span class="p">)</span> <span class="p">};</span>
+    <span class="n">sp</span><span class="p">.</span><span class="n">Children</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="k">new</span> <span class="n">TextBlock</span> <span class="p">{</span> <span class="n">Text</span> <span class="p">=</span> <span class="s">"Hi from a popup"</span> <span class="p">});</span>
+
+    <span class="n">Button</span> <span class="n">newButton</span> <span class="p">=</span> <span class="k">new</span> <span class="n">Button</span> <span class="p">{</span> <span class="n">Content</span> <span class="p">=</span> <span class="s">"Another button"</span> <span class="p">};</span>
+    <span class="n">newButton</span><span class="p">.</span><span class="n">Click</span> <span class="p">+=</span> <span class="k">delegate</span> <span class="p">{</span> <span class="n">window</span><span class="p">.</span><span class="n">IsOpen</span> <span class="p">=</span> <span class="k">false</span><span class="p">;</span> <span class="p">};</span>
+
+    <span class="n">sp</span><span class="p">.</span><span class="n">Children</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="n">newButton</span><span class="p">);</span>
+    <span class="n">sp</span><span class="p">.</span><span class="n">Children</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="k">new</span> <span class="n">Slider</span> <span class="p">{</span> <span class="n">Minimum</span> <span class="p">=</span> <span class="m">0</span><span class="p">,</span> <span class="n">Maximum</span> <span class="p">=</span> <span class="m">50</span><span class="p">,</span> <span class="n">Value</span> <span class="p">=</span> <span class="m">25</span><span class="p">,</span> <span class="n">Width</span> <span class="p">=</span> <span class="m">100</span> <span class="p">});</span>
+
+    <span class="n">window</span><span class="p">.</span><span class="n">Child</span> <span class="p">=</span> <span class="k">new</span> <span class="n">Border</span> <span class="p">{</span> <span class="n">Background</span> <span class="p">=</span> <span class="n">Brushes</span><span class="p">.</span><span class="n">White</span><span class="p">,</span> <span class="n">BorderBrush</span> <span class="p">=</span> <span class="n">Brushes</span><span class="p">.</span><span class="n">Black</span><span class="p">,</span> <span class="n">BorderThickness</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">Thickness</span><span class="p">(</span><span class="m">2</span><span class="p">),</span> <span class="n">Child</span> <span class="p">=</span> <span class="n">sp</span> <span class="p">};</span>
+    <span class="n">window</span><span class="p">.</span><span class="n">PlacementTarget</span> <span class="p">=</span> <span class="k">this</span><span class="p">;</span>
+    <span class="n">window</span><span class="p">.</span><span class="n">Placement</span> <span class="p">=</span> <span class="n">PlacementMode</span><span class="p">.</span><span class="n">Center</span><span class="p">;</span>
+    <span class="n">window</span><span class="p">.</span><span class="n">IsOpen</span> <span class="p">=</span> <span class="k">true</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The key thing you need to do is set the <code class="language-plaintext highlighter-rouge">PlacementTarget</code> property. That associates a “parent” window and without it, the <code class="language-plaintext highlighter-rouge">Popup</code> class asserts <code class="language-plaintext highlighter-rouge">UIPermission</code> which will fail in the browser environment.</p>
+
+  </div><a class="u-url" href="/wpf/2008/04/02/creating-popup-windows-in-xbap-applications.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>NumericTextBoxBehavior for XAML-based Windows Store Applications | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="NumericTextBoxBehavior for XAML-based Windows Store Applications" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="One of the first (and arguably most useful) behaviors that I wrote for MVVMHelpers was a NumericTextBoxBehavior. This is a WPF behavior that restricts the input for a TextBox to be numeric-only. Recently, someone emailed me asking if it was possible to do the same thing in a Windows Store application. It absolutely is, but there are some caveats. My original implementation for WPF utilizes preview events - these are events which are sent to the ancestors of the element prior to it receiving a true input event such as KeyDown. The advantage to this approach is we can cancel the input event and make it appear as if the keypress never happened. For something like a numeric restriction this is perfect - the TextBox never even sees non-numeric keyboard events. WinRT, unfortunately, doesn’t have preview events - so we have two choices:" />
+<meta property="og:description" content="One of the first (and arguably most useful) behaviors that I wrote for MVVMHelpers was a NumericTextBoxBehavior. This is a WPF behavior that restricts the input for a TextBox to be numeric-only. Recently, someone emailed me asking if it was possible to do the same thing in a Windows Store application. It absolutely is, but there are some caveats. My original implementation for WPF utilizes preview events - these are events which are sent to the ancestors of the element prior to it receiving a true input event such as KeyDown. The advantage to this approach is we can cancel the input event and make it appear as if the keypress never happened. For something like a numeric restriction this is perfect - the TextBox never even sees non-numeric keyboard events. WinRT, unfortunately, doesn’t have preview events - so we have two choices:" />
+<link rel="canonical" href="http://localhost:4000/mvvm/2013/12/10/numerictextboxbehavior-wsa.html" />
+<meta property="og:url" content="http://localhost:4000/mvvm/2013/12/10/numerictextboxbehavior-wsa.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2013-12-10T18:00:00-06:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="NumericTextBoxBehavior for XAML-based Windows Store Applications" />
+<script type="application/ld+json">
+{"headline":"NumericTextBoxBehavior for XAML-based Windows Store Applications","dateModified":"2013-12-10T18:00:00-06:00","datePublished":"2013-12-10T18:00:00-06:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/mvvm/2013/12/10/numerictextboxbehavior-wsa.html"},"description":"One of the first (and arguably most useful) behaviors that I wrote for MVVMHelpers was a NumericTextBoxBehavior. This is a WPF behavior that restricts the input for a TextBox to be numeric-only. Recently, someone emailed me asking if it was possible to do the same thing in a Windows Store application. It absolutely is, but there are some caveats. My original implementation for WPF utilizes preview events - these are events which are sent to the ancestors of the element prior to it receiving a true input event such as KeyDown. The advantage to this approach is we can cancel the input event and make it appear as if the keypress never happened. For something like a numeric restriction this is perfect - the TextBox never even sees non-numeric keyboard events. WinRT, unfortunately, doesn’t have preview events - so we have two choices:","url":"http://localhost:4000/mvvm/2013/12/10/numerictextboxbehavior-wsa.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">NumericTextBoxBehavior for XAML-based Windows Store Applications</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2013-12-10T18:00:00-06:00" itemprop="datePublished">Dec 10, 2013
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>One of the first (and arguably most useful) behaviors that I wrote for <a href="https://github.com/markjulmar/mvvmhelpers">MVVMHelpers</a> was a <a href="https://github.com/markjulmar/mvvmhelpers/blob/master/Julmar.Wpf.Helpers/Julmar.Wpf.Behaviors/Interactivity/NumericTextBoxBehavior.cs">NumericTextBoxBehavior</a>.  This is a WPF behavior that restricts the input for a <code class="language-plaintext highlighter-rouge">TextBox</code> to be numeric-only.  Recently, someone emailed me asking if it was possible to do the same thing in a Windows Store application.  It absolutely is, but there are some caveats. My original implementation for WPF utilizes <em>preview events</em> - these are events which are sent to the ancestors of the element prior to it receiving a true input event such as <code class="language-plaintext highlighter-rouge">KeyDown</code>.  The advantage to this approach is we can cancel the input event and make it appear as if the keypress never happened.  For something like a numeric restriction this is perfect - the <code class="language-plaintext highlighter-rouge">TextBox</code> never even sees non-numeric keyboard events. WinRT, unfortunately, doesn’t have preview events - so we have two choices:</p>
+
+<ol>
+  <li>Use the <code class="language-plaintext highlighter-rouge">TextChanged</code> event and then reset the text if it’s not valid.</li>
+  <li>Extend the control and override the KeyDown logic to strip out numerics.</li>
+</ol>
+
+<p>#2 would provide a better experience, with the downside of no longer being able to use a standard control. #1 allows me to use a behavior-based approach, but you will see the text (briefly) when it is typed. Both will solve the overall issue of only allowing numerics into the field. So, with all that, here’s the first pass at a numeric behavior in Windows 8.1 using the Blend Behaviors SDK:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">using</span> <span class="nn">System</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Windows.UI.Xaml</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Windows.UI.Xaml.Controls</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Windows.UI.Xaml.Input</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Microsoft.Xaml.Interactivity</span><span class="p">;</span>
+
+<span class="k">namespace</span> <span class="nn">App1</span>
+<span class="p">{</span>
+    <span class="c1">///</span>
+    <span class="c1">/// Simple NumericTextBox behavior for Windows 8.1</span>
+    <span class="c1">///</span>
+    <span class="k">public</span> <span class="k">sealed</span> <span class="k">class</span> <span class="nc">NumericTextBoxBehavior</span> <span class="p">:</span> <span class="n">DependencyObject</span><span class="p">,</span> <span class="n">IBehavior</span>
+    <span class="p">{</span>
+        <span class="c1">///</span>
+        <span class="c1">/// Track the last valid text value.</span>
+        <span class="c1">///</span>
+        <span class="k">private</span> <span class="kt">string</span> <span class="n">_lastText</span><span class="p">;</span>
+
+        <span class="c1">///</span>
+        <span class="c1">/// Backing storage for the AllowDecimal property</span>
+        <span class="c1">///</span>
+        <span class="k">public</span> <span class="k">static</span> <span class="k">readonly</span> <span class="n">DependencyProperty</span> <span class="n">AllowDecimalProperty</span> <span class="p">=</span> <span class="n">DependencyProperty</span><span class="p">.</span><span class="nf">Register</span><span class="p">(</span>
+            <span class="s">"AllowDecimal"</span><span class="p">,</span>
+            <span class="k">typeof</span><span class="p">(</span><span class="kt">bool</span><span class="p">),</span>
+            <span class="k">typeof</span><span class="p">(</span><span class="n">NumericTextBoxBehavior</span><span class="p">),</span>
+            <span class="k">new</span> <span class="nf">PropertyMetadata</span><span class="p">(</span><span class="k">false</span><span class="p">));</span>
+
+        <span class="c1">///</span>
+        <span class="c1">/// True to allow a decimal point.</span>
+        <span class="c1">///</span>
+        <span class="k">public</span> <span class="kt">bool</span> <span class="n">AllowDecimal</span>
+        <span class="p">{</span>
+            <span class="k">get</span>
+            <span class="p">{</span>
+                <span class="k">return</span> <span class="p">(</span><span class="kt">bool</span><span class="p">)</span><span class="k">base</span><span class="p">.</span><span class="nf">GetValue</span><span class="p">(</span><span class="n">AllowDecimalProperty</span><span class="p">);</span>
+            <span class="p">}</span>
+
+            <span class="k">set</span>
+            <span class="p">{</span>
+                <span class="k">base</span><span class="p">.</span><span class="nf">SetValue</span><span class="p">(</span><span class="n">AllowDecimalProperty</span><span class="p">,</span> <span class="k">value</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+
+        <span class="c1">///</span>
+        <span class="c1">/// Used to attach this behavior to an element.</span>
+        <span class="c1">/// Must be a TextBox.</span>
+        <span class="c1">///</span>
+        <span class="c1">///TextBox to associate this behavior with.</span>
+        <span class="k">public</span> <span class="k">void</span> <span class="nf">Attach</span><span class="p">(</span><span class="n">DependencyObject</span> <span class="n">associatedObject</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="n">TextBox</span> <span class="n">tb</span> <span class="p">=</span> <span class="n">associatedObject</span> <span class="k">as</span> <span class="n">TextBox</span><span class="p">;</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">tb</span> <span class="p">==</span> <span class="k">null</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="k">throw</span> <span class="k">new</span> <span class="nf">ArgumentException</span><span class="p">(</span><span class="s">"NumericTextBoxBehavior can only be used with a TextBox."</span><span class="p">);</span>
+            <span class="p">}</span>
+
+            <span class="n">AssociatedObject</span> <span class="p">=</span> <span class="n">associatedObject</span><span class="p">;</span>
+
+            <span class="n">_lastText</span> <span class="p">=</span> <span class="n">tb</span><span class="p">.</span><span class="n">Text</span><span class="p">;</span>
+            <span class="n">tb</span><span class="p">.</span><span class="n">TextChanged</span> <span class="p">+=</span> <span class="n">TbOnTextChanged</span><span class="p">;</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">tb</span><span class="p">.</span><span class="n">InputScope</span> <span class="p">==</span> <span class="k">null</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="kt">var</span> <span class="n">inputScope</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">InputScope</span><span class="p">();</span>
+                <span class="n">inputScope</span><span class="p">.</span><span class="n">Names</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="k">new</span> <span class="nf">InputScopeName</span><span class="p">(</span><span class="n">InputScopeNameValue</span><span class="p">.</span><span class="n">Number</span><span class="p">));</span>
+                <span class="n">tb</span><span class="p">.</span><span class="n">InputScope</span> <span class="p">=</span> <span class="n">inputScope</span><span class="p">;</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+
+        <span class="c1">///</span>
+        <span class="c1">/// Handles the TextChanged event on the TextBox and watches for</span>
+        <span class="c1">/// numeric entries.</span>
+        <span class="c1">///</span>
+        <span class="k">private</span> <span class="k">void</span> <span class="nf">TbOnTextChanged</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">TextChangedEventArgs</span> <span class="n">e</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="n">TextBox</span> <span class="n">tb</span> <span class="p">=</span> <span class="n">AssociatedObject</span> <span class="k">as</span> <span class="n">TextBox</span><span class="p">;</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">tb</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">AllowDecimal</span><span class="p">)</span>
+                <span class="p">{</span>
+                    <span class="kt">double</span> <span class="k">value</span><span class="p">;</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="kt">string</span><span class="p">.</span><span class="nf">IsNullOrEmpty</span><span class="p">(</span><span class="n">tb</span><span class="p">.</span><span class="n">Text</span><span class="p">)</span> <span class="p">||</span> 
+                        <span class="n">Double</span><span class="p">.</span><span class="nf">TryParse</span><span class="p">(</span><span class="n">tb</span><span class="p">.</span><span class="n">Text</span><span class="p">,</span> <span class="k">out</span> <span class="k">value</span><span class="p">))</span>
+                    <span class="p">{</span>
+                        <span class="n">_lastText</span> <span class="p">=</span> <span class="n">tb</span><span class="p">.</span><span class="n">Text</span><span class="p">;</span>
+                        <span class="k">return</span><span class="p">;</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+                <span class="k">else</span>
+                <span class="p">{</span>
+                    <span class="kt">long</span> <span class="k">value</span><span class="p">;</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="kt">string</span><span class="p">.</span><span class="nf">IsNullOrEmpty</span><span class="p">(</span><span class="n">tb</span><span class="p">.</span><span class="n">Text</span><span class="p">)</span> <span class="p">||</span> 
+                        <span class="kt">long</span><span class="p">.</span><span class="nf">TryParse</span><span class="p">(</span><span class="n">tb</span><span class="p">.</span><span class="n">Text</span><span class="p">,</span> <span class="k">out</span> <span class="k">value</span><span class="p">))</span>
+                    <span class="p">{</span>
+                        <span class="n">_lastText</span> <span class="p">=</span> <span class="n">tb</span><span class="p">.</span><span class="n">Text</span><span class="p">;</span>
+                        <span class="k">return</span><span class="p">;</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+
+                <span class="n">tb</span><span class="p">.</span><span class="n">Text</span> <span class="p">=</span> <span class="n">_lastText</span><span class="p">;</span>
+                <span class="n">tb</span><span class="p">.</span><span class="n">SelectionStart</span> <span class="p">=</span> <span class="n">tb</span><span class="p">.</span><span class="n">Text</span><span class="p">.</span><span class="n">Length</span><span class="p">;</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+
+        <span class="c1">///</span>
+        <span class="c1">/// Detaches the behavior from the TextBox.</span>
+        <span class="c1">///</span>
+        <span class="k">public</span> <span class="k">void</span> <span class="nf">Detach</span><span class="p">()</span>
+        <span class="p">{</span>
+            <span class="n">TextBox</span> <span class="n">tb</span> <span class="p">=</span> <span class="n">AssociatedObject</span> <span class="k">as</span> <span class="n">TextBox</span><span class="p">;</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">tb</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="n">tb</span><span class="p">.</span><span class="n">TextChanged</span> <span class="p">-=</span> <span class="k">this</span><span class="p">.</span><span class="n">TbOnTextChanged</span><span class="p">;</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+
+        <span class="c1">///</span>
+        <span class="c1">/// The associated object (TextBox).</span>
+        <span class="c1">///</span>
+        <span class="k">public</span> <span class="n">DependencyObject</span> <span class="n">AssociatedObject</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The usage is quite easy - there’s only one property you can set (<code class="language-plaintext highlighter-rouge">AllowDecimal</code>) which controls whether the value can be a double vs. an integer. Here’s an example using this behavior:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;StackPanel</span> <span class="na">HorizontalAlignment=</span><span class="s">"Center"</span> <span class="na">VerticalAlignment=</span><span class="s">"Center"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;TextBlock</span> <span class="na">Margin=</span><span class="s">"5"</span> <span class="na">FontSize=</span><span class="s">"36"</span>
+                <span class="na">Text=</span><span class="s">"Enter an integer value:"</span> <span class="nt">/&gt;</span>
+    <span class="nt">&lt;TextBox</span> <span class="na">Width=</span><span class="s">"200"</span> <span class="na">Margin=</span><span class="s">"5"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;interactivity:Interaction.Behaviors&gt;</span>
+            <span class="nt">&lt;local:NumericTextBoxBehavior</span> <span class="nt">/&gt;</span>
+        <span class="nt">&lt;/interactivity:Interaction.Behaviors&gt;</span>
+    <span class="nt">&lt;/TextBox&gt;</span>
+
+    <span class="nt">&lt;TextBlock</span> <span class="na">Margin=</span><span class="s">"5"</span> <span class="na">FontSize=</span><span class="s">"36"</span>
+                <span class="na">Text=</span><span class="s">"Enter a decimal value:"</span> <span class="nt">/&gt;</span>
+    <span class="nt">&lt;TextBox</span> <span class="na">Width=</span><span class="s">"200"</span> <span class="na">Margin=</span><span class="s">"5"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;interactivity:Interaction.Behaviors&gt;</span>
+            <span class="nt">&lt;local:NumericTextBoxBehavior</span> <span class="na">AllowDecimal=</span><span class="s">"true"</span> <span class="nt">/&gt;</span>
+        <span class="nt">&lt;/interactivity:Interaction.Behaviors&gt;</span>
+    <span class="nt">&lt;/TextBox&gt;</span>
+<span class="nt">&lt;/StackPanel&gt;</span>
+</code></pre></div></div>
+
+<p>If you place this code into a blank Windows Store app application, it will restrict the text box fields to an integer and decimal value - however typing a non-numeric into the field will briefly show the character before it is caught and removed by the behavior.</p>
+
+<p><a href="/samples/NumericTextBox.Win81.zip">Here’s the sample if you want to try it yourself</a></p>
+
+<p>While writing this, I realized you could abstract this approach a little further and create a more diverse set of <code class="language-plaintext highlighter-rouge">TextBox</code> behaviors - to support other transformations at the view level.  More on that in the next post!</p>
+
+  </div><a class="u-url" href="/mvvm/2013/12/10/numerictextboxbehavior-wsa.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

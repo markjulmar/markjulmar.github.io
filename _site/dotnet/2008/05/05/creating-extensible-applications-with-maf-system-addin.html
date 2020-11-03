@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Creating Extensible Applications with MAF (System.AddIn) | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="Creating Extensible Applications with MAF (System.AddIn)" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Last month, my colleague, Pinku Surana, wrote an article about .NET AppDomains and how they can be used to provide component isolation and make your applications more reliable. If you missed it, you can read the Developments archives on Developmentor’s website. This month, I’d like to continue exploring reliability and extensibility by introducing you to a new framework included with .NET 3.5: The Managed Add-in Framework (MAF), sometimes referred to as System.AddIn." />
+<meta property="og:description" content="Last month, my colleague, Pinku Surana, wrote an article about .NET AppDomains and how they can be used to provide component isolation and make your applications more reliable. If you missed it, you can read the Developments archives on Developmentor’s website. This month, I’d like to continue exploring reliability and extensibility by introducing you to a new framework included with .NET 3.5: The Managed Add-in Framework (MAF), sometimes referred to as System.AddIn." />
+<link rel="canonical" href="http://localhost:4000/dotnet/2008/05/05/creating-extensible-applications-with-maf-system-addin.html" />
+<meta property="og:url" content="http://localhost:4000/dotnet/2008/05/05/creating-extensible-applications-with-maf-system-addin.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2008-05-05T19:00:00-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Creating Extensible Applications with MAF (System.AddIn)" />
+<script type="application/ld+json">
+{"headline":"Creating Extensible Applications with MAF (System.AddIn)","dateModified":"2008-05-05T19:00:00-05:00","datePublished":"2008-05-05T19:00:00-05:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/dotnet/2008/05/05/creating-extensible-applications-with-maf-system-addin.html"},"description":"Last month, my colleague, Pinku Surana, wrote an article about .NET AppDomains and how they can be used to provide component isolation and make your applications more reliable. If you missed it, you can read the Developments archives on Developmentor’s website. This month, I’d like to continue exploring reliability and extensibility by introducing you to a new framework included with .NET 3.5: The Managed Add-in Framework (MAF), sometimes referred to as System.AddIn.","url":"http://localhost:4000/dotnet/2008/05/05/creating-extensible-applications-with-maf-system-addin.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Creating Extensible Applications with MAF (System.AddIn)</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2008-05-05T19:00:00-05:00" itemprop="datePublished">May 5, 2008
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>Last month, my colleague, Pinku Surana, wrote an article about .NET AppDomains and how they can be used to provide component isolation and make your applications more reliable. If you missed it, you can read the <a href="http://www.develop.com/us/technology/technology.aspx?tech=all">Developments archives</a> on Developmentor’s website. This month, I’d like to continue exploring reliability and extensibility by introducing you to a new framework included with .NET 3.5: The Managed Add-in Framework (MAF), sometimes referred to as System.AddIn.</p>
+
+<p>The hardest part about this process was understanding how we could integrate the app as an Enterprise solution. Thankfully, there is a lot of information out there, such as the <a href="https://www.salesforce.com/products/platform/best-practices/enterprise-application-development/">Salesforce application development</a> process which aided us in understanding the barriers we had to beat.</p>
+
+<p>Developers (and managers) have long desired a way to easily create extensible applications that allow new features to be added without jeopardizing the stability of the existing code base. The .NET framework has provided the underlying support to accomplish this from the very beginning through the reflection API and AppDomain support Pinku examined last month. MAF builds on that fundamental support to provide a higher-level service that allow you to dynamically discover, load, secure and interact with external assemblies used to provide features for your application. Several common architectural requirements are made trivial with MAF:</p>
+
+<ol>
+  <li>Isolate aspects of your code for security reasons or partial-trust scenarios.</li>
+  <li>Allow business partners to extend your application safely without access to the source code; Adobe Illustrator is a great example of this style of application.</li>
+  <li>Separate volatile sections of your application out – where depending on the customer the application needs to execute different sets of code.</li>
+  <li>Add or change code without unloading the application – for example pay-to-play scenarios, or where you need to update an assembly but the application must continue to run.</li>
+  <li>Develop and evolve different sections of the application in parallel without any fear of destabilizing one based on the other.</li>
+</ol>
+
+<p>If any of these scenarios sound like something you could utilize in your application then you should know about MAF!</p>
+
+<p>At the center of the MAF-based application is the pipeline.</p>
+
+<h2 id="the-pipeline">The Pipeline</h2>
+
+<p>Communication between add-ins and the host application is strictly regulated by the pipeline. The pipeline is dynamically created by MAF through a set of loosely-coupled components which are used to version, marshal and transform the data as it passes back and forth between the host and each loaded add-in.</p>
+
+<p><img src="/images/image001.png" alt="image001.png" /></p>
+
+<p>Each section of the pipeline is contained in a separate assembly, loaded as necessary to manage the specific add-in. MAF discovers each component and then loads them on request using reflection.</p>
+
+<p>For reliability, MAF allows optional isolation boundaries to be created between the add-in and host – everything to the left of the contract is loaded into the main (host) AppDomain and everything to the right loaded into a newly created AppDomain which has its own security permission set. The isolation can also be done through cross-process calls if true process-level isolation is necessary. Under the covers, the system uses traditional remoting calls to do the work of marshaling calls back and forth.</p>
+
+<p>Breaking down the pipeline, there are three main parts starting in the center with the contract.</p>
+
+<h2 id="contract">Contract</h2>
+
+<p>As you might expect, MAF is based on interface contracts. Interfaces allow classes in an application to be loosely coupled, reducing the risk when changes are made between dependent sections of the code. The interface contract is shared between the host and add-in and once it has been established, it should never be changed.</p>
+
+<p>Consider the simple example of a translator program. The host will expect to load one or more translator add-ins that will do some work on an inbound string and return the results. To accomplish this, I might create an <code class="language-plaintext highlighter-rouge">ITranslator</code> interface that looks like:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="n">AddInContract</span><span class="p">]</span>
+<span class="k">public</span> <span class="k">interface</span> <span class="nc">ITranslator</span> <span class="p">:</span> <span class="n">IContract</span>
+<span class="p">{</span>
+    <span class="kt">string</span> <span class="nf">Translate</span><span class="p">(</span><span class="kt">string</span> <span class="n">input</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Notice that the interface derives from <code class="language-plaintext highlighter-rouge">IContract</code>. This is a requirement for add-in contracts and is what will be used to provide marshalling support when the pipeline is established. We also need to decorate the interface with the <code class="language-plaintext highlighter-rouge">[AddInContract]</code> attribute – this is the marker used by MAF to identify the contract when it is dynamically constructing the pipeline. Both of these types come from the <code class="language-plaintext highlighter-rouge">System.AddIn.Pipeline</code> namespace in <code class="language-plaintext highlighter-rouge">System.AddIn.Contract.dll</code>.</p>
+
+<h2 id="views">Views</h2>
+
+<p>Moving to the edges, we find the views. This is the code that the add-in and host directly interact with. It represents a host or add-in specific “view” of the contract and, like the contract, is contained in a separate assembly.</p>
+
+<p>Both of the view classes will echo the structure of the contract, but not actually be dependent upon the contract. For example, our host side view might look like this:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">abstract</span> <span class="k">class</span> <span class="nc">TranslatorHostView</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="k">abstract</span> <span class="kt">string</span> <span class="nf">Translate</span><span class="p">(</span><span class="kt">string</span> <span class="n">input</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The view is commonly exposed as an abstract class to make it look more natural when used by the host, but an interface will work just as well. The host uses the view directly when communicating with any add-in based on the contract.</p>
+
+<p>On the add-in side, we have an almost identical class – except we decorate this type with the <code class="language-plaintext highlighter-rouge">[AddInBase]</code> attribute so MAF knows which side of the pipeline this view is for (the add-in). This is located in the <code class="language-plaintext highlighter-rouge">System.AddIn.Pipeline</code> namespace in the <code class="language-plaintext highlighter-rouge">System.AddIn</code> assembly.</p>
+
+<p>When we create each add-in, the implementation will use this type as the base class.</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="n">AddInBase</span><span class="p">]</span>
+<span class="k">public</span> <span class="k">abstract</span> <span class="k">class</span> <span class="nc">TranslatorAddInView</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="k">abstract</span> <span class="kt">string</span> <span class="nf">Translate</span><span class="p">(</span><span class="kt">string</span> <span class="n">input</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="adapters">Adapters</h2>
+
+<p>The last piece of the pipeline is the adapters. The adapters play a very special role in the pipeline – they are the glue that binds the contract to the view: implementing lifetime management and any necessary data conversion between the two ends.</p>
+
+<p>It may seem redundant to have this class, but by separating the view from the contract we introduce version tolerance into our architecture – the host can version independently of the add-in and vice-versa. Depending on the situation, the adapters can be as simple as a pass-through class, or can provide higher-level services to allow non-serializable types to be marshaled across the isolation boundaries.</p>
+
+<p>On the host side, the adapter will implement the view (remember it is either an interface or abstract class). It will be passed a reference to the contract in the constructor and it is responsible for connecting the two together.</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="n">HostAdapter</span><span class="p">]</span>
+<span class="k">public</span> <span class="k">class</span> <span class="nc">TranslatorHostViewToContract</span> <span class="p">:</span> <span class="n">TranslatorHostView</span>
+<span class="p">{</span>
+    <span class="n">ITranslator</span> <span class="n">_contract</span><span class="p">;</span>
+    <span class="n">ContractHandle</span> <span class="n">_lifetime</span><span class="p">;</span>
+
+    <span class="k">public</span> <span class="nf">TranslatorHostViewToContract</span><span class="p">(</span><span class="n">ITranslator</span> <span class="n">contract</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">_contract</span> <span class="p">=</span> <span class="n">contract</span><span class="p">;</span>
+        <span class="n">_lifetime</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">ContractHandle</span><span class="p">(</span><span class="n">contract</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">public</span> <span class="k">override</span> <span class="kt">string</span> <span class="nf">Translate</span><span class="p">(</span><span class="kt">string</span> <span class="n">input</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="k">return</span> <span class="n">_contract</span><span class="p">.</span><span class="nf">Translate</span><span class="p">(</span><span class="n">input</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>In this simple example, the code caches off the contract interface. This is a remoting proxy to the actual loaded add-in. The adapter then implements the <code class="language-plaintext highlighter-rouge">Translate</code> method and passes it forward to the contract for implementation. If we had non-serializable types, then the adapter would be responsible for converting them into something that <em>was</em> serializable.</p>
+
+<p>It also provides some lifetime management for the contract. Because the contract is a remoting proxy and is likely running in a separate AppDomain (or even process) we have to be concerned with how long it lives. MAF provides all the support for this through the <code class="language-plaintext highlighter-rouge">ContractHandle</code> class. Most of the time, all you will need to do is store a <code class="language-plaintext highlighter-rouge">ContractHandle</code> in your host adapter and then pass it the inbound contract to wrap in your constructor.</p>
+
+<p>Finally, in order for MAF to identify this class, it must be decorated with the <code class="language-plaintext highlighter-rouge">[HostAdapter]</code> attribute from the <code class="language-plaintext highlighter-rouge">System.AddIn.Pipeline</code> namespace out of the <strong>System.AddIn.dll</strong>.</p>
+
+<p>The add-in side looks very similar, but does the opposite: it makes the add-in view look like the contract.</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="n">AddInAdapter</span><span class="p">]</span>
+<span class="k">public</span> <span class="k">class</span> <span class="nc">TranslatorAddInViewToContract</span> <span class="p">:</span> <span class="n">ContractBase</span><span class="p">,</span> <span class="n">ITranslator</span>
+<span class="p">{</span>
+    <span class="n">TranslatorAddInView</span> <span class="n">_view</span><span class="p">;</span>
+    <span class="k">public</span> <span class="nf">TranslatorAddInViewToContract</span><span class="p">(</span><span class="n">TranslatorView</span> <span class="n">view</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">_view</span> <span class="p">=</span> <span class="n">view</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="k">public</span> <span class="kt">string</span> <span class="nf">Translate</span><span class="p">(</span><span class="kt">string</span> <span class="n">input</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="k">return</span> <span class="n">_view</span><span class="p">.</span><span class="nf">Translate</span><span class="p">(</span><span class="n">input</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>MAF passes the view to the constructor and the class caches the reference off in a field. It implements the contract (<code class="language-plaintext highlighter-rouge">ITranslator</code>) and <code class="language-plaintext highlighter-rouge">ContractBase</code> which provides the implementation of the <code class="language-plaintext highlighter-rouge">IContract</code> interface for us (remember this was a required interface on our contract). As the host makes calls to the contract interface, this class will translate those calls to the add-in view, which as you will see is the implementation provided by the add-in itself. Note how the <code class="language-plaintext highlighter-rouge">[AddInAdapter]</code> attribute is used to mark this class so MAF can discover it.</p>
+
+<p>If it seems like all the above is a lot of repetitious, boilerplate code well.. you’re right! To make it easier on the developer to create the pipeline components, the MAF team has created a <a href="http://www.codeplex.com/clraddins">pipeline builder</a> available at http://www.codeplex.com/clraddins. It takes the contract assembly and then generates the views and adapters from it:</p>
+
+<p><img src="/images/image003.jpg" alt="image003.jpg" /></p>
+
+<h2 id="creating-an-add-in">Creating an add-in</h2>
+
+<p>Once the pipeline pieces are built you can create add-ins. Each add-in provides an implementation of the abstract add-in view. For example, we might provide a BabelFish add-in for universalized translation:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="nf">AddIn</span><span class="p">(</span><span class="err">“</span><span class="n">BabelFishTranslator</span><span class="err">”</span><span class="p">,</span> <span class="n">Description</span><span class="p">=</span><span class="err">“</span><span class="n">Universal</span> <span class="n">translator</span><span class="err">”</span><span class="p">,</span> <span class="n">Version</span><span class="p">=</span><span class="err">“</span><span class="m">1.0</span><span class="p">.</span><span class="m">0.0</span><span class="err">”</span><span class="p">,</span> <span class="n">Publisher</span><span class="p">=</span><span class="err">“</span><span class="n">Zaphod</span> <span class="n">Beeblebrox</span><span class="err">”</span><span class="p">)]</span>
+<span class="k">public</span> <span class="k">class</span> <span class="nc">BabelFishAddIn</span> <span class="p">:</span> <span class="n">TranslatorAddInView</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="kt">string</span> <span class="nf">Translate</span><span class="p">(</span><span class="kt">string</span> <span class="n">input</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="p">...</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The add-in implements the <code class="language-plaintext highlighter-rouge">AddInView</code>, providing a concrete implementation of the <code class="language-plaintext highlighter-rouge">Translate</code> method. It is decorated with the <code class="language-plaintext highlighter-rouge">[AddIn\]</code> attribute that allows it to provide a name, version, description and other data the host can use to decide whether it is a useful translator.</p>
+
+<h2 id="putting-the-pieces-together--the-directory-structure">Putting the pieces together – the directory structure</h2>
+
+<p>To properly identify each of the components necessary, MAF enforces a particular directory structure you need to follow for deployment. Each piece is stored in a sub-directory off the root of the pipeline directory (this is typically the <strong>APPBASE</strong> where the host executable is stored).</p>
+
+<p><img src="/images/image006.png" alt="image006.png" /></p>
+
+<p>The directory names are required, but not case sensitive – each directory holding a single piece of the pipeline that MAF will load dynamically when it is loading the add-in. The host-side view is always located in the same directory as the host executable itself so it does not need a dedicated directory. When creating your Visual Studio project, it is important to set the output directories appropriately so that you create the above directory structure. In addition, all references between the components should be marked as <strong>CopyLocal = “false”</strong> in Visual Studio to ensure a local copy of the assembly isn’t placed into the sub-directory:</p>
+
+<p><img src="/images/image008.png" alt="image008.png" /></p>
+
+<h2 id="discovering-and-loading-add-ins-from-the-host">Discovering and loading add-ins from the host</h2>
+
+<p>The last piece of the puzzle is the actual loading of add-ins from the host. This is done in three basic steps:</p>
+
+<ol>
+  <li>Identify and catalog the add-ins</li>
+  <li>Retrieve the list of specific add-ins based on view or name</li>
+  <li>Activate and use the add-in</li>
+</ol>
+
+<p>The first step is to identify the available add-ins for the host. This is done through the <code class="language-plaintext highlighter-rouge">System.AddIn.AddInStore</code> class:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">string</span><span class="p">[]</span> <span class="n">errorList</span> <span class="p">=</span> <span class="n">AddInStore</span><span class="p">.</span><span class="nf">Rebuild</span><span class="p">(</span><span class="n">PipelineStoreLocation</span><span class="p">.</span><span class="n">ApplicationBase</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>Calling <code class="language-plaintext highlighter-rouge">Rebuild</code> forces MAF to walk the directory structure and create the pipeline database. It stores this information in the pipeline root directory and returns a list of errors, if any occur. The most common errors are missing pipeline components – where MAF is unable to locate some required portion of the pipeline such as a View or Adapter.</p>
+
+<p>Next, the host will retrieve a list of add-ins based on the host view through the <code class="language-plaintext highlighter-rouge">FindAddIns</code> method – these will be the add-ins conforming to a specific contract (whatever the view/adapter is bound to):</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Collection</span> <span class="n">addinTokens</span> <span class="p">=</span> <span class="n">AddInStore</span><span class="p">.</span><span class="nf">FindAddIns</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">TranslatorHostView</span><span class="p">),</span> <span class="n">PipelineStoreLocation</span><span class="p">.</span><span class="n">ApplicationBase</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>The first parameter is the host view type – so MAF knows what add-ins we are looking for, the second is the pipeline root directory, which is the same directory passed to the <code class="language-plaintext highlighter-rouge">Rebuild</code> method and indicates where the pipeline database is stored.</p>
+
+<p>The returning collection represents a series of <em>tokens</em> that are used to identify and control the add-ins. This is how the host can examine, activate and unload the add-in. To activate a specific add-in, you can take the token and call <code class="language-plaintext highlighter-rouge">Activate</code>:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Collection</span> <span class="n">addinTokens</span><span class="p">;</span>
+   <span class="p">...</span>
+
+<span class="k">foreach</span> <span class="p">(</span><span class="n">AddInToken</span> <span class="n">token</span> <span class="k">in</span> <span class="n">addinTokens</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">TranslatorHostView</span> <span class="n">view</span> <span class="p">=</span> <span class="n">token</span><span class="p">.</span><span class="nf">Activate</span><span class="p">(</span><span class="n">AddInSecurityLevel</span><span class="p">.</span><span class="n">Internet</span><span class="p">);</span>
+    <span class="kt">string</span> <span class="n">hello</span> <span class="p">=</span> <span class="n">view</span><span class="p">.</span><span class="nf">Translate</span><span class="p">(</span><span class="err">“</span><span class="n">Bonjour</span><span class="err">”</span><span class="p">);</span>
+    <span class="p">...</span>  
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">Activate</code> call loads all the required components, instantiates the add-in type and returns the host view used to interact with the add-in. Calls made to this object will be marshaled back and forth to the add-in using the pipeline.</p>
+
+<p>Notice that the parameter passed to <code class="language-plaintext highlighter-rouge">Activate</code> indicates the security level required. There are several overrides that allow you to dictate exactly how the add-in is loaded. You can load the add-in into a specific AppDomain – the current one for best performance:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">token</span><span class="p">.</span><span class="nf">Activate</span><span class="p">(</span><span class="n">AppDomain</span><span class="p">.</span><span class="n">CurrentDomain</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>You can specify a specific permission set to restrict the things the add-in can do on your behalf:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">PermissionSet</span> <span class="n">pset</span> <span class="p">=</span> <span class="p">...;</span>
+<span class="n">token</span><span class="p">.</span><span class="nf">Activate</span><span class="p">(</span><span class="n">pset</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>Or you can specify a known permission set based on the CAS zones:</p>
+
+<p><img src="/images/image010.png" alt="image010.png" /></p>
+
+<p>Once the add-in is activated, the host can call it just like any other object – but never forget that you are likely crossing an isolation barrier! Make sure to design your contracts so that you minimize the number of calls between the host and add-ins to ensure your performance doesn’t suffer.</p>
+
+<p>When you are finished with the add-in, you can tell MAF to unload it through the <code class="language-plaintext highlighter-rouge">AddInController</code> associated with the view:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">AddInController</span> <span class="n">ctrl</span> <span class="p">=</span> <span class="n">AddInController</span><span class="p">.</span><span class="nf">GetAddInController</span><span class="p">(</span><span class="n">view</span><span class="p">);</span>
+<span class="n">ctrl</span><span class="p">.</span><span class="nf">Shutdown</span><span class="p">();</span>
+</code></pre></div></div>
+
+<p>This will unload the add-in side pipeline and then destroy the containing AppDomain so you release the resources associated with it.</p>
+
+<p>There are many other capabilities MAF provides such as versioning, passing collections and WPF visuals, passing non-serializable types, etc. You can get a pretty decent overview of the features from <a href="http://msdn.microsoft.com/en-us/library/bb384241.aspx">MSDN</a> and the MAF team has a blog at <a href="http://blogs.msdn.com/clraddins/">http://blogs.msdn.com/clraddins/</a> that has some great, practical information on using this new framework.</p>
+
+  </div><a class="u-url" href="/dotnet/2008/05/05/creating-extensible-applications-with-maf-system-addin.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

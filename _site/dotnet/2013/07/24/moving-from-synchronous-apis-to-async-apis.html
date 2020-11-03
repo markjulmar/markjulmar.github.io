@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Moving from synchronous APIs to async APIs | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="Moving from synchronous APIs to async APIs" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="One of the main features added to .NET 4.5 is a whole new set of asynchronous APIs that mirror the current synchronous versions. These were added primarily for Windows Store Apps (where they actually replace the existing APIs) but also to improve the responsiveness of UI applications with the advent of the async/await keywords in C# 5." />
+<meta property="og:description" content="One of the main features added to .NET 4.5 is a whole new set of asynchronous APIs that mirror the current synchronous versions. These were added primarily for Windows Store Apps (where they actually replace the existing APIs) but also to improve the responsiveness of UI applications with the advent of the async/await keywords in C# 5." />
+<link rel="canonical" href="http://localhost:4000/dotnet/2013/07/24/moving-from-synchronous-apis-to-async-apis.html" />
+<meta property="og:url" content="http://localhost:4000/dotnet/2013/07/24/moving-from-synchronous-apis-to-async-apis.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2013-07-24T19:00:00-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Moving from synchronous APIs to async APIs" />
+<script type="application/ld+json">
+{"headline":"Moving from synchronous APIs to async APIs","dateModified":"2013-07-24T19:00:00-05:00","datePublished":"2013-07-24T19:00:00-05:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/dotnet/2013/07/24/moving-from-synchronous-apis-to-async-apis.html"},"description":"One of the main features added to .NET 4.5 is a whole new set of asynchronous APIs that mirror the current synchronous versions. These were added primarily for Windows Store Apps (where they actually replace the existing APIs) but also to improve the responsiveness of UI applications with the advent of the async/await keywords in C# 5.","url":"http://localhost:4000/dotnet/2013/07/24/moving-from-synchronous-apis-to-async-apis.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Moving from synchronous APIs to async APIs</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2013-07-24T19:00:00-05:00" itemprop="datePublished">Jul 24, 2013
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>One of the main features added to .NET 4.5 is a whole new set of asynchronous APIs that mirror the current synchronous versions.  These were added primarily for Windows Store Apps (where they actually <em>replace</em> the existing APIs) but also to improve the responsiveness of UI applications with the advent of the async/await keywords in C# 5.</p>
+
+<p>The <a href="https://github.com/dotnetbio/">.NET Bio project</a> has a whole set of APIs to hit common bioinformatic web services such as <a href="http://blast.ncbi.nlm.nih.gov/">BLAST</a> which searches various databases trying to find matching sequences to new data.  When these APIs were designed and written, a polling mechanism was built to support the async nature of the web service calls.  So, a typical program to hit a BLAST service might look something like this:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">using</span> <span class="nn">System</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">System.Threading</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Bio</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Bio.Web</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Bio.Web.Blast</span><span class="p">;</span>
+
+<span class="k">namespace</span> <span class="nn">BlastExample</span>
+<span class="p">{</span>
+    <span class="k">class</span> <span class="nc">Program</span>
+    <span class="p">{</span>
+        <span class="k">private</span> <span class="k">static</span> <span class="k">void</span> <span class="nf">Main</span><span class="p">(</span><span class="kt">string</span><span class="p">[]</span> <span class="n">args</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="k">const</span> <span class="kt">string</span> <span class="n">seq</span> <span class="p">=</span> <span class="s">"ACCTCCACTAGCTTTGTTTGTAGTGATGCTCTGTAGCACCACTGG"</span> <span class="p">+</span>
+                               <span class="s">"GAAGCCCTTTAATGAATGTGCCTTTCCGCAAATCACACACACACAAATACACTTATAGAAACAAGGTGATTTTCTTGAAA"</span> <span class="p">+</span>
+                               <span class="s">"TAATAAAACAAAATTTGGAAGAAGATTTTTACTGTCTTAGGAAAAGTAAGGCATTGGAAGGTGGCTAGGTATGACATATG"</span> <span class="p">+</span>
+                               <span class="s">"AAGTTGCATTTTAAAACTGGAATTGGACAACTGATATTCAGTGATATTTATGCTACTACCTTCTAGAATCGAGAGCATGC"</span> <span class="p">+</span>
+                               <span class="s">"ACCCCACTCTGTACTCTTGCCTGGAGAATCCATGATGAGAGCCTGGTAGGCTGCAGTCCATGGGGTCACACAGAGTCGGA"</span> <span class="p">+</span>
+                               <span class="s">"CATGACTGAGCGACTTCACTTTCACTTTTCAATTTCATGCATTGGAGCCGGAAATGGCAACCCACTCCAGTGTTCTTGCC"</span> <span class="p">+</span>
+                               <span class="s">"TGGAGAATCCCAGGGATGGGGAAGCCTGGTGGGCTGCTGTCTATGGGGTCGCAGAGAGTCAGACACGACTGAAGTGACTT"</span> <span class="p">+</span>
+                               <span class="s">"AGCAGCAACCTTCTGGAATAAACGCCTCAGGCTTTAAACTCTGGCTTGACCATTCACTAGCCATGGGATCCACTAGAGTC"</span> <span class="p">+</span>
+                               <span class="s">"GACCTGCAGGCATGCAAGC"</span><span class="p">;</span>
+
+            <span class="n">ISequence</span> <span class="n">sequence</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">Sequence</span><span class="p">(</span><span class="n">Alphabets</span><span class="p">.</span><span class="n">DNA</span><span class="p">,</span> <span class="n">seq</span><span class="p">);</span>
+
+            <span class="kt">var</span> <span class="n">blastService</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">NCBIBlastHandler</span><span class="p">(</span><span class="k">new</span> <span class="n">ConfigParameters</span>
+                <span class="p">{</span><span class="n">UseBrowserProxy</span> <span class="p">=</span> <span class="k">false</span><span class="p">,</span> <span class="n">UseAsyncMode</span> <span class="p">=</span> <span class="k">true</span><span class="p">});</span>
+
+            <span class="c1">// Set database and program to search.</span>
+            <span class="kt">var</span> <span class="n">searchParams</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">BlastParameters</span><span class="p">();</span>
+            <span class="n">searchParams</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">"Program"</span><span class="p">,</span> <span class="s">"blastn"</span><span class="p">);</span>
+            <span class="n">searchParams</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">"Database"</span><span class="p">,</span> <span class="s">"ecoli"</span><span class="p">);</span>
+
+            <span class="kt">string</span> <span class="n">jobId</span><span class="p">;</span>
+            <span class="k">try</span>
+            <span class="p">{</span>
+                <span class="n">jobId</span> <span class="p">=</span> <span class="n">blastService</span><span class="p">.</span><span class="nf">SubmitRequest</span><span class="p">(</span><span class="n">sequence</span><span class="p">,</span> <span class="n">searchParams</span><span class="p">);</span>
+            <span class="p">}</span>
+            <span class="k">catch</span> <span class="p">(</span><span class="n">Exception</span> <span class="n">ex</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Service is not available: "</span> <span class="p">+</span> <span class="n">ex</span><span class="p">.</span><span class="n">Message</span><span class="p">);</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="n">ServiceRequestInformation</span> <span class="n">info</span> <span class="p">=</span> <span class="n">blastService</span><span class="p">.</span><span class="nf">GetRequestStatus</span><span class="p">(</span><span class="n">jobId</span><span class="p">);</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">info</span><span class="p">.</span><span class="n">Status</span> <span class="p">!=</span> <span class="n">ServiceRequestStatus</span><span class="p">.</span><span class="n">Waiting</span>
+                <span class="p">&amp;&amp;</span> <span class="n">info</span><span class="p">.</span><span class="n">Status</span> <span class="p">!=</span> <span class="n">ServiceRequestStatus</span><span class="p">.</span><span class="n">Ready</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Service is not ready or waiting."</span><span class="p">);</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">attempt</span> <span class="p">=</span> <span class="m">0</span><span class="p">;</span> <span class="n">attempt</span> <span class="p">&lt;</span> <span class="m">10</span><span class="p">;</span> <span class="n">attempt</span><span class="p">++)</span>
+            <span class="p">{</span>
+                <span class="n">info</span> <span class="p">=</span> <span class="n">blastService</span><span class="p">.</span><span class="nf">GetRequestStatus</span><span class="p">(</span><span class="n">jobId</span><span class="p">);</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">info</span><span class="p">.</span><span class="n">Status</span> <span class="p">==</span> <span class="n">ServiceRequestStatus</span><span class="p">.</span><span class="n">Error</span> <span class="p">||</span> <span class="n">info</span><span class="p">.</span><span class="n">Status</span> <span class="p">==</span> <span class="n">ServiceRequestStatus</span><span class="p">.</span><span class="n">Canceled</span><span class="p">)</span>
+                <span class="p">{</span>
+                    <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Requested failed, status is: {0} - {1}"</span><span class="p">,</span> <span class="n">info</span><span class="p">.</span><span class="n">Status</span><span class="p">,</span> <span class="n">info</span><span class="p">.</span><span class="n">StatusInformation</span><span class="p">);</span>
+                    <span class="k">return</span><span class="p">;</span>
+                <span class="p">}</span>
+
+                <span class="k">if</span> <span class="p">(</span><span class="n">info</span><span class="p">.</span><span class="n">Status</span> <span class="p">!=</span> <span class="n">ServiceRequestStatus</span><span class="p">.</span><span class="n">Ready</span><span class="p">)</span>
+                <span class="p">{</span>
+                    <span class="n">Thread</span><span class="p">.</span><span class="nf">Sleep</span><span class="p">(</span><span class="n">info</span><span class="p">.</span><span class="n">Status</span> <span class="p">==</span> <span class="n">ServiceRequestStatus</span><span class="p">.</span><span class="n">Waiting</span> <span class="p">||</span>
+                                 <span class="n">info</span><span class="p">.</span><span class="n">Status</span> <span class="p">==</span> <span class="n">ServiceRequestStatus</span><span class="p">.</span><span class="n">Queued</span>
+                        <span class="p">?</span> <span class="m">5000</span> <span class="p">*</span> <span class="n">attempt</span>
+                        <span class="p">:</span> <span class="m">1</span><span class="p">);</span>
+                <span class="p">}</span>
+                <span class="k">else</span> <span class="k">break</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="kt">var</span> <span class="n">results</span> <span class="p">=</span> <span class="n">blastService</span><span class="p">.</span><span class="nf">FetchResultsSync</span><span class="p">(</span><span class="n">jobId</span><span class="p">,</span> <span class="n">searchParams</span><span class="p">);</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">results</span> <span class="p">==</span> <span class="k">null</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"No results returned."</span><span class="p">);</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="k">foreach</span> <span class="p">(</span><span class="kt">var</span> <span class="n">r</span> <span class="k">in</span> <span class="n">results</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="kt">var</span> <span class="n">md</span> <span class="p">=</span> <span class="n">r</span><span class="p">.</span><span class="n">Metadata</span><span class="p">;</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">md</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+                <span class="p">{</span>
+                    <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Metadata:"</span><span class="p">);</span>
+                    <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Database: {0}, Program: {1}, Version: {2}"</span><span class="p">,</span> <span class="n">md</span><span class="p">.</span><span class="n">Database</span><span class="p">,</span> <span class="n">md</span><span class="p">.</span><span class="n">Program</span><span class="p">,</span> <span class="n">md</span><span class="p">.</span><span class="n">Version</span><span class="p">);</span>
+                    <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Query Sequence: {0}"</span><span class="p">,</span> <span class="n">md</span><span class="p">.</span><span class="n">QuerySequence</span><span class="p">);</span>
+                    <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Parameter Query: {0}"</span><span class="p">,</span> <span class="n">md</span><span class="p">.</span><span class="n">ParameterEntrezQuery</span><span class="p">);</span>
+                    <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Parameter Expect: {0}"</span><span class="p">,</span> <span class="n">md</span><span class="p">.</span><span class="n">ParameterExpect</span><span class="p">);</span>
+                    <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Parameter Filter: {0}"</span><span class="p">,</span> <span class="n">md</span><span class="p">.</span><span class="n">ParameterFilter</span><span class="p">);</span>
+                    <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Gap Extend: {0}, Open: {1}"</span><span class="p">,</span> <span class="n">md</span><span class="p">.</span><span class="n">ParameterGapExtend</span><span class="p">,</span> <span class="n">md</span><span class="p">.</span><span class="n">ParameterGapOpen</span><span class="p">);</span>
+                    <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Include: {0}, MatchScore: {1}, Mismatch Score: {2}"</span><span class="p">,</span> <span class="n">md</span><span class="p">.</span><span class="n">ParameterInclude</span><span class="p">,</span>
+                        <span class="n">md</span><span class="p">.</span><span class="n">ParameterMatchScore</span><span class="p">,</span> <span class="n">md</span><span class="p">.</span><span class="n">ParameterMismatchScore</span><span class="p">);</span>
+                    <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Matrix: {0}, Pattern: {1}"</span><span class="p">,</span> <span class="n">md</span><span class="p">.</span><span class="n">ParameterMatrix</span><span class="p">,</span> <span class="n">md</span><span class="p">.</span><span class="n">ParameterPattern</span><span class="p">);</span>
+                    <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Def: {0}, Query Id: {1}, Query Len: {2}"</span><span class="p">,</span> <span class="n">md</span><span class="p">.</span><span class="n">QueryDefinition</span><span class="p">,</span> <span class="n">md</span><span class="p">.</span><span class="n">QueryId</span><span class="p">,</span>
+                        <span class="n">md</span><span class="p">.</span><span class="n">QueryLength</span><span class="p">);</span>
+                <span class="p">}</span>
+
+                <span class="k">foreach</span> <span class="p">(</span><span class="kt">var</span> <span class="n">rec</span> <span class="k">in</span> <span class="n">r</span><span class="p">.</span><span class="n">Records</span><span class="p">)</span>
+                <span class="p">{</span>
+                    <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">();</span>
+                    <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Hits:"</span><span class="p">);</span>
+                    <span class="k">foreach</span> <span class="p">(</span><span class="kt">var</span> <span class="n">h</span> <span class="k">in</span> <span class="n">rec</span><span class="p">.</span><span class="n">Hits</span><span class="p">)</span>
+                    <span class="p">{</span>
+                        <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Id: {0}, Length: {1}"</span><span class="p">,</span> <span class="n">h</span><span class="p">.</span><span class="n">Id</span><span class="p">,</span> <span class="n">h</span><span class="p">.</span><span class="n">Length</span><span class="p">);</span>
+                        <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Accession: {0}, Def: {1}"</span><span class="p">,</span> <span class="n">h</span><span class="p">.</span><span class="n">Accession</span><span class="p">,</span> <span class="n">h</span><span class="p">.</span><span class="n">Def</span><span class="p">);</span>
+                        <span class="k">foreach</span> <span class="p">(</span><span class="kt">var</span> <span class="n">hs</span> <span class="k">in</span> <span class="n">h</span><span class="p">.</span><span class="n">Hsps</span><span class="p">)</span>
+                        <span class="p">{</span>
+                            <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">" Alignment length: {0}"</span><span class="p">,</span> <span class="n">hs</span><span class="p">.</span><span class="n">AlignmentLength</span><span class="p">);</span>
+                            <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">" Bit Score: {0}, Density: {1}, EValue: {2}, Gaps: {3}"</span><span class="p">,</span> <span class="n">hs</span><span class="p">.</span><span class="n">BitScore</span><span class="p">,</span>
+                                <span class="n">hs</span><span class="p">.</span><span class="n">Density</span><span class="p">,</span> <span class="n">hs</span><span class="p">.</span><span class="n">EValue</span><span class="p">,</span> <span class="n">hs</span><span class="p">.</span><span class="n">Gaps</span><span class="p">);</span>
+                            <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">" Hit Sequence: {0}rnStart: {1}, End: {2}, Frame: {3}"</span><span class="p">,</span> <span class="n">hs</span><span class="p">.</span><span class="n">HitSequence</span><span class="p">,</span>
+                                <span class="n">hs</span><span class="p">.</span><span class="n">HitStart</span><span class="p">,</span> <span class="n">hs</span><span class="p">.</span><span class="n">HitEnd</span><span class="p">,</span> <span class="n">hs</span><span class="p">.</span><span class="n">HitFrame</span><span class="p">);</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Notice where the code spins asking the web service for the current status of the request. It’s inefficient (but necessary given the way BLAST is exposed by NCBI here), but also tedious and easy to code incorrectly. I think a better approach would be to rely on the new async pattern used in .NET 4.5 where a Task is returned from the API and we can use the <strong>await</strong> keyword to wait for the API to complete. For timeout (the retryCount shown above) we can use <code class="language-plaintext highlighter-rouge">CancellationToken</code> support with timeouts. Here’s what the updated code might look like:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">using</span> <span class="nn">System</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">System.Threading</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Bio</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Bio.Web.Blast</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">System.Collections.Generic</span><span class="p">;</span>
+
+<span class="k">namespace</span> <span class="nn">BlastExample</span>
+<span class="p">{</span>
+    <span class="k">internal</span> <span class="k">class</span> <span class="nc">Program</span>
+    <span class="p">{</span>
+        <span class="k">private</span> <span class="k">static</span> <span class="k">void</span> <span class="nf">Main</span><span class="p">(</span><span class="kt">string</span><span class="p">[]</span> <span class="n">args</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="k">const</span> <span class="kt">string</span> <span class="n">seq</span> <span class="p">=</span>
+                    <span class="s">"ACCTCCACTAGCTTTGTTTGTAGTGATGCTCTGTAGCACCACTGG ..."</span><span class="p">;</span> <span class="c1">// ... use sequence data from above ... ISequence sequence = new Sequence(Alphabets.DNA, seq);</span>
+
+            <span class="kt">var</span> <span class="n">blastService</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">NCBIBlastHandler</span><span class="p">();</span>
+
+            <span class="n">IList</span> <span class="n">results</span><span class="p">;</span>
+
+            <span class="k">try</span>
+            <span class="p">{</span>
+                <span class="n">results</span> <span class="p">=</span> <span class="n">blastService</span>
+                    <span class="p">.</span><span class="nf">SubmitRequestAsync</span><span class="p">(</span>
+                            <span class="c1">// Sequence to find sequence,</span>
+                            <span class="c1">// Set parameters using fluid syntax (replace Add eventually?</span>
+                            <span class="k">new</span> <span class="nf">BlastParameters</span><span class="p">()</span>
+                                <span class="p">.</span><span class="nf">AddEx</span><span class="p">(</span><span class="s">"Program"</span><span class="p">,</span> <span class="s">"blastn"</span><span class="p">)</span>
+                                <span class="p">.</span><span class="nf">AddEx</span><span class="p">(</span><span class="s">"Database"</span><span class="p">,</span> <span class="s">"ecoli"</span><span class="p">),</span>
+                            <span class="c1">// Wait up to 10 seconds for the response and support cancelation</span>
+                            <span class="k">new</span> <span class="nf">CancellationTokenSource</span><span class="p">(</span><span class="n">TimeSpan</span><span class="p">.</span><span class="nf">FromSeconds</span><span class="p">(</span><span class="m">10</span><span class="p">)).</span><span class="n">Token</span><span class="p">).</span><span class="n">Result</span><span class="p">;</span> 
+            <span class="p">}</span>
+            <span class="k">catch</span><span class="p">(</span><span class="n">AggregateException</span> <span class="n">ex</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Service is not available: "</span> <span class="p">+</span> <span class="n">ex</span><span class="p">.</span><span class="nf">Flatten</span><span class="p">().</span><span class="n">InnerExceptions</span><span class="p">[</span><span class="m">0</span><span class="p">].</span><span class="n">Message</span><span class="p">);</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="n">results</span> <span class="p">==</span> <span class="k">null</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"No results returned."</span><span class="p">);</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="c1">// Remainder of the code is identical..</span>
+            <span class="k">foreach</span> <span class="p">(</span><span class="kt">var</span> <span class="n">r</span> <span class="k">in</span> <span class="n">results</span><span class="p">)</span> <span class="p">{</span> <span class="p">...</span> <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>I think this code reads much easier, is easier to program, and best of all, when used with a GUI program (or at least not called from <strong>Main</strong>), you can use await on the <strong>SubmitRequestAsync</strong> call to process the results. Here, because async/await is not usable from your Main method I am just getting the <strong>Result</strong> property which blocks the main thread. Using async/await would also simplify the error processing since it pulls exceptions out of the <code class="language-plaintext highlighter-rouge">AggregateException</code> for you.</p>
+
+<p>I tried this out by creating a set of extension methods on the <code class="language-plaintext highlighter-rouge">NCBIBlastHandler</code> class and the <code class="language-plaintext highlighter-rouge">BlastParameters</code> class. These wrap the current polling logic into a <code class="language-plaintext highlighter-rouge">Task</code> which can then be awaited. I also added some Fluid API support to the <code class="language-plaintext highlighter-rouge">BlastParameters</code> so it can be created inline:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">new</span> <span class="nf">BlastParameters</span><span class="p">()</span>
+    <span class="p">.</span><span class="nf">AddEx</span><span class="p">(</span><span class="s">"Program"</span><span class="p">,</span> <span class="s">"blastn"</span><span class="p">)</span>
+    <span class="p">.</span><span class="nf">AddEx</span><span class="p">(</span><span class="s">"Database"</span><span class="p">,</span> <span class="s">"ecoli"</span><span class="p">),</span>
+</code></pre></div></div>
+
+<p>These would presumably replace the existing <code class="language-plaintext highlighter-rouge">Add</code> methods already on the class - it’s not a breaking change since it just changes the return type which for existing usages would be ignored anyway (as it’s void today).</p>
+
+<p>Here are the extension methods:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">using</span> <span class="nn">System</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">System.Collections.Generic</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">System.Runtime.Serialization</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">System.Threading</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">System.Threading.Tasks</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Bio</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Bio.Web</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Bio.Web.Blast</span><span class="p">;</span>
+
+<span class="k">namespace</span> <span class="nn">BlastExample</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="k">static</span> <span class="k">class</span> <span class="nc">NcbiBlastRequestExtensions</span>
+    <span class="p">{</span>
+        <span class="k">public</span> <span class="k">static</span> <span class="n">BlastParameters</span> <span class="nf">AddEx</span><span class="p">(</span><span class="k">this</span> <span class="n">BlastParameters</span> <span class="n">bp</span><span class="p">,</span> <span class="kt">string</span> <span class="n">parameterName</span><span class="p">,</span> <span class="kt">string</span> <span class="n">parameterValue</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="n">bp</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="n">parameterName</span><span class="p">,</span> <span class="n">parameterValue</span><span class="p">);</span>
+            <span class="k">return</span> <span class="n">bp</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="k">public</span> <span class="k">static</span> <span class="n">Task</span><span class="p">&lt;</span><span class="n">IList</span><span class="p">&gt;</span> <span class="nf">SubmitRequestAsync</span><span class="p">(</span><span class="k">this</span> <span class="n">NCBIBlastHandler</span> <span class="n">handler</span><span class="p">,</span> <span class="n">ISequence</span> <span class="n">sequence</span><span class="p">,</span>
+            <span class="n">BlastParameters</span> <span class="n">searchParameters</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="k">return</span> <span class="n">handler</span><span class="p">.</span><span class="nf">SubmitRequestAsync</span><span class="p">(</span><span class="k">new</span> <span class="nf">List</span><span class="p">(</span><span class="k">new</span><span class="p">[]</span> <span class="p">{</span><span class="n">sequence</span><span class="p">}),</span> <span class="n">searchParameters</span><span class="p">,</span> <span class="n">CancellationToken</span><span class="p">.</span><span class="n">None</span><span class="p">);</span>
+        <span class="p">}</span>
+
+        <span class="k">public</span> <span class="k">static</span> <span class="n">Task</span><span class="p">&lt;</span><span class="n">IList</span><span class="p">&gt;</span> <span class="nf">SubmitRequestAsync</span><span class="p">(</span><span class="k">this</span> <span class="n">NCBIBlastHandler</span> <span class="n">handler</span><span class="p">,</span> <span class="n">ISequence</span> <span class="n">sequence</span><span class="p">,</span>
+            <span class="n">BlastParameters</span> <span class="n">searchParameters</span><span class="p">,</span> <span class="n">CancellationToken</span> <span class="n">cancellationToken</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="k">return</span> <span class="n">handler</span><span class="p">.</span><span class="nf">SubmitRequestAsync</span><span class="p">(</span><span class="k">new</span> <span class="nf">List</span><span class="p">(</span><span class="k">new</span><span class="p">[]</span> <span class="p">{</span><span class="n">sequence</span><span class="p">}),</span> <span class="n">searchParameters</span><span class="p">,</span> <span class="n">cancellationToken</span><span class="p">);</span>
+        <span class="p">}</span>
+
+        <span class="k">public</span> <span class="k">static</span> <span class="n">Task</span><span class="p">&lt;</span><span class="n">IList</span><span class="p">&gt;</span> <span class="nf">SubmitRequestAsync</span><span class="p">(</span><span class="k">this</span> <span class="n">NCBIBlastHandler</span> <span class="n">handler</span><span class="p">,</span> <span class="n">IList</span> <span class="n">sequences</span><span class="p">,</span>
+            <span class="n">BlastParameters</span> <span class="n">searchParameters</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="k">return</span> <span class="n">handler</span><span class="p">.</span><span class="nf">SubmitRequestAsync</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">searchParameters</span><span class="p">,</span> <span class="n">CancellationToken</span><span class="p">.</span><span class="n">None</span><span class="p">);</span>
+        <span class="p">}</span>
+
+        <span class="k">public</span> <span class="k">static</span> <span class="n">Task</span><span class="p">&lt;</span><span class="n">IList</span><span class="p">&gt;</span> <span class="nf">SubmitRequestAsync</span><span class="p">(</span><span class="k">this</span> <span class="n">NCBIBlastHandler</span> <span class="n">handler</span><span class="p">,</span> <span class="n">IList</span> <span class="n">sequences</span><span class="p">,</span>
+            <span class="n">BlastParameters</span> <span class="n">searchParameters</span><span class="p">,</span> <span class="n">CancellationToken</span> <span class="n">cancellationToken</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="kt">var</span> <span class="n">jobId</span> <span class="p">=</span> <span class="n">handler</span><span class="p">.</span><span class="nf">SubmitRequest</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">searchParameters</span><span class="p">);</span>
+            <span class="k">return</span> <span class="n">Task</span><span class="p">.</span><span class="nf">Run</span><span class="p">(</span><span class="k">async</span> <span class="p">()</span> <span class="p">=&gt;</span>
+            <span class="p">{</span>
+                <span class="n">cancellationToken</span><span class="p">.</span><span class="nf">ThrowIfCancellationRequested</span><span class="p">();</span>
+
+                <span class="n">ServiceRequestInformation</span> <span class="n">info</span> <span class="p">=</span> <span class="n">handler</span><span class="p">.</span><span class="nf">GetRequestStatus</span><span class="p">(</span><span class="n">jobId</span><span class="p">);</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">info</span><span class="p">.</span><span class="n">Status</span> <span class="p">!=</span> <span class="n">ServiceRequestStatus</span><span class="p">.</span><span class="n">Waiting</span> <span class="p">&amp;&amp;</span> <span class="n">info</span><span class="p">.</span><span class="n">Status</span> <span class="p">!=</span> <span class="n">ServiceRequestStatus</span><span class="p">.</span><span class="n">Ready</span> <span class="p">&amp;&amp;</span>
+                    <span class="n">info</span><span class="p">.</span><span class="n">Status</span> <span class="p">!=</span> <span class="n">ServiceRequestStatus</span><span class="p">.</span><span class="n">Queued</span><span class="p">)</span>
+                <span class="p">{</span>
+                    <span class="k">throw</span> <span class="k">new</span> <span class="nf">BlastException</span><span class="p">()</span> <span class="p">{</span><span class="n">ServiceRequestInformation</span> <span class="p">=</span> <span class="n">info</span><span class="p">};</span>
+                <span class="p">}</span>
+
+                <span class="k">do</span>
+                <span class="p">{</span>
+                    <span class="n">cancellationToken</span><span class="p">.</span><span class="nf">ThrowIfCancellationRequested</span><span class="p">();</span>
+
+                    <span class="k">if</span> <span class="p">(</span><span class="n">info</span><span class="p">.</span><span class="n">Status</span> <span class="p">!=</span> <span class="n">ServiceRequestStatus</span><span class="p">.</span><span class="n">Ready</span><span class="p">)</span>
+                    <span class="p">{</span>
+                        <span class="k">if</span> <span class="p">(</span><span class="n">info</span><span class="p">.</span><span class="n">Status</span> <span class="p">==</span> <span class="n">ServiceRequestStatus</span><span class="p">.</span><span class="n">Error</span> <span class="p">||</span> <span class="n">info</span><span class="p">.</span><span class="n">Status</span> <span class="p">==</span> <span class="n">ServiceRequestStatus</span><span class="p">.</span><span class="n">Canceled</span><span class="p">)</span>
+                        <span class="p">{</span>
+                            <span class="k">throw</span> <span class="k">new</span> <span class="nf">BlastException</span><span class="p">()</span> <span class="p">{</span><span class="n">ServiceRequestInformation</span> <span class="p">=</span> <span class="n">info</span><span class="p">};</span>
+                        <span class="p">}</span>
+
+                        <span class="k">await</span> <span class="n">Task</span><span class="p">.</span><span class="nf">Delay</span><span class="p">(</span><span class="m">1000</span><span class="p">,</span> <span class="n">cancellationToken</span><span class="p">);</span>
+                    <span class="p">}</span>
+
+                    <span class="n">info</span> <span class="p">=</span> <span class="n">handler</span><span class="p">.</span><span class="nf">GetRequestStatus</span><span class="p">(</span><span class="n">jobId</span><span class="p">);</span>
+                <span class="p">}</span> <span class="k">while</span> <span class="p">(</span><span class="n">info</span><span class="p">.</span><span class="n">Status</span> <span class="p">!=</span> <span class="n">ServiceRequestStatus</span><span class="p">.</span><span class="n">Ready</span><span class="p">);</span>
+
+                <span class="n">cancellationToken</span><span class="p">.</span><span class="nf">ThrowIfCancellationRequested</span><span class="p">();</span>
+
+                <span class="k">if</span> <span class="p">(</span><span class="n">info</span><span class="p">.</span><span class="n">Status</span> <span class="p">!=</span> <span class="n">ServiceRequestStatus</span><span class="p">.</span><span class="n">Ready</span><span class="p">)</span>
+                <span class="p">{</span>
+                    <span class="k">throw</span> <span class="k">new</span> <span class="nf">BlastException</span><span class="p">(</span><span class="s">"Timed out"</span><span class="p">)</span> <span class="p">{</span><span class="n">ServiceRequestInformation</span> <span class="p">=</span> <span class="n">info</span><span class="p">};</span>
+                <span class="p">}</span>
+
+                <span class="k">return</span> <span class="n">handler</span><span class="p">.</span><span class="nf">FetchResultsSync</span><span class="p">(</span><span class="n">jobId</span><span class="p">,</span> <span class="n">searchParameters</span><span class="p">);</span>
+            <span class="p">},</span> <span class="n">cancellationToken</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="p">[</span><span class="n">Serializable</span><span class="p">]</span>
+    <span class="k">public</span> <span class="k">class</span> <span class="nc">BlastException</span> <span class="p">:</span> <span class="n">Exception</span>
+    <span class="p">{</span>
+        <span class="k">public</span> <span class="n">ServiceRequestInformation</span> <span class="n">ServiceRequestInformation</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+        <span class="k">public</span> <span class="nf">BlastException</span><span class="p">()</span>
+        <span class="p">{</span>
+        <span class="p">}</span>
+
+        <span class="k">public</span> <span class="nf">BlastException</span><span class="p">(</span><span class="kt">string</span> <span class="n">message</span><span class="p">)</span> <span class="p">:</span> <span class="k">base</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="p">{</span>
+        <span class="p">}</span>
+
+        <span class="k">public</span> <span class="nf">BlastException</span><span class="p">(</span><span class="kt">string</span> <span class="n">message</span><span class="p">,</span> <span class="n">Exception</span> <span class="n">inner</span><span class="p">)</span> <span class="p">:</span> <span class="k">base</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">inner</span><span class="p">)</span>
+        <span class="p">{</span>
+        <span class="p">}</span>
+
+        <span class="k">protected</span> <span class="nf">BlastException</span><span class="p">(</span><span class="n">SerializationInfo</span> <span class="n">info</span><span class="p">,</span> <span class="n">StreamingContext</span> <span class="n">context</span><span class="p">)</span> <span class="p">:</span> <span class="k">base</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+        <span class="p">{</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>These are by no means production quality code, but they show off what could be done in the API. I like this approach and for GUI apps it makes total sense. It also allows for 100% backward compatibility which for some projects is crucial.</p>
+
+<p>If you are interested in running the code, here’s the final async example: <a href="/samples/Async.BlastExample.zip">AsyncBlastExample.zip</a></p>
+
+  </div><a class="u-url" href="/dotnet/2013/07/24/moving-from-synchronous-apis-to-async-apis.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

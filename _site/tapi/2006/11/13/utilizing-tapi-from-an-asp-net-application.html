@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Utilizing TAPI from an ASP.NET application | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="Utilizing TAPI from an ASP.NET application" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="I’ve gotten several email requests about using ATAPI from ASP.NET – people have had trouble getting it to function properly so I figured I’d post an example of how it works. First, I’d recommend using ATAPI and not ITAPI3 - only because the latter pulls in COM objects which always makes things much more complex." />
+<meta property="og:description" content="I’ve gotten several email requests about using ATAPI from ASP.NET – people have had trouble getting it to function properly so I figured I’d post an example of how it works. First, I’d recommend using ATAPI and not ITAPI3 - only because the latter pulls in COM objects which always makes things much more complex." />
+<link rel="canonical" href="http://localhost:4000/tapi/2006/11/13/utilizing-tapi-from-an-asp-net-application.html" />
+<meta property="og:url" content="http://localhost:4000/tapi/2006/11/13/utilizing-tapi-from-an-asp-net-application.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2006-11-13T18:00:00-06:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Utilizing TAPI from an ASP.NET application" />
+<script type="application/ld+json">
+{"headline":"Utilizing TAPI from an ASP.NET application","dateModified":"2006-11-13T18:00:00-06:00","datePublished":"2006-11-13T18:00:00-06:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/tapi/2006/11/13/utilizing-tapi-from-an-asp-net-application.html"},"description":"I’ve gotten several email requests about using ATAPI from ASP.NET – people have had trouble getting it to function properly so I figured I’d post an example of how it works. First, I’d recommend using ATAPI and not ITAPI3 - only because the latter pulls in COM objects which always makes things much more complex.","url":"http://localhost:4000/tapi/2006/11/13/utilizing-tapi-from-an-asp-net-application.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Utilizing TAPI from an ASP.NET application</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2006-11-13T18:00:00-06:00" itemprop="datePublished">Nov 13, 2006
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>I’ve gotten several email requests about using ATAPI from ASP.NET – people have had trouble getting it to function properly so I figured I’d post an example of how it works. First, I’d recommend using ATAPI and <strong>not</strong> ITAPI3 - only because the latter pulls in COM objects which always makes things <em>much</em> more complex.</p>
+
+<p>The key thing to remember is where to hook up your events. Don’t hook events inside your ASP.NET page-derived classes - that will keep the pages alive and cause memory leaks. Instead, use static methods (as presented here) or hook the events in <strong>global.asax</strong> or some other global shared class.</p>
+
+<p>I created a simple dialer in ASP.NET 2.0 through the following steps:</p>
+
+<ol>
+  <li>Create an ASP.NET website</li>
+  <li>Add a reference to ATAPI.DLL</li>
+  <li>Add a Global Application Class (global.asax)</li>
+  <li>Create an instance of the <code class="language-plaintext highlighter-rouge">TapiManager</code> class in your global application class</li>
+  <li>Utilize the <code class="language-plaintext highlighter-rouge">TapiManager</code> from your pages</li>
+</ol>
+
+<p>As an example, here is my <strong>global.asax</strong> class - I chose to store the <strong>TapiManager</strong> class into the Application property bag, but you could just make it a global as well if you prefer that approach.</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">void</span> <span class="nf">Application_Start</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">EventArgs</span> <span class="n">e</span><span class="p">)</span> 
+<span class="p">{</span>
+    <span class="c1">// Code that runs on application startup</span>
+    <span class="n">JulMar</span><span class="p">.</span><span class="n">Atapi</span><span class="p">.</span><span class="n">TapiManager</span> <span class="n">tapiManager</span> <span class="p">=</span> <span class="k">new</span> <span class="n">JulMar</span><span class="p">.</span><span class="n">Atapi</span><span class="p">.</span><span class="nf">TapiManager</span><span class="p">(</span><span class="s">"TestWebApp"</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(!</span><span class="n">tapiManager</span><span class="p">.</span><span class="nf">Initialize</span><span class="p">())</span>
+        <span class="n">System</span><span class="p">.</span><span class="n">Diagnostics</span><span class="p">.</span><span class="n">EventLog</span><span class="p">.</span><span class="nf">WriteEntry</span><span class="p">(</span><span class="s">"Application"</span><span class="p">,</span> <span class="s">"TapiManager failed to initialize"</span><span class="p">);</span>
+    <span class="k">else</span>
+    <span class="p">{</span>
+        <span class="n">Application</span><span class="p">[</span><span class="s">"tapi"</span><span class="p">]</span> <span class="p">=</span> <span class="n">tapiManager</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+    
+<span class="k">void</span> <span class="nf">Application_End</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">EventArgs</span> <span class="n">e</span><span class="p">)</span> 
+<span class="p">{</span>
+    <span class="c1">//  Code that runs on application shutdown</span>
+    <span class="n">JulMar</span><span class="p">.</span><span class="n">Atapi</span><span class="p">.</span><span class="n">TapiManager</span> <span class="n">tapiManager</span> <span class="p">=</span> <span class="p">(</span><span class="n">JulMar</span><span class="p">.</span><span class="n">Atapi</span><span class="p">.</span><span class="n">TapiManager</span><span class="p">)</span><span class="n">Application</span><span class="p">[</span><span class="s">"tapi"</span><span class="p">];</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">tapiManager</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+        <span class="n">tapiManager</span><span class="p">.</span><span class="nf">Shutdown</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Next, I added some markup to my <strong>default.aspx</strong> file to give me some server-side controls to manipulate TAPI with:</p>
+
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;</span><span class="err">%@</span> <span class="na">Page</span> <span class="na">Language=</span><span class="s">"C#"</span> <span class="na">AutoEventWireup=</span><span class="s">"true"</span>  <span class="na">CodeFile=</span><span class="s">"Default.aspx.cs"</span> <span class="na">Inherits=</span><span class="s">"_Default"</span> <span class="err">%</span><span class="nt">&gt;</span>
+<span class="nt">&lt;html</span> <span class="na">xmlns=</span><span class="s">"http://www.w3.org/1999/xhtml"</span> <span class="nt">&gt;</span>
+<span class="nt">&lt;head</span> <span class="na">runat=</span><span class="s">"server"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;title&gt;</span>Untitled Page<span class="nt">&lt;/title&gt;</span>
+<span class="nt">&lt;/head&gt;</span>
+<span class="nt">&lt;body&gt;</span>
+    <span class="nt">&lt;form</span> <span class="na">id=</span><span class="s">"form1"</span> <span class="na">runat=</span><span class="s">"server"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;div&gt;</span>
+        <span class="nt">&lt;h1&gt;</span>Sample TAPI Dialer<span class="nt">&lt;/h1&gt;</span>
+        <span class="nt">&lt;asp:Label</span> <span class="na">runat=</span><span class="s">"server"</span> <span class="na">Text=</span><span class="s">"Select Line:"</span> <span class="nt">/&gt;</span><span class="ni">&amp;nbsp;&amp;nbsp;</span>
+        <span class="nt">&lt;asp:DropDownList</span> <span class="na">ID=</span><span class="s">"lineList"</span> <span class="na">runat=</span><span class="s">"server"</span> <span class="nt">/&gt;</span>
+        <span class="nt">&lt;br</span> <span class="nt">/&gt;</span>
+        <span class="nt">&lt;asp:Label</span> <span class="na">runat=</span><span class="s">"server"</span> <span class="na">Text=</span><span class="s">"Number to dial:"</span> <span class="nt">/&gt;</span><span class="ni">&amp;nbsp;&amp;nbsp;</span>
+        <span class="nt">&lt;asp:TextBox</span> <span class="na">runat=</span><span class="s">"server"</span> <span class="na">Width=</span><span class="s">"100"</span> <span class="na">ID=</span><span class="s">"number"</span> <span class="nt">/&gt;</span><span class="ni">&amp;nbsp;&amp;nbsp;</span>
+        <span class="nt">&lt;asp:Button</span> <span class="na">runat=</span><span class="s">"server"</span> <span class="na">ID=</span><span class="s">"dial"</span> <span class="na">OnClick=</span><span class="s">"DialNumber"</span> <span class="na">Text=</span><span class="s">" Dial "</span> <span class="nt">/&gt;</span>
+        <span class="nt">&lt;asp:Button</span> <span class="na">runat=</span><span class="s">"server"</span> <span class="na">ID=</span><span class="s">"refresh"</span> <span class="na">Text=</span><span class="s">" Refresh "</span> <span class="nt">/&gt;</span>
+        <span class="nt">&lt;br</span> <span class="nt">/&gt;</span>
+        <span class="nt">&lt;br</span> <span class="nt">/&gt;</span>
+        <span class="nt">&lt;asp:ListBox</span> <span class="na">runat=</span><span class="s">"server"</span> <span class="na">ID=</span><span class="s">"events"</span> <span class="na">Width=</span><span class="s">"400"</span> <span class="na">Height=</span><span class="s">"300"</span> <span class="na">EnableViewState=</span><span class="s">"false"</span> <span class="nt">/&gt;</span>
+    <span class="nt">&lt;/div&gt;</span>
+    <span class="nt">&lt;/form&gt;</span>
+<span class="nt">&lt;/body&gt;</span>
+<span class="nt">&lt;/html&gt;</span>
+</code></pre></div></div>
+
+<p>Finally, I added the code-behind to actually do the dialing. As part of this, I hook the appropriate events using static methods - not instance methods so I don’t keep the page alive longer than a single request. I also store all my TAPI events in a global string collection so that when the page is refreshed, I can display the current set of events.</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">using</span> <span class="nn">System</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">System.Configuration</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">System.Web</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">System.Web.Security</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">System.Web.UI</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">System.Web.UI.WebControls</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">System.Collections.Specialized</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">JulMar.Atapi</span><span class="p">;</span>
+  
+<span class="k">public</span> <span class="k">partial</span> <span class="k">class</span> <span class="nc">_Default</span> <span class="p">:</span> <span class="n">System</span><span class="p">.</span><span class="n">Web</span><span class="p">.</span><span class="n">UI</span><span class="p">.</span><span class="n">Page</span> 
+<span class="p">{</span>
+    <span class="k">static</span> <span class="n">StringCollection</span> <span class="n">data</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">StringCollection</span><span class="p">();</span>
+	  
+    <span class="k">protected</span> <span class="k">void</span> <span class="nf">Page_Load</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">EventArgs</span> <span class="n">e</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">TapiManager</span> <span class="n">tapiManager</span> <span class="p">=</span> <span class="p">(</span><span class="n">TapiManager</span><span class="p">)</span><span class="n">Application</span><span class="p">[</span><span class="s">"tapi"</span><span class="p">];</span>
+        <span class="k">if</span> <span class="p">(!</span><span class="n">Page</span><span class="p">.</span><span class="n">IsPostBack</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">tapiManager</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+                <span class="n">lineList</span><span class="p">.</span><span class="n">DataSource</span> <span class="p">=</span> <span class="n">tapiManager</span><span class="p">.</span><span class="n">Lines</span><span class="p">;</span>
+        <span class="p">}</span>
+  
+        <span class="n">events</span><span class="p">.</span><span class="n">DataSource</span> <span class="p">=</span> <span class="n">data</span><span class="p">;</span>
+        <span class="nf">DataBind</span><span class="p">();</span>
+    <span class="p">}</span>
+  
+    <span class="k">protected</span> <span class="k">void</span> <span class="nf">DialNumber</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">EventArgs</span> <span class="n">e</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">TapiManager</span> <span class="n">tapiManager</span> <span class="p">=</span> <span class="p">(</span><span class="n">TapiManager</span><span class="p">)</span><span class="n">Application</span><span class="p">[</span><span class="s">"tapi"</span><span class="p">];</span>
+        <span class="kt">string</span> <span class="n">lineName</span> <span class="p">=</span> <span class="n">lineList</span><span class="p">.</span><span class="n">SelectedValue</span><span class="p">;</span>
+  
+        <span class="n">TapiLine</span> <span class="n">line</span> <span class="p">=</span> <span class="n">tapiManager</span><span class="p">.</span><span class="nf">GetLineByName</span><span class="p">(</span><span class="n">lineName</span><span class="p">,</span> <span class="k">true</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">line</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(!</span><span class="n">line</span><span class="p">.</span><span class="n">IsOpen</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="k">try</span>
+                <span class="p">{</span>
+                    <span class="n">line</span><span class="p">.</span><span class="nf">Open</span><span class="p">(</span><span class="n">MediaModes</span><span class="p">.</span><span class="n">InteractiveVoice</span><span class="p">);</span>
+                <span class="p">}</span>
+                <span class="k">catch</span>
+                <span class="p">{</span>
+                    <span class="n">line</span><span class="p">.</span><span class="nf">Open</span><span class="p">(</span><span class="n">MediaModes</span><span class="p">.</span><span class="n">DataModem</span><span class="p">);</span>
+                <span class="p">}</span>
+  
+                <span class="n">line</span><span class="p">.</span><span class="n">NewCall</span> <span class="p">+=</span> <span class="k">new</span> <span class="n">EventHandler</span><span class="p">&lt;</span><span class="n">NewCallEventArgs</span><span class="p">&gt;(</span><span class="n">line_NewCall</span><span class="p">);</span>
+                <span class="n">line</span><span class="p">.</span><span class="n">CallInfoChanged</span> <span class="p">+=</span> <span class="k">new</span> <span class="n">EventHandler</span><span class="p">&lt;</span><span class="n">CallInfoChangeEventArgs</span><span class="p">&gt;(</span><span class="n">line_CallInfoChanged</span><span class="p">);</span>
+                <span class="n">line</span><span class="p">.</span><span class="n">CallStateChanged</span> <span class="p">+=</span> <span class="k">new</span> <span class="n">EventHandler</span><span class="p">&lt;</span><span class="n">CallStateEventArgs</span><span class="p">&gt;(</span><span class="n">line_CallStateChanged</span><span class="p">);</span>
+            <span class="p">}</span>
+  
+            <span class="k">if</span> <span class="p">(</span><span class="n">number</span><span class="p">.</span><span class="n">Text</span><span class="p">.</span><span class="n">Length</span> <span class="p">&gt;</span> <span class="m">0</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="n">TapiCall</span> <span class="n">call</span> <span class="p">=</span> <span class="n">line</span><span class="p">.</span><span class="nf">MakeCall</span><span class="p">(</span><span class="n">number</span><span class="p">.</span><span class="n">Text</span><span class="p">);</span>
+                <span class="n">data</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="kt">string</span><span class="p">.</span><span class="nf">Format</span><span class="p">(</span><span class="s">"Created call: {0}"</span><span class="p">,</span> <span class="n">call</span><span class="p">));</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+  
+    <span class="k">static</span> <span class="k">void</span> <span class="nf">line_NewCall</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">NewCallEventArgs</span> <span class="n">e</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">data</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="kt">string</span><span class="p">.</span><span class="nf">Format</span><span class="p">(</span><span class="s">"New call: {0}, {1}"</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">Call</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">Privilege</span><span class="p">));</span>
+    <span class="p">}</span>
+  
+    <span class="k">static</span> <span class="k">void</span> <span class="nf">line_CallStateChanged</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">CallStateEventArgs</span> <span class="n">e</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">data</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="kt">string</span><span class="p">.</span><span class="nf">Format</span><span class="p">(</span><span class="s">"CallState: {0} is now {1}"</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">Call</span><span class="p">.</span><span class="nf">ToString</span><span class="p">(),</span> <span class="n">e</span><span class="p">.</span><span class="n">CallState</span><span class="p">));</span>
+    <span class="p">}</span>
+  
+    <span class="k">static</span> <span class="k">void</span> <span class="nf">line_CallInfoChanged</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">CallInfoChangeEventArgs</span> <span class="n">e</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">data</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="kt">string</span><span class="p">.</span><span class="nf">Format</span><span class="p">(</span><span class="s">"CallInfo: {0} {1}"</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">Call</span><span class="p">.</span><span class="nf">ToString</span><span class="p">(),</span> <span class="n">e</span><span class="p">.</span><span class="n">Change</span><span class="p">));</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>This deploys and executes properly on Windows 2003 Server and IIS6. I did not try it under XP or IIS5, although I see no reason why it would not work as shown. Hopefully this will help someone out there trying to use TAPI from within a website!</p>
+
+  </div><a class="u-url" href="/tapi/2006/11/13/utilizing-tapi-from-an-asp-net-application.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

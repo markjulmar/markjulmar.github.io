@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Variable sized tiles in Windows Store Apps | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="Variable sized tiles in Windows Store Apps" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="One of the common requests I hear when training customers on Windows 8 is “How do I create variable sized tiles in a GridView?” The Windows Store app utilize this technique where different tiles have different sizes to promote content." />
+<meta property="og:description" content="One of the common requests I hear when training customers on Windows 8 is “How do I create variable sized tiles in a GridView?” The Windows Store app utilize this technique where different tiles have different sizes to promote content." />
+<link rel="canonical" href="http://localhost:4000/mvvm/2013/05/07/variable-sized-tiles-in-windows-store-apps.html" />
+<meta property="og:url" content="http://localhost:4000/mvvm/2013/05/07/variable-sized-tiles-in-windows-store-apps.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2013-05-07T19:00:00-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Variable sized tiles in Windows Store Apps" />
+<script type="application/ld+json">
+{"headline":"Variable sized tiles in Windows Store Apps","dateModified":"2013-05-07T19:00:00-05:00","datePublished":"2013-05-07T19:00:00-05:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/mvvm/2013/05/07/variable-sized-tiles-in-windows-store-apps.html"},"description":"One of the common requests I hear when training customers on Windows 8 is “How do I create variable sized tiles in a GridView?” The Windows Store app utilize this technique where different tiles have different sizes to promote content.","url":"http://localhost:4000/mvvm/2013/05/07/variable-sized-tiles-in-windows-store-apps.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Variable sized tiles in Windows Store Apps</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2013-05-07T19:00:00-05:00" itemprop="datePublished">May 7, 2013
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>One of the common requests I hear when training customers on Windows 8 is “How do I create variable sized tiles in a GridView?” The Windows Store app utilize this technique where different tiles have different sizes to promote content.</p>
+
+<p><img src="/images/store-1024x640.png" alt="" title="Windows Store" /></p>
+
+<p>It turns out this is relatively easy in HTML - which is probably one of the reasons Microsoft chose to use that visual platform to build the app.  In XAML however, this is a bit more difficult.  There are many posts which detail using a <strong>VariableSizeWrapGrid</strong> with a GridView to achieve a similar effect - I like <a href="http://mtaulty.com/CommunityServer/blogs/mike_taultys_blog/archive/2012/09/14/windows-8-xaml-and-displaying-multiple-sized-items.aspx">Mike Taulty’s blog</a> on the approach.  And this does work as long as you don’t want to have different sized rows <strong>and</strong> columns, and you don’t have too many items.  The problem is that the <strong>VariableSizeWrapGrid</strong> doesn’t support virtualization or incremental loading - both key technologies if you have a lot of items.</p>
+
+<p>An alternative approach to this is to do the layout yourself and use a <strong>Canvas</strong> as the panel - in this sense, you (the programmer) have to manage the layout and it’s not done automatically as rows and columns, but the upside is you have <em>complete</em> control over the layout <em>and</em> performance is greatly improved.</p>
+
+<p>For a test, I chose to enumerate the available colors and then randomly create rows and columns - here’s a single run:</p>
+
+<p><img src="/images/ColorsView1-1024x640.png" alt="" title="ColorsView" /></p>
+
+<p>Notice that in this case the sample has two items side-by-side in the same column, and also has different sized columns and items that span rows - in fact, because I’m using a Canvas as my panel, I can use any sized element I choose - I’m not required to enforce columns and rows at all like I am with the grid-based panels.</p>
+
+<p>The code is relatively straight-forward - I’m using MVVM so I put the Top/Width/Height into properties on the <strong>ColorViewModel</strong>:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">sealed</span> <span class="k">class</span> <span class="nc">ColorViewModel</span> <span class="p">:</span> <span class="n">SimpleViewModel</span>
+<span class="p">{</span>
+    <span class="err">#</span><span class="n">region</span> <span class="n">Data</span>
+
+    <span class="k">private</span> <span class="kt">int</span> <span class="n">_heightPercent</span><span class="p">;</span>
+    <span class="k">private</span> <span class="kt">double</span> <span class="n">_height</span><span class="p">,</span> <span class="n">_width</span><span class="p">;</span>
+    <span class="k">private</span> <span class="kt">double</span> <span class="n">_top</span><span class="p">,</span> <span class="n">_left</span><span class="p">;</span>
+
+    <span class="err">#</span><span class="n">endregion</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Color for this item</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="kt">string</span> <span class="n">Color</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Index of the item (used for label)</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="kt">int</span> <span class="n">Index</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Row for the item (used for label)</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="kt">int</span> <span class="n">Row</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt; </span>
+    <span class="c1">/// Column for the item (used for label) </span>
+    <span class="c1">/// &lt;/summary&gt; </span>
+    <span class="k">public</span> <span class="kt">int</span> <span class="n">Col</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt; </span>
+    <span class="c1">/// Left position relative to (0,0). </span>
+    <span class="c1">/// &lt;/summary&gt; </span>
+    <span class="k">public</span> <span class="kt">double</span> <span class="n">Left</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_left</span><span class="p">;</span> <span class="p">}</span>
+        <span class="k">set</span> <span class="p">{</span> <span class="nf">SetPropertyValue</span><span class="p">(</span><span class="k">ref</span> <span class="n">_left</span><span class="p">,</span> <span class="k">value</span><span class="p">);</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt; </span>
+    <span class="c1">/// Top position - changes when the Height of the GridView </span>
+    <span class="c1">/// is altered (i.e. screen orientation) </span>
+    <span class="c1">/// &lt;/summary&gt; </span>
+    <span class="k">public</span> <span class="kt">double</span> <span class="n">Top</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_top</span><span class="p">;</span> <span class="p">}</span>
+        <span class="k">set</span> <span class="p">{</span> <span class="nf">SetPropertyValue</span><span class="p">(</span><span class="k">ref</span> <span class="n">_top</span><span class="p">,</span> <span class="k">value</span><span class="p">);</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt; </span>
+    <span class="c1">/// Width of this item </span>
+    <span class="c1">/// &lt;/summary&gt; </span>
+    <span class="k">public</span> <span class="kt">double</span> <span class="n">Width</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_width</span><span class="p">;</span> <span class="p">}</span>
+        <span class="k">set</span> <span class="p">{</span> <span class="nf">SetPropertyValue</span><span class="p">(</span><span class="k">ref</span> <span class="n">_width</span><span class="p">,</span> <span class="k">value</span><span class="p">);</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt; </span>
+    <span class="c1">/// Height to use for this item - calculated by the MainViewModel </span>
+    <span class="c1">/// once it knows the actual height of the GridView using the Height % </span>
+    <span class="c1">/// &lt;/summary&gt; </span>
+    <span class="k">public</span> <span class="kt">double</span> <span class="n">Height</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_height</span><span class="p">;</span> <span class="p">}</span>
+        <span class="k">set</span> <span class="p">{</span> <span class="nf">SetPropertyValue</span><span class="p">(</span><span class="k">ref</span> <span class="n">_height</span><span class="p">,</span> <span class="k">value</span><span class="p">);</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt; </span>
+    <span class="c1">/// How much of the height to take up as a % </span>
+    <span class="c1">/// &lt;/summary&gt; </span>
+    <span class="k">public</span> <span class="kt">int</span> <span class="n">HeightPercent</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_heightPercent</span><span class="p">;</span> <span class="p">}</span>
+        <span class="k">set</span> <span class="p">{</span> <span class="nf">SetPropertyValue</span><span class="p">(</span><span class="k">ref</span> <span class="n">_heightPercent</span><span class="p">,</span> <span class="k">value</span><span class="p">);</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt; </span>
+    <span class="c1">/// This indicates if the cell is shared with another item in the </span>
+    <span class="c1">/// same column/row (side-by-side) </span>
+    <span class="c1">/// &lt;/summary&gt; </span>
+    <span class="k">public</span> <span class="kt">bool</span> <span class="n">IsSplitCell</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt; </span>
+    <span class="c1">/// Returns a string that represents the current object. </span>
+    <span class="c1">/// &lt;/summary&gt; </span>
+    <span class="k">public</span> <span class="k">override</span> <span class="kt">string</span> <span class="nf">ToString</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="k">return</span> <span class="kt">string</span><span class="p">.</span><span class="nf">Format</span><span class="p">(</span><span class="s">"{0}: {1} ({2}x{3}) {4}% [{5},{6}]"</span><span class="p">,</span> <span class="n">Index</span><span class="p">,</span> <span class="n">Color</span><span class="p">,</span> <span class="n">Width</span><span class="p">,</span> <span class="n">Height</span><span class="p">,</span> <span class="n">HeightPercent</span><span class="p">,</span> <span class="n">Col</span><span class="p">,</span> <span class="n">Row</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>These properties are then calculated by the <strong>MainViewModel</strong> for each of the known colors - the position is randomly determined here just for example purposes, presumably in a real application (such as the Windows Store app) there would be an XML data file pulled from a server to display the data - but in any case there would be an known row/column and size for each element. Note there is a little code at the end of each loop iteration to ensure we always end the height of the column at 100%. The two important bits of code here are the <strong>ViewHeight</strong> property and the constructor which loads the items.</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">sealed</span> <span class="k">class</span> <span class="nc">MainViewModel</span> <span class="p">:</span> <span class="n">SimpleViewModel</span>
+<span class="p">{</span>
+    <span class="err">#</span><span class="n">region</span> <span class="n">Data</span>
+
+    <span class="k">private</span> <span class="k">readonly</span> <span class="n">Random</span> <span class="n">_rng</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">Random</span><span class="p">();</span>
+    <span class="k">private</span> <span class="kt">double</span> <span class="n">_viewHeight</span> <span class="p">=</span> <span class="n">Double</span><span class="p">.</span><span class="n">NaN</span><span class="p">,</span> <span class="n">_viewWidth</span><span class="p">;</span>
+    <span class="k">private</span> <span class="k">readonly</span> <span class="n">List</span><span class="p">&lt;</span><span class="n">ColorViewModel</span><span class="p">&gt;</span> <span class="n">_backingStore</span><span class="p">;</span>
+
+    <span class="err">#</span><span class="n">endregion</span>
+
+    <span class="c1">/// &lt;summary&gt; </span>
+    <span class="c1">/// This is set to the actual height of the panel </span>
+    <span class="c1">/// it then calculates the proper height and top of each item </span>
+    <span class="c1">/// &lt;/summary&gt; </span>
+    <span class="k">public</span> <span class="kt">double</span> <span class="n">ViewHeight</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_viewHeight</span><span class="p">;</span> <span class="p">}</span>
+        <span class="k">set</span>
+        <span class="p">{</span>
+            <span class="nf">SetPropertyValue</span><span class="p">(</span><span class="k">ref</span> <span class="n">_viewHeight</span><span class="p">,</span> <span class="k">value</span><span class="p">);</span>
+
+            <span class="kt">double</span> <span class="n">top</span> <span class="p">=</span> <span class="m">0</span><span class="p">;</span>
+            <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">index</span> <span class="p">=</span> <span class="m">0</span><span class="p">;</span> <span class="n">index</span> <span class="p">&lt;</span> <span class="n">_backingStore</span><span class="p">.</span><span class="n">Count</span><span class="p">;</span> <span class="n">index</span><span class="p">++)</span>
+            <span class="p">{</span>
+                <span class="kt">var</span> <span class="n">cvm</span> <span class="p">=</span> <span class="n">_backingStore</span><span class="p">[</span><span class="n">index</span><span class="p">];</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">cvm</span><span class="p">.</span><span class="n">Row</span> <span class="p">==</span> <span class="m">0</span><span class="p">)</span> <span class="n">top</span> <span class="p">=</span> <span class="m">0</span><span class="p">;</span>
+
+                <span class="n">cvm</span><span class="p">.</span><span class="n">Height</span> <span class="p">=</span> <span class="n">_viewHeight</span> <span class="p">*</span> <span class="p">(</span><span class="n">cvm</span><span class="p">.</span><span class="n">HeightPercent</span> <span class="p">/</span> <span class="m">100.0</span><span class="p">)</span> <span class="p">*</span> <span class="p">.</span><span class="m">9</span><span class="p">;</span>
+
+                <span class="k">if</span> <span class="p">(</span><span class="n">index</span> <span class="p">&gt;</span> <span class="m">0</span> <span class="p">&amp;&amp;</span> <span class="n">_backingStore</span><span class="p">[</span><span class="n">index</span> <span class="p">-</span> <span class="m">1</span><span class="p">].</span><span class="n">IsSplitCell</span><span class="p">)</span>
+                <span class="p">{</span>
+                    <span class="n">cvm</span><span class="p">.</span><span class="n">Top</span> <span class="p">=</span> <span class="n">_backingStore</span><span class="p">[</span><span class="n">index</span> <span class="p">-</span> <span class="m">1</span><span class="p">].</span><span class="n">Top</span><span class="p">;</span>
+                <span class="p">}</span>
+                <span class="k">else</span>
+                <span class="p">{</span>
+                    <span class="n">cvm</span><span class="p">.</span><span class="n">Top</span> <span class="p">=</span> <span class="n">top</span><span class="p">;</span>
+                    <span class="n">top</span> <span class="p">+=</span> <span class="n">cvm</span><span class="p">.</span><span class="n">Height</span><span class="p">;</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt; </span>
+    <span class="c1">/// The calculated width of the panel - this is required so we get scrollbars in the GridView. </span>
+    <span class="c1">/// &lt;/summary&gt; </span>
+    <span class="k">public</span> <span class="kt">double</span> <span class="n">ViewWidth</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_viewWidth</span><span class="p">;</span> <span class="p">}</span>
+        <span class="k">set</span> <span class="p">{</span> <span class="nf">SetPropertyValue</span><span class="p">(</span><span class="k">ref</span> <span class="n">_viewWidth</span><span class="p">,</span> <span class="k">value</span><span class="p">);</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt; </span>
+    <span class="c1">/// The list of colors </span>
+    <span class="c1">/// &lt;/summary&gt; </span>
+    <span class="k">public</span> <span class="n">IList</span><span class="p">&lt;</span><span class="n">ColorViewModel</span><span class="p">&gt;</span> <span class="n">Colors</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt; </span>
+    <span class="c1">/// Constructor </span>
+    <span class="c1">/// &lt;/summary&gt; </span>
+    <span class="k">public</span> <span class="nf">MainViewModel</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="n">_backingStore</span> <span class="p">=</span> <span class="k">typeof</span><span class="p">(</span><span class="n">Colors</span><span class="p">).</span><span class="nf">GetTypeInfo</span><span class="p">().</span><span class="n">DeclaredProperties</span><span class="p">.</span><span class="nf">Select</span><span class="p">(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="k">new</span> <span class="n">ColorViewModel</span> <span class="p">{</span><span class="n">Color</span> <span class="p">=</span> <span class="n">p</span><span class="p">.</span><span class="n">Name</span><span class="p">})</span>
+            <span class="p">.</span><span class="nf">ToList</span><span class="p">();</span>
+
+        <span class="kt">int</span> <span class="n">currentColumn</span> <span class="p">=</span> <span class="m">0</span><span class="p">;</span>
+        <span class="kt">double</span> <span class="n">currentWidth</span> <span class="p">=</span> <span class="m">0</span><span class="p">;</span>
+
+        <span class="c1">// Calculate the position of each item.</span>
+        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="p">=</span> <span class="m">0</span><span class="p">;</span> <span class="n">i</span> <span class="p">&lt;</span> <span class="n">_backingStore</span><span class="p">.</span><span class="n">Count</span><span class="p">;)</span>
+        <span class="p">{</span>
+            <span class="kt">int</span> <span class="n">columnWidth</span> <span class="p">=</span> <span class="n">_rng</span><span class="p">.</span><span class="nf">Next</span><span class="p">(</span><span class="m">200</span><span class="p">,</span> <span class="m">500</span><span class="p">);</span>
+            <span class="kt">int</span> <span class="n">numberOfColors</span> <span class="p">=</span> <span class="n">_rng</span><span class="p">.</span><span class="nf">Next</span><span class="p">(</span><span class="m">1</span><span class="p">,</span> <span class="m">7</span><span class="p">);</span>
+            <span class="kt">int</span> <span class="n">trackPct</span> <span class="p">=</span> <span class="m">0</span><span class="p">;</span>
+
+            <span class="c1">// Create a single column </span>
+            <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">c</span> <span class="p">=</span> <span class="m">0</span><span class="p">;</span> <span class="n">c</span> <span class="p">&lt;</span> <span class="n">numberOfColors</span> <span class="p">&amp;&amp;</span> <span class="n">trackPct</span> <span class="p">&lt;</span> <span class="m">95</span> <span class="p">&amp;&amp;</span> <span class="n">i</span> <span class="p">&lt;</span> <span class="n">_backingStore</span><span class="p">.</span><span class="n">Count</span><span class="p">;</span> <span class="n">i</span><span class="p">++,</span> <span class="n">c</span><span class="p">++)</span>
+            <span class="p">{</span>
+                <span class="n">ColorViewModel</span> <span class="n">cvm</span> <span class="p">=</span> <span class="n">_backingStore</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+                <span class="n">cvm</span><span class="p">.</span><span class="n">Index</span> <span class="p">=</span> <span class="n">i</span> <span class="p">+</span> <span class="m">1</span><span class="p">;</span>
+                <span class="n">cvm</span><span class="p">.</span><span class="n">Col</span> <span class="p">=</span> <span class="n">currentColumn</span><span class="p">;</span>
+                <span class="n">cvm</span><span class="p">.</span><span class="n">Row</span> <span class="p">=</span> <span class="n">c</span><span class="p">;</span>
+                <span class="n">cvm</span><span class="p">.</span><span class="n">Left</span> <span class="p">=</span> <span class="n">currentWidth</span><span class="p">;</span>
+
+                <span class="c1">// Decide the height of this item. </span>
+                <span class="kt">int</span> <span class="n">maxH</span> <span class="p">=</span> <span class="n">Math</span><span class="p">.</span><span class="nf">Min</span><span class="p">(</span><span class="m">100</span> <span class="p">-</span> <span class="n">trackPct</span><span class="p">,</span> <span class="m">100</span> <span class="p">/</span> <span class="n">numberOfColors</span><span class="p">);</span>
+                <span class="kt">int</span> <span class="n">h</span> <span class="p">=</span> <span class="n">_rng</span><span class="p">.</span><span class="nf">Next</span><span class="p">(</span><span class="m">15</span><span class="p">,</span> <span class="n">maxH</span><span class="p">);</span>
+
+                <span class="c1">// Allow it to share row with second item </span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">c</span> <span class="p">&gt;</span> <span class="m">0</span> <span class="p">&amp;&amp;</span> <span class="n">_backingStore</span><span class="p">[</span><span class="n">i</span> <span class="p">-</span> <span class="m">1</span><span class="p">].</span><span class="n">IsSplitCell</span><span class="p">)</span>
+                <span class="p">{</span>
+                    <span class="kt">var</span> <span class="n">previousCell</span> <span class="p">=</span> <span class="n">_backingStore</span><span class="p">[</span><span class="n">i</span> <span class="p">-</span> <span class="m">1</span><span class="p">];</span>
+                    <span class="n">cvm</span><span class="p">.</span><span class="n">Left</span> <span class="p">=</span> <span class="n">previousCell</span><span class="p">.</span><span class="n">Left</span> <span class="p">+</span> <span class="n">previousCell</span><span class="p">.</span><span class="n">Width</span><span class="p">;</span>
+                    <span class="n">cvm</span><span class="p">.</span><span class="n">Width</span> <span class="p">=</span> <span class="n">previousCell</span><span class="p">.</span><span class="n">Width</span><span class="p">;</span>
+                    <span class="n">cvm</span><span class="p">.</span><span class="n">HeightPercent</span> <span class="p">=</span> <span class="n">previousCell</span><span class="p">.</span><span class="n">HeightPercent</span><span class="p">;</span>
+                    <span class="n">c</span><span class="p">--;</span>
+                <span class="p">}</span>
+                <span class="k">else</span>
+                <span class="p">{</span>
+                    <span class="n">trackPct</span> <span class="p">+=</span> <span class="n">h</span><span class="p">;</span>
+                    <span class="n">cvm</span><span class="p">.</span><span class="n">HeightPercent</span> <span class="p">=</span> <span class="n">h</span><span class="p">;</span>
+
+                    <span class="k">if</span> <span class="p">(</span><span class="n">c</span> <span class="p">&gt;</span> <span class="m">0</span> <span class="p">&amp;&amp;</span> <span class="n">numberOfColors</span> <span class="p">&gt;</span> <span class="m">2</span> <span class="p">&amp;&amp;</span> <span class="n">_rng</span><span class="p">.</span><span class="nf">Next</span><span class="p">(</span><span class="m">4</span><span class="p">)</span> <span class="p">==</span> <span class="m">1</span><span class="p">)</span> <span class="c1">// 1/4 chance </span>
+                    <span class="p">{</span>
+                        <span class="n">cvm</span><span class="p">.</span><span class="n">Width</span> <span class="p">=</span> <span class="p">(</span><span class="n">columnWidth</span> <span class="p">/</span> <span class="m">2.0</span><span class="p">)</span> <span class="p">-</span> <span class="m">5</span><span class="p">;</span>
+                        <span class="n">cvm</span><span class="p">.</span><span class="n">IsSplitCell</span> <span class="p">=</span> <span class="k">true</span><span class="p">;</span>
+                    <span class="p">}</span>
+                    <span class="k">else</span> <span class="n">cvm</span><span class="p">.</span><span class="n">Width</span> <span class="p">=</span> <span class="n">columnWidth</span><span class="p">;</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+
+            <span class="c1">// Make sure we always end on 100%</span>
+            <span class="n">_backingStore</span><span class="p">[</span><span class="n">i</span> <span class="p">-</span> <span class="m">1</span><span class="p">].</span><span class="n">HeightPercent</span> <span class="p">+=</span> <span class="m">100</span> <span class="p">-</span> <span class="n">trackPct</span><span class="p">;</span>
+            <span class="n">_backingStore</span><span class="p">[</span><span class="n">i</span> <span class="p">-</span> <span class="m">1</span><span class="p">].</span><span class="n">Width</span> <span class="p">=</span> <span class="n">columnWidth</span><span class="p">;</span>
+            <span class="n">_backingStore</span><span class="p">[</span><span class="n">i</span> <span class="p">-</span> <span class="m">1</span><span class="p">].</span><span class="n">IsSplitCell</span> <span class="p">=</span> <span class="k">false</span><span class="p">;</span>
+
+            <span class="n">currentColumn</span><span class="p">++;</span>
+            <span class="n">currentWidth</span> <span class="p">+=</span> <span class="n">columnWidth</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="n">Colors</span> <span class="p">=</span> <span class="n">_backingStore</span><span class="p">;</span>
+        <span class="n">ViewWidth</span> <span class="p">=</span> <span class="n">currentWidth</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The last piece of the puzzle is the XAML - in order to properly size the height, we need the actual height of the <strong>GridView</strong> itself, so the code behind hooks the <strong>SizeChanged</strong> event on the <strong>GridView</strong> and then passes the newly calculated size onto the <strong>MainViewModel</strong>:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">private</span> <span class="k">void</span> <span class="nf">OnPanelSizeChanged</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">Windows</span><span class="p">.</span><span class="n">UI</span><span class="p">.</span><span class="n">Xaml</span><span class="p">.</span><span class="n">SizeChangedEventArgs</span> <span class="n">e</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="c1">// Populate DC after first resize so we don't see small-ish items on first render.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">DataContext</span> <span class="p">==</span> <span class="k">null</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">DataContext</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">MainViewModel</span><span class="p">();</span>
+    <span class="p">}</span>
+
+    <span class="c1">// Set the new actual height</span>
+    <span class="n">MainViewModel</span> <span class="n">vm</span> <span class="p">=</span> <span class="p">(</span><span class="n">MainViewModel</span><span class="p">)</span> <span class="n">DataContext</span><span class="p">;</span>
+    <span class="n">vm</span><span class="p">.</span><span class="n">ViewHeight</span> <span class="p">=</span> <span class="n">e</span><span class="p">.</span><span class="n">NewSize</span><span class="p">.</span><span class="n">Height</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>We also need to respect the <strong>Canvas.Left</strong> and <strong>Canvas.Top</strong> properties - this would normally be done in an <strong>ItemContainerStyle</strong>, but unfortunately setting attached properties is not currently supported. To compensate for this, we override the <strong>GridView</strong> and set our properties onto each ItemContainer in the <strong>PrepareContainerForOverride</strong> method:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// &lt;summary&gt; </span>
+<span class="c1">/// This is here just to create a binding for the Height/Width on the GridViewItem. </span>
+<span class="c1">/// WinRT currently doesn't support attached properties in Style setters.</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="k">public</span> <span class="k">class</span> <span class="nc">VariableSizedGridView</span> <span class="p">:</span> <span class="n">GridView</span>
+<span class="p">{</span>
+    <span class="k">protected</span> <span class="k">override</span> <span class="k">void</span> <span class="nf">PrepareContainerForItemOverride</span><span class="p">(</span><span class="n">DependencyObject</span> <span class="n">element</span><span class="p">,</span> <span class="kt">object</span> <span class="n">item</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">BindingOperations</span><span class="p">.</span><span class="nf">SetBinding</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">Canvas</span><span class="p">.</span><span class="n">LeftProperty</span><span class="p">,</span> <span class="k">new</span> <span class="n">Binding</span> <span class="p">{</span><span class="n">Path</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">PropertyPath</span><span class="p">(</span><span class="s">"Left"</span><span class="p">)});</span>
+        <span class="n">BindingOperations</span><span class="p">.</span><span class="nf">SetBinding</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">Canvas</span><span class="p">.</span><span class="n">TopProperty</span><span class="p">,</span> <span class="k">new</span> <span class="n">Binding</span> <span class="p">{</span><span class="n">Path</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">PropertyPath</span><span class="p">(</span><span class="s">"Top"</span><span class="p">)});</span>
+        <span class="n">BindingOperations</span><span class="p">.</span><span class="nf">SetBinding</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">WidthProperty</span><span class="p">,</span> <span class="k">new</span> <span class="n">Binding</span> <span class="p">{</span><span class="n">Path</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">PropertyPath</span><span class="p">(</span><span class="s">"Width"</span><span class="p">)});</span>
+        <span class="n">BindingOperations</span><span class="p">.</span><span class="nf">SetBinding</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">HeightProperty</span><span class="p">,</span> <span class="k">new</span> <span class="n">Binding</span> <span class="p">{</span><span class="n">Path</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">PropertyPath</span><span class="p">(</span><span class="s">"Height"</span><span class="p">)});</span>
+
+        <span class="k">base</span><span class="p">.</span><span class="nf">PrepareContainerForItemOverride</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">item</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>And, of course we replace the panel for the derived <strong>GridView</strong> with a <strong>Canvas</strong>:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;differentSizedTiles:VariableSizedGridView</span> <span class="na">ItemsSource=</span><span class="s">"{Binding Colors}"</span> <span class="na">Grid.Column=</span><span class="s">"1"</span> <span class="na">Grid.Row=</span><span class="s">"1"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;GridView.ItemContainerStyle&gt;</span>
+    <span class="nt">&lt;Style</span> <span class="na">TargetType=</span><span class="s">"GridViewItem"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;Setter</span> <span class="na">Property=</span><span class="s">"HorizontalContentAlignment"</span> <span class="na">Value=</span><span class="s">"Stretch"</span><span class="nt">/&gt;</span>
+      <span class="nt">&lt;Setter</span> <span class="na">Property=</span><span class="s">"VerticalContentAlignment"</span> <span class="na">Value=</span><span class="s">"Stretch"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;/Style&gt;</span>
+  <span class="nt">&lt;/GridView.ItemContainerStyle&gt;</span>
+  <span class="nt">&lt;GridView.ItemsPanel&gt;</span>
+    <span class="nt">&lt;ItemsPanelTemplate&gt;</span>
+      <span class="nt">&lt;Canvas</span> <span class="na">SizeChanged=</span><span class="s">"OnPanelSizeChanged"</span> <span class="na">Width=</span><span class="s">"{Binding ViewWidth}"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;/ItemsPanelTemplate&gt;</span>
+  <span class="nt">&lt;/GridView.ItemsPanel&gt;</span>
+  <span class="nt">&lt;GridView.ItemTemplate&gt;</span>
+    <span class="nt">&lt;DataTemplate&gt;</span>
+      <span class="nt">&lt;Grid</span> <span class="na">Margin=</span><span class="s">"5"</span> <span class="na">ToolTipService.ToolTip=</span><span class="s">"{Binding}"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;Rectangle</span> <span class="na">Fill=</span><span class="s">"{Binding Color}"</span> <span class="na">HorizontalAlignment=</span><span class="s">"Stretch"</span> <span class="na">VerticalAlignment=</span><span class="s">"Stretch"</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;Border</span> <span class="na">Background=</span><span class="s">"#30000000"</span> <span class="na">VerticalAlignment=</span><span class="s">"Top"</span> <span class="na">HorizontalAlignment=</span><span class="s">"Stretch"</span> <span class="na">Height=</span><span class="s">"40"</span><span class="nt">&gt;</span>
+          <span class="nt">&lt;TextBlock</span> <span class="na">Text=</span><span class="s">"{Binding}"</span> <span class="na">Margin=</span><span class="s">"10"</span> <span class="na">Style=</span><span class="s">"{StaticResource ItemTextStyle}"</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/Border&gt;</span>
+      <span class="nt">&lt;/Grid&gt;</span>
+    <span class="nt">&lt;/DataTemplate&gt;</span>
+  <span class="nt">&lt;/GridView.ItemTemplate&gt;</span>
+<span class="nt">&lt;/differentSizedTiles:VariableSizedGridView&gt;</span>
+</code></pre></div></div>
+
+<p>Voila! Note that we still don’t have UI virtualization - it turns out that you currently cannot create a custom virtualized panel, the support isn’t exposed yet in WinRT. But even still, the performance is easily 100x better than the <strong>VariableSizeGridPanel</strong>. The code is slightly more complex, but not overly so. <a href="/samples/DifferentSizedTiles.Canvas.zip">Here’s the final project</a> if you want to play with it yourself. Have fun!</p>
+
+  </div><a class="u-url" href="/mvvm/2013/05/07/variable-sized-tiles-in-windows-store-apps.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

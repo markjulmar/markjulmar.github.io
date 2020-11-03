@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Adding to an ObservableCollection from a background thread | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="Adding to an ObservableCollection from a background thread" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="One annoying thing about ObservableCollection&lt;T&gt; is that it doesn’t support modifications from background threads. That is to say, the CollectionChanged notification doesn’t marshal to the proper thread when it is raised and it causes the exception “This type of CollectionView does not support changes to its SourceCollection from a thread different from the Dispatcher thread”." />
+<meta property="og:description" content="One annoying thing about ObservableCollection&lt;T&gt; is that it doesn’t support modifications from background threads. That is to say, the CollectionChanged notification doesn’t marshal to the proper thread when it is raised and it causes the exception “This type of CollectionView does not support changes to its SourceCollection from a thread different from the Dispatcher thread”." />
+<link rel="canonical" href="http://localhost:4000/dotnet/2009/03/31/adding-to-an-observablecollection-from-a-background-thread.html" />
+<meta property="og:url" content="http://localhost:4000/dotnet/2009/03/31/adding-to-an-observablecollection-from-a-background-thread.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2009-03-31T19:00:00-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Adding to an ObservableCollection from a background thread" />
+<script type="application/ld+json">
+{"headline":"Adding to an ObservableCollection from a background thread","dateModified":"2009-03-31T19:00:00-05:00","datePublished":"2009-03-31T19:00:00-05:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/dotnet/2009/03/31/adding-to-an-observablecollection-from-a-background-thread.html"},"description":"One annoying thing about ObservableCollection&lt;T&gt; is that it doesn’t support modifications from background threads. That is to say, the CollectionChanged notification doesn’t marshal to the proper thread when it is raised and it causes the exception “This type of CollectionView does not support changes to its SourceCollection from a thread different from the Dispatcher thread”.","url":"http://localhost:4000/dotnet/2009/03/31/adding-to-an-observablecollection-from-a-background-thread.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Adding to an ObservableCollection from a background thread</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2009-03-31T19:00:00-05:00" itemprop="datePublished">Mar 31, 2009
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>One annoying thing about <code class="language-plaintext highlighter-rouge">ObservableCollection&lt;T&gt;</code> is that it doesn’t support modifications from background threads.  That is to say, the <code class="language-plaintext highlighter-rouge">CollectionChanged</code> notification doesn’t marshal to the proper thread when it is raised and it causes the exception <strong>“This type of CollectionView does not support changes to its SourceCollection from a thread different from the Dispatcher thread”</strong>.</p>
+
+<p>I ran into this problem a while back and searched out to see if someone else had solved it. I found a solution from Tamir Khason (a fellow WPF disciple), he wrote a <a href="http://blogs.microsoft.co.il/blogs/tamir/archive/2007/04/22/Thread-safe-observable-collection.aspx">thread-safe version</a>, but I didn’t want to add the locking into the collection itself (I want to manage it at a higher level myself).  Really, all I want is to do the notification on the proper (Dispatcher) thread.</p>
+
+<p>It turns out to be pretty easy, here’s my solution:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">class</span> <span class="nc">MTObservableCollection</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;</span> <span class="p">:</span> <span class="n">ObservableCollection</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;</span>  
+<span class="p">{</span>  
+    <span class="k">public</span> <span class="k">override</span> <span class="k">event</span> <span class="n">NotifyCollectionChangedEventHandler</span> <span class="n">CollectionChanged</span><span class="p">;</span>  
+    <span class="k">protected</span> <span class="k">override</span> <span class="k">void</span> <span class="nf">OnCollectionChanged</span><span class="p">(</span><span class="n">NotifyCollectionChangedEventArgs</span> <span class="n">e</span><span class="p">)</span>  
+    <span class="p">{</span>  
+        <span class="kt">var</span> <span class="n">eh</span> <span class="p">=</span> <span class="n">CollectionChanged</span><span class="p">;</span>  
+        <span class="k">if</span> <span class="p">(</span><span class="n">eh</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>  
+        <span class="p">{</span>  
+            <span class="n">Dispatcher</span> <span class="n">dispatcher</span> <span class="err">\</span><span class="p">=</span> <span class="p">(</span><span class="k">from</span> <span class="n">NotifyCollectionChangedEventHandler</span> <span class="n">nh</span> <span class="k">in</span> <span class="n">eh</span><span class="p">.</span><span class="nf">GetInvocationList</span><span class="p">()</span>  
+                 <span class="k">let</span> <span class="n">dpo</span> <span class="p">=</span> <span class="n">nh</span><span class="p">.</span><span class="n">Target</span> <span class="k">as</span> <span class="n">DispatcherObject</span>  
+                 <span class="k">where</span> <span class="n">dpo</span> <span class="p">!=</span> <span class="k">null</span>  
+                 <span class="k">select</span> <span class="n">dpo</span><span class="p">.</span><span class="n">Dispatcher</span><span class="p">).</span><span class="nf">FirstOrDefault</span><span class="p">();</span>  
+
+            <span class="k">if</span> <span class="p">(</span><span class="n">dispatcher</span> <span class="p">!=</span> <span class="k">null</span> <span class="p">&amp;&amp;</span> <span class="n">dispatcher</span><span class="p">.</span><span class="nf">CheckAccess</span><span class="p">()</span> <span class="p">==</span> <span class="k">false</span><span class="p">)</span>  
+            <span class="p">{</span>  
+                <span class="n">dispatcher</span><span class="p">.</span><span class="nf">Invoke</span><span class="p">(</span><span class="n">DispatcherPriority</span><span class="p">.</span><span class="n">DataBind</span><span class="p">,</span> <span class="p">(</span><span class="n">Action</span><span class="p">)(()</span> <span class="p">=&gt;</span> <span class="nf">OnCollectionChanged</span><span class="p">(</span><span class="n">e</span><span class="p">)));</span>  
+            <span class="p">}</span>  
+            <span class="k">else</span>
+            <span class="p">{</span>  
+                <span class="k">foreach</span> <span class="p">(</span><span class="n">NotifyCollectionChangedEventHandler</span> <span class="n">nh</span> <span class="k">in</span> <span class="n">eh</span><span class="p">.</span><span class="nf">GetInvocationList</span><span class="p">())</span>  
+                    <span class="n">nh</span><span class="p">.</span><span class="nf">Invoke</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="n">e</span><span class="p">);</span>  
+            <span class="p">}</span>  
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+  </div><a class="u-url" href="/dotnet/2009/03/31/adding-to-an-observablecollection-from-a-background-thread.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

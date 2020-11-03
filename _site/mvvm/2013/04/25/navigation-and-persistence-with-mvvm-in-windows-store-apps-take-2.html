@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Navigation and Persistence with MVVM in Windows Store Apps take #2 | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="Navigation and Persistence with MVVM in Windows Store Apps take #2" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Earlier I posted on an updated version of MVVMHelpers with persistence support. Paulo Quicoli, a long-time MVVMHelpers contributor, sent me a little code and a different way of managing navigation and persistence that he’s been using. I thought it was quite elegant and asked if I could include a version in the library, which he graciously agreed to. The result will be in the next release of the library - but I thought I’d introduce it here." />
+<meta property="og:description" content="Earlier I posted on an updated version of MVVMHelpers with persistence support. Paulo Quicoli, a long-time MVVMHelpers contributor, sent me a little code and a different way of managing navigation and persistence that he’s been using. I thought it was quite elegant and asked if I could include a version in the library, which he graciously agreed to. The result will be in the next release of the library - but I thought I’d introduce it here." />
+<link rel="canonical" href="http://localhost:4000/mvvm/2013/04/25/navigation-and-persistence-with-mvvm-in-windows-store-apps-take-2.html" />
+<meta property="og:url" content="http://localhost:4000/mvvm/2013/04/25/navigation-and-persistence-with-mvvm-in-windows-store-apps-take-2.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2013-04-25T19:00:00-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Navigation and Persistence with MVVM in Windows Store Apps take #2" />
+<script type="application/ld+json">
+{"headline":"Navigation and Persistence with MVVM in Windows Store Apps take #2","dateModified":"2013-04-25T19:00:00-05:00","datePublished":"2013-04-25T19:00:00-05:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/mvvm/2013/04/25/navigation-and-persistence-with-mvvm-in-windows-store-apps-take-2.html"},"description":"Earlier I posted on an updated version of MVVMHelpers with persistence support. Paulo Quicoli, a long-time MVVMHelpers contributor, sent me a little code and a different way of managing navigation and persistence that he’s been using. I thought it was quite elegant and asked if I could include a version in the library, which he graciously agreed to. The result will be in the next release of the library - but I thought I’d introduce it here.","url":"http://localhost:4000/mvvm/2013/04/25/navigation-and-persistence-with-mvvm-in-windows-store-apps-take-2.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Navigation and Persistence with MVVM in Windows Store Apps take #2</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2013-04-25T19:00:00-05:00" itemprop="datePublished">Apr 25, 2013
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>Earlier I posted on an updated version of MVVMHelpers with persistence support. <strong>Paulo Quicoli</strong>, a long-time MVVMHelpers contributor, sent me a little code and a different way of managing navigation and persistence that he’s been using. I thought it was quite elegant and asked if I could include a version in the library, which he graciously agreed to.  The result will be in the next release of the library - but I thought I’d introduce it here.</p>
+
+<p>The idea is to use a serializer on the ViewModel so that it is always passed as the parameter in navigation - in this case, as a string.  The code Paulo provided was a simple use of the <strong>DataContractJsonSerializer</strong> to turn an object into a Json string - which we can then pass through the normal navigation APIs so it gets captured into the navigation stack automatically.  In this scenario, we are doing ViewModel-first - we’ll create the ViewModel and then navigate to the view - passing the view model as the navigation parameter.</p>
+
+<p>To accomplish this, two new classes were added into MVVMHelpers - both optional.  The first is the <strong>JulMar.Windows.Serialization.Json</strong> static class which looks like:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">static</span> <span class="k">class</span> <span class="nc">Json</span>
+<span class="p">{</span>
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// This method serializes an object or graph into a JSON string</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="k">static</span> <span class="kt">string</span> <span class="nf">Serialize</span><span class="p">(</span><span class="kt">object</span> <span class="n">instance</span><span class="p">);</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// This takes a JSON string and turns it into an object or graph.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="k">static</span> <span class="n">T</span> <span class="nf">Deserialize</span><span class="p">(</span><span class="kt">string</span> <span class="n">stream</span><span class="p">);</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// This takes a JSON string and turns it into an object or graph.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="k">static</span> <span class="kt">object</span> <span class="nf">Deserialize</span><span class="p">(</span><span class="n">Type</span> <span class="n">type</span><span class="p">,</span> <span class="kt">string</span> <span class="n">stream</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>This class is just a slim wrapper around the serializer to take an object and turn it into a string and vice-versa.  Note that the object must be serializable - which as of the last public release, the base <strong>ViewModel</strong> classes are.</p>
+
+<p>The second class is an implementation of the <strong>IPageNavigator</strong> interface which supports the above serialization.  It does several things:</p>
+
+<ol>
+  <li>It uses the <strong>NavigateTo</strong> method which takes a page key (or type) and single parameter, or a parameter and ViewModel (in which case, the parameter is ignored).</li>
+  <li>It serializes the parameter/ViewModel into a string and passes that to the normal frame navigation API.</li>
+  <li>When the page is navigated TO, the string is de-serialized back into a ViewModel and set as the DataContext.</li>
+  <li>It properly handles suspension/resumption by saving/restoring the navigation stack and deserializing the ViewModel (if available) from the parameters back to the current page.</li>
+</ol>
+
+<p>It’s easy to use, although is not the default navigation provider - so there is a setup step that needs to be performed in order to use this new page navigator.  Specifically, in the startup sequence of the application (typically, the Application constructor in App.xaml.cs) you will need to add the highlighted line to replace the default page navigator:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="nf">App</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="n">ServiceLocator</span><span class="p">.</span><span class="n">Instance</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">IPageNavigator</span><span class="p">),</span> <span class="k">new</span> <span class="nf">AutoSerializingPageNavigator</span><span class="p">());</span>
+    <span class="k">this</span><span class="p">.</span><span class="nf">InitializeComponent</span><span class="p">();</span>
+    <span class="k">this</span><span class="p">.</span><span class="n">Suspending</span> <span class="p">+=</span> <span class="n">OnSuspending</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>You still need to add the support to save/restore the state in your <strong>OnLaunched</strong> and <strong>Resuming</strong> events as well, this is the same code as the normal page navigator:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">protected</span> <span class="k">async</span> <span class="k">override</span> <span class="k">void</span> <span class="nf">OnLaunched</span><span class="p">(</span><span class="n">LaunchActivatedEventArgs</span> <span class="n">args</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">IPageNavigator</span> <span class="n">pageNavigator</span> <span class="p">=</span> <span class="n">ServiceLocator</span><span class="p">.</span><span class="n">Instance</span><span class="p">.</span><span class="nf">Resolve</span><span class="p">();</span>
+
+    <span class="n">Frame</span> <span class="n">rootFrame</span> <span class="p">=</span> <span class="n">Window</span><span class="p">.</span><span class="n">Current</span><span class="p">.</span><span class="n">Content</span> <span class="k">as</span> <span class="n">Frame</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">rootFrame</span> <span class="p">==</span> <span class="k">null</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">rootFrame</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">Frame</span><span class="p">();</span>
+        <span class="n">Window</span><span class="p">.</span><span class="n">Current</span><span class="p">.</span><span class="n">Content</span> <span class="p">=</span> <span class="n">rootFrame</span><span class="p">;</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">args</span><span class="p">.</span><span class="n">PreviousExecutionState</span> <span class="p">==</span> <span class="n">ApplicationExecutionState</span><span class="p">.</span><span class="n">Terminated</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="k">await</span> <span class="n">pageNavigator</span><span class="p">.</span><span class="nf">LoadAsync</span><span class="p">();</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="p">...</span>
+<span class="p">}</span>
+
+<span class="k">private</span> <span class="k">async</span> <span class="k">void</span> <span class="nf">OnSuspending</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">SuspendingEventArgs</span> <span class="n">e</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">IPageNavigator</span> <span class="n">pageNavigator</span> <span class="p">=</span> <span class="n">ServiceLocator</span><span class="p">.</span><span class="n">Instance</span><span class="p">.</span><span class="nf">Resolve</span><span class="p">();</span>
+    <span class="kt">var</span> <span class="n">deferral</span> <span class="p">=</span> <span class="n">e</span><span class="p">.</span><span class="n">SuspendingOperation</span><span class="p">.</span><span class="nf">GetDeferral</span><span class="p">();</span>
+    <span class="k">await</span> <span class="n">pageNavigator</span><span class="p">.</span><span class="nf">SaveAsync</span><span class="p">();</span>
+    <span class="n">deferral</span><span class="p">.</span><span class="nf">Complete</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Next, the ViewModel’s must participate in this and be properly serializable - that means saving all the appropriate state by marking the properties with <code class="language-plaintext highlighter-rouge">[DataMember]</code> or with <code class="language-plaintext highlighter-rouge">[IgnoreDataMember]</code> based on whether you decorate the type with <code class="language-plaintext highlighter-rouge">[DataContract]</code> or not.  Also, remember that when you use <code class="language-plaintext highlighter-rouge">[DataContract]</code> the default constructor is not run - that means putting initialization logic into an <code class="language-plaintext highlighter-rouge">[OnDeseralizing]</code> method.  This is the primary reason I chose not to make this approach the default as it puts a bit of a burden onto the ViewModel - but once this is done, everything else is taken care of:</p>
+
+<ul>
+  <li>It will navigate and setup the DataContext automatically</li>
+  <li>It will properly save/restore the state on suspension/resumption</li>
+</ul>
+
+<p>Here’s an example of a simple color view model:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="n">DataContract</span><span class="p">]</span>
+<span class="k">public</span> <span class="k">sealed</span> <span class="k">class</span> <span class="nc">ColorViewModel</span> <span class="p">:</span> <span class="n">ViewModel</span>
+<span class="p">{</span>
+    <span class="p">[</span><span class="n">DataMember</span><span class="p">]</span> <span class="k">public</span> <span class="kt">string</span> <span class="n">Color</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="k">public</span> <span class="n">IDelegateCommand</span> <span class="n">GoBack</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="k">public</span> <span class="nf">ColorViewModel</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="nf">Initialize</span><span class="p">(</span><span class="k">new</span> <span class="nf">StreamingContext</span><span class="p">());</span>
+    <span class="p">}</span>
+
+    <span class="p">[</span><span class="n">OnDeserialized</span><span class="p">]</span>
+    <span class="k">void</span> <span class="nf">Initialize</span><span class="p">(</span><span class="n">StreamingContext</span> <span class="n">context</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">GoBack</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">DelegateCommand</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="n">Resolve</span><span class="p">&lt;</span><span class="n">IPageNavigator</span><span class="p">&gt;().</span><span class="nf">GoBack</span><span class="p">(),</span>
+            <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">Resolve</span><span class="p">&lt;</span><span class="n">IPageNavigator</span><span class="p">&gt;().</span><span class="n">CanGoBack</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">public</span> <span class="nf">ColorViewModel</span><span class="p">(</span><span class="kt">string</span> <span class="n">color</span><span class="p">)</span> <span class="p">:</span> <span class="k">this</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="n">Color</span> <span class="p">=</span> <span class="n">color</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>And here’s the logic to navigate to this view model:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="n">DataContract</span><span class="p">]</span>
+<span class="k">public</span> <span class="k">sealed</span> <span class="k">class</span> <span class="nc">ColorViewModel</span> <span class="p">:</span> <span class="n">ViewModel</span>
+<span class="p">{</span>
+    <span class="p">[</span><span class="n">DataMember</span><span class="p">]</span> <span class="k">public</span> <span class="kt">string</span> <span class="n">Color</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="k">public</span> <span class="n">IDelegateCommand</span> <span class="n">GoBack</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="k">public</span> <span class="nf">ColorViewModel</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="nf">Initialize</span><span class="p">(</span><span class="k">new</span> <span class="nf">StreamingContext</span><span class="p">());</span>
+    <span class="p">}</span>
+
+    <span class="p">[</span><span class="n">OnDeserialized</span><span class="p">]</span>
+    <span class="k">void</span> <span class="nf">Initialize</span><span class="p">(</span><span class="n">StreamingContext</span> <span class="n">context</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">GoBack</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">DelegateCommand</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="n">Resolve</span><span class="p">&lt;</span><span class="n">IPageNavigator</span><span class="p">&gt;().</span><span class="nf">GoBack</span><span class="p">(),</span>
+            <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">Resolve</span><span class="p">&lt;</span><span class="n">IPageNavigator</span><span class="p">&gt;().</span><span class="n">CanGoBack</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">public</span> <span class="nf">ColorViewModel</span><span class="p">(</span><span class="kt">string</span> <span class="n">color</span><span class="p">)</span> <span class="p">:</span> <span class="k">this</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="n">Color</span> <span class="p">=</span> <span class="n">color</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>In addition, the Page and ViewModel can still participate in the <strong>INavigationAware</strong> interface - the new page navigator will still invoke it.  So this new capability allows for an alternative mechanism for managing page state and navigation - I expect to release it early next week! If you are interested in the full sample, check out <a href="https://github.com/markjulmar/mvvmhelpers">the Source Code</a> and look at the sample test project <a href="https://github.com/markjulmar/mvvmhelpers/tree/master/Metro/Test/AutoSerializingNavigationTest">AutoSerializingNavigationTest</a>.</p>
+
+  </div><a class="u-url" href="/mvvm/2013/04/25/navigation-and-persistence-with-mvvm-in-windows-store-apps-take-2.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

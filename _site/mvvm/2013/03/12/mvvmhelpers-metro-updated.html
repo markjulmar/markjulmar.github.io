@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>MVVMHelpers.Metro updated | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="MVVMHelpers.Metro updated" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="The Metro version of MVVMHelpers was updated yesterday with some key new features, one of them is some built-in state management for process lifetime and navigation. This is done through two interfaces - IPageNavigator and IStateManager." />
+<meta property="og:description" content="The Metro version of MVVMHelpers was updated yesterday with some key new features, one of them is some built-in state management for process lifetime and navigation. This is done through two interfaces - IPageNavigator and IStateManager." />
+<link rel="canonical" href="http://localhost:4000/mvvm/2013/03/12/mvvmhelpers-metro-updated.html" />
+<meta property="og:url" content="http://localhost:4000/mvvm/2013/03/12/mvvmhelpers-metro-updated.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2013-03-12T19:00:00-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="MVVMHelpers.Metro updated" />
+<script type="application/ld+json">
+{"headline":"MVVMHelpers.Metro updated","dateModified":"2013-03-12T19:00:00-05:00","datePublished":"2013-03-12T19:00:00-05:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/mvvm/2013/03/12/mvvmhelpers-metro-updated.html"},"description":"The Metro version of MVVMHelpers was updated yesterday with some key new features, one of them is some built-in state management for process lifetime and navigation. This is done through two interfaces - IPageNavigator and IStateManager.","url":"http://localhost:4000/mvvm/2013/03/12/mvvmhelpers-metro-updated.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">MVVMHelpers.Metro updated</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2013-03-12T19:00:00-05:00" itemprop="datePublished">Mar 12, 2013
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>The Metro version of MVVMHelpers was updated yesterday with some key new features, one of them is some built-in state management for process lifetime and navigation. This is done through two interfaces - <strong>IPageNavigator</strong> and <strong>IStateManager</strong>.</p>
+
+<p>You can use them independently, or together. By default, if you don’t assign one, the PageNavigator service will internally create a StateManager to store off page navigation state. You can supply your own IStateManager implementation by either overriding the framework (i.e. apply an <strong>[Export(typeof(IStateManager)]</strong> to a type) or by simply setting the StateManager property on the IPageNavigator itself. I’ll show that in a later blog post, but now let’s see how they work together. To give you an example, let’s build a sample app.</p>
+
+<p>First, fire up Visual Studio 2012 on a Windows 8 box and create a new Blank App project. I called it “SampleBoxes”. Next, add references to MVVMHelpers and MEF through Nuget: Right click on references and select “Manage Nuget References”. Select “Online” and type “MVVMHelpers” in the search box:</p>
+
+<p><img src="/images/nuget_pic1-300x200.jpg" alt="" title="nuget_pic1" /></p>
+
+<p>Click “Install” to add the references. Next, modify the app.xaml.cs with code to use the new types - you can use the ServiceLocator to get the IPageNavigator interface.</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">protected</span> <span class="k">override</span> <span class="k">void</span> <span class="nf">OnLaunched</span><span class="p">(</span><span class="n">LaunchActivatedEventArgs</span> <span class="n">args</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">IPageNavigator</span> <span class="n">pageNavigator</span> <span class="p">=</span> <span class="n">ServiceLocator</span><span class="p">.</span><span class="n">Instance</span><span class="p">.</span><span class="nf">Resolve</span><span class="p">();</span>
+    <span class="n">Frame</span> <span class="n">rootFrame</span> <span class="p">=</span> <span class="n">Window</span><span class="p">.</span><span class="n">Current</span><span class="p">.</span><span class="n">Content</span> <span class="k">as</span> <span class="n">Frame</span><span class="p">;</span>
+    <span class="p">...</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>In the same method, just a little further down, modify the code to create the frame, assign the content and then reload any persisted settings. This must be done <em>after</em> setting the frame as this method both loads the underlying state using an internal IStateManager and also restores the navigation stack if it is present. <strong>Note: since the call to LoadAsync is asynchronous, we will use an await here, make sure to mark the method itself as an async method</strong></p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">if</span> <span class="p">(</span><span class="n">rootFrame</span> <span class="p">==</span> <span class="k">null</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="c1">// Create a Frame to act as the navigation context and navigate to the first page </span>
+    <span class="n">Window</span><span class="p">.</span><span class="n">Current</span><span class="p">.</span><span class="n">Content</span> <span class="p">=</span> <span class="n">rootFrame</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">Frame</span><span class="p">();</span>
+
+    <span class="c1">// Reload our saved state</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">args</span><span class="p">.</span><span class="n">PreviousExecutionState</span> <span class="p">==</span> <span class="n">ApplicationExecutionState</span><span class="p">.</span><span class="n">Terminated</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="k">await</span> <span class="n">pageNavigator</span><span class="p">.</span><span class="nf">LoadAsync</span><span class="p">();</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Finally, in the <code class="language-plaintext highlighter-rouge">OnSuspending</code> event handler at the bottom of the <strong>app.xaml.cs</strong> file, locate the <code class="language-plaintext highlighter-rouge">IPageNavigator</code> and call <code class="language-plaintext highlighter-rouge">SaveAsync</code> to save off all the page state and navigation stack.</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">private</span> <span class="k">async</span> <span class="k">void</span> <span class="nf">OnSuspending</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">SuspendingEventArgs</span> <span class="n">e</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">var</span> <span class="n">deferral</span> <span class="p">=</span> <span class="n">e</span><span class="p">.</span><span class="n">SuspendingOperation</span><span class="p">.</span><span class="nf">GetDeferral</span><span class="p">();</span>
+    <span class="n">IPageNavigator</span> <span class="n">pageNavigator</span> <span class="p">=</span> <span class="n">ServiceLocator</span><span class="p">.</span><span class="n">Instance</span><span class="p">.</span><span class="nf">Resolve</span><span class="p">();</span>
+    <span class="k">await</span> <span class="n">pageNavigator</span><span class="p">.</span><span class="nf">SaveAsync</span><span class="p">();</span>
+    <span class="n">deferral</span><span class="p">.</span><span class="nf">Complete</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>That’s all we need to add in order to save and restore our state. Now, how do we actually add things to the state manager itself? The key is the INavigationAware interface - if you implement this in either the View (<code class="language-plaintext highlighter-rouge">Page</code> classes) or ViewModel (<code class="language-plaintext highlighter-rouge">DataContext</code> of the Page) then it will automatically get called when the page navigation occurs, both from and to. The event args will have an <code class="language-plaintext highlighter-rouge">IDictionary</code> which you can use to store off any settings specific to that page or view model. Note that the dictionaries will be different for each (they are segregated so you do not have to worry about key overlaps).</p>
+
+<p>Create a folder in the solution called “ViewModels” and add a new class into the folder called MainViewModel.cs, go ahead and derive from the ViewModel base class. Next, add a data class into the project - I’ve named it <code class="language-plaintext highlighter-rouge">ColorBox</code> and here’s the code:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">sealed</span> <span class="k">class</span> <span class="nc">ColorBox</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="kt">string</span> <span class="n">Color</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="k">public</span> <span class="nf">ColorBox</span><span class="p">(</span><span class="n">Color</span> <span class="n">color</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">Color</span> <span class="p">=</span> <span class="n">color</span><span class="p">.</span><span class="nf">ToString</span><span class="p">();</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>This will act as our data. In the <code class="language-plaintext highlighter-rouge">MainViewModel</code>, add an <code class="language-plaintext highlighter-rouge">IList</code> and populate it with different colors. Here’s some sample code to use if you want to copy/paste:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">sealed</span> <span class="k">class</span> <span class="nc">MainViewModel</span> <span class="p">:</span> <span class="n">ViewModel</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="n">IList</span> <span class="n">Boxes</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="k">public</span> <span class="nf">MainViewModel</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="n">Random</span> <span class="n">RNG</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">Random</span><span class="p">();</span>
+        <span class="n">Boxes</span> <span class="p">=</span> <span class="k">new</span> <span class="n">List</span><span class="p">&lt;</span><span class="n">ColorBox</span><span class="p">&gt;(</span><span class="n">Enumerable</span><span class="p">.</span><span class="nf">Range</span><span class="p">(</span><span class="m">0</span><span class="p">,</span> <span class="m">200</span><span class="p">).</span><span class="nf">Select</span><span class="p">(</span><span class="n">n</span> <span class="p">=&gt;</span>
+            <span class="k">new</span> <span class="nf">ColorBox</span><span class="p">(</span><span class="n">Color</span><span class="p">.</span><span class="nf">FromArgb</span><span class="p">(</span><span class="m">255</span><span class="p">,</span> <span class="p">(</span><span class="kt">byte</span><span class="p">)</span> <span class="n">RNG</span><span class="p">.</span><span class="nf">Next</span><span class="p">(</span><span class="m">255</span><span class="p">),</span> <span class="p">(</span><span class="kt">byte</span><span class="p">)</span> <span class="n">RNG</span><span class="p">.</span><span class="nf">Next</span><span class="p">(</span><span class="m">255</span><span class="p">),</span> <span class="p">(</span><span class="kt">byte</span><span class="p">)</span> <span class="n">RNG</span><span class="p">.</span><span class="nf">Next</span><span class="p">(</span><span class="m">255</span><span class="p">)))));</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Add an <strong>ExportViewModel</strong> attribute to the view model:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="nf">ExportViewModel</span><span class="p">(</span><span class="s">"MainViewModel"</span><span class="p">)]</span>
+<span class="k">public</span> <span class="k">sealed</span> <span class="k">class</span> <span class="nc">MainViewModel</span> <span class="p">:</span> <span class="n">ViewModel</span>
+<span class="p">{</span>
+    <span class="p">...</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Now, open the <strong>MainPage.xaml</strong> file - add a <code class="language-plaintext highlighter-rouge">Key</code> property to the Page element to locate the view model:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;Page</span> <span class="na">x:Class=</span><span class="s">"SampleBoxes.MainPage"</span> 
+    <span class="na">xmlns=</span><span class="s">"http://schemas.microsoft.com/winfx/2006/xaml/presentation"</span>
+    <span class="na">xmlns:x=</span><span class="s">"http://schemas.microsoft.com/winfx/2006/xaml"</span>
+    <span class="na">xmlns:local=</span><span class="s">"using:SampleBoxes"</span>
+    <span class="na">xmlns:d=</span><span class="s">"http://schemas.microsoft.com/expression/blend/2008"</span>
+    <span class="na">xmlns:mc=</span><span class="s">"http://schemas.openxmlformats.org/markup-compatibility/2006"</span>
+    <span class="na">mc:Ignorable=</span><span class="s">"d"</span>
+    <span class="na">xmlns:Mvvm=</span><span class="s">"using:JulMar.Windows.Mvvm"</span>
+    <span class="na">Mvvm:ViewModelLocator.Key=</span><span class="s">"MainViewModel"</span><span class="nt">&gt;</span>
+</code></pre></div></div>
+
+<p>Next, add a <code class="language-plaintext highlighter-rouge">GridView</code> to display the color boxes - just replace the Grid already present in the file with the following:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;Grid</span> <span class="na">Background=</span><span class="s">"{StaticResource ApplicationPageBackgroundThemeBrush}"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;Grid.RowDefinitions&gt;</span>
+    <span class="nt">&lt;RowDefinition</span> <span class="na">Height=</span><span class="s">"140"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;RowDefinition/&gt;</span>
+    <span class="nt">&lt;RowDefinition</span> <span class="na">Height=</span><span class="s">"50"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;/Grid.RowDefinitions&gt;</span>
+  <span class="nt">&lt;Grid.ColumnDefinitions&gt;</span>
+    <span class="nt">&lt;ColumnDefinition</span> <span class="na">Width=</span><span class="s">"120"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;ColumnDefinition/&gt;</span>
+    <span class="nt">&lt;ColumnDefinition</span> <span class="na">Width=</span><span class="s">"50"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;/Grid.ColumnDefinitions&gt;</span>
+  <span class="nt">&lt;TextBlock</span> <span class="na">Text=</span><span class="s">"Colored Boxes"</span> <span class="na">Style=</span><span class="s">"{StaticResource PageHeaderTextStyle}"</span> <span class="na">Grid.ColumnSpan=</span><span class="s">"2"</span> <span class="na">Grid.Column=</span><span class="s">"1"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;GridView</span> <span class="na">Grid.Row=</span><span class="s">"1"</span> <span class="na">Margin=</span><span class="s">"10,9,10,11"</span> <span class="na">Grid.Column=</span><span class="s">"1"</span> <span class="na">ItemsSource=</span><span class="s">"{Binding Boxes}"</span> <span class="na">IsItemClickEnabled=</span><span class="s">"True"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;GridView.ItemTemplate&gt;</span>
+      <span class="nt">&lt;DataTemplate&gt;</span>
+        <span class="nt">&lt;Rectangle</span> <span class="na">Margin=</span><span class="s">"5"</span> <span class="na">Fill=</span><span class="s">"{Binding Color}"</span> <span class="na">Width=</span><span class="s">"200"</span> <span class="na">Height=</span><span class="s">"200"</span><span class="nt">/&gt;</span>
+      <span class="nt">&lt;/DataTemplate&gt;</span>
+    <span class="nt">&lt;/GridView.ItemTemplate&gt;</span>
+  <span class="nt">&lt;/GridView&gt;</span>
+<span class="nt">&lt;/Grid&gt;</span>
+</code></pre></div></div>
+
+<p>Compile it and you will see design-time data - the <code class="language-plaintext highlighter-rouge">ViewModelLocator</code> works fine with the designer. It should run as well. Add a second Blank page into the project - name it <strong>BoxDetailsPage.xaml</strong> and use the following XAML:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;Grid</span> <span class="na">Background=</span><span class="s">"{StaticResource ApplicationPageBackgroundThemeBrush}"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;Grid.RowDefinitions&gt;</span>
+    <span class="nt">&lt;RowDefinition</span> <span class="na">Height=</span><span class="s">"140"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;RowDefinition/&gt;</span>
+    <span class="nt">&lt;RowDefinition</span> <span class="na">Height=</span><span class="s">"50"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;/Grid.RowDefinitions&gt;</span>
+  <span class="nt">&lt;Grid.ColumnDefinitions&gt;</span>
+    <span class="nt">&lt;ColumnDefinition</span> <span class="na">Width=</span><span class="s">"120"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;ColumnDefinition/&gt;</span>
+    <span class="nt">&lt;ColumnDefinition</span> <span class="na">Width=</span><span class="s">"50"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;/Grid.ColumnDefinitions&gt;</span>
+  <span class="nt">&lt;Button</span> <span class="na">Style=</span><span class="s">"{StaticResource BackButtonStyle}"</span> <span class="na">Command=</span><span class="s">"{Binding GoBack}"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;TextBlock</span> <span class="na">Text=</span><span class="s">"Box Details"</span> <span class="na">Style=</span><span class="s">"{StaticResource PageHeaderTextStyle}"</span> <span class="na">Grid.ColumnSpan=</span><span class="s">"2"</span> <span class="na">Grid.Column=</span><span class="s">"1"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;Rectangle</span> <span class="na">Fill=</span><span class="s">"{Binding Color}"</span> <span class="na">Width=</span><span class="s">"400"</span> <span class="na">Height=</span><span class="s">"400"</span> <span class="na">Grid.Column=</span><span class="s">"1"</span> <span class="na">Grid.Row=</span><span class="s">"1"</span><span class="nt">/&gt;</span>
+<span class="nt">&lt;/Grid&gt;</span>
+</code></pre></div></div>
+
+<p>Notice that the Back button is using a Command here to go backwards – you could also use the LayoutAwarePage.cs here as the IPageNavigator utilizes the normal Frame navigation under the covers so you can mix and match as necessary; but here I will show you how to use a ViewModel to drive it.</p>
+
+<p>Add a new ViewModel into the source called <strong>BoxDetailsViewModel.cs</strong> - here’s the code:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">sealed</span> <span class="k">class</span> <span class="nc">BoxDetailsViewModel</span> <span class="p">:</span> <span class="n">ViewModel</span>
+<span class="p">{</span>
+    <span class="k">private</span> <span class="kt">string</span> <span class="n">_color</span><span class="p">;</span>
+
+    <span class="k">public</span> <span class="kt">string</span> <span class="n">Color</span>
+    <span class="p">{</span>
+        <span class="k">get</span>
+        <span class="p">{</span>
+            <span class="k">return</span> <span class="n">_color</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="k">set</span>
+        <span class="p">{</span>
+            <span class="nf">SetPropertyValue</span><span class="p">(</span><span class="k">ref</span> <span class="n">_color</span><span class="p">,</span> <span class="k">value</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="p">[</span><span class="n">Import</span><span class="p">]</span> <span class="k">public</span> <span class="n">IPageNavigator</span> <span class="n">PageNavigator</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="k">public</span> <span class="n">IDelegateCommand</span> <span class="n">GoBack</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="k">public</span> <span class="nf">BoxDetailsViewModel</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="n">GoBack</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">DelegateCommand</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="n">PageNavigator</span><span class="p">.</span><span class="nf">GoBack</span><span class="p">(),</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">PageNavigator</span><span class="p">.</span><span class="n">CanGoBack</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Notice we are importing the <code class="language-plaintext highlighter-rouge">IPageNavigator</code> rather than using the ServiceLocator. This works because the base ViewModel class makes sure to satisfy imports - if you derive from <code class="language-plaintext highlighter-rouge">SimpleViewModel</code> (which just has the <strong>INotifyPropertyChanged</strong> implementation) then you would need to do this step yourself. Here you can see the first usage of the page navigator to do true navigation - we are using the GoBack() method and CanGoBack property to implement our command.</p>
+
+<p>Now, let’s integrate this page into our system. Back in the MainViewModel, add the following code:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="nf">ExportViewModel</span><span class="p">(</span><span class="s">"MainViewModel"</span><span class="p">)]</span>
+<span class="k">public</span> <span class="k">sealed</span> <span class="k">class</span> <span class="nc">MainViewModel</span> <span class="p">:</span> <span class="n">ViewModel</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="n">IList</span> <span class="n">Boxes</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="p">[</span><span class="n">Import</span><span class="p">]</span> <span class="k">public</span> <span class="n">IPageNavigator</span> <span class="n">PageNavigator</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="k">public</span> <span class="n">IDelegateCommand</span> <span class="n">ShowDetails</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="k">public</span> <span class="nf">MainViewModel</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="n">Random</span> <span class="n">RNG</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">Random</span><span class="p">();</span>
+        <span class="n">Boxes</span> <span class="p">=</span> <span class="k">new</span> <span class="n">List</span><span class="p">&lt;</span><span class="n">ColorBox</span><span class="p">&gt;(</span><span class="n">Enumerable</span><span class="p">.</span><span class="nf">Range</span><span class="p">(</span><span class="m">0</span><span class="p">,</span> <span class="m">200</span><span class="p">).</span><span class="nf">Select</span><span class="p">(</span><span class="n">n</span> <span class="p">=&gt;</span>
+            <span class="k">new</span> <span class="nf">ColorBox</span><span class="p">(</span><span class="n">Color</span><span class="p">.</span><span class="nf">FromArgb</span><span class="p">(</span><span class="m">255</span><span class="p">,</span> <span class="p">(</span><span class="kt">byte</span><span class="p">)</span> <span class="n">RNG</span><span class="p">.</span><span class="nf">Next</span><span class="p">(</span><span class="m">255</span><span class="p">),</span> <span class="p">(</span><span class="kt">byte</span><span class="p">)</span> <span class="n">RNG</span><span class="p">.</span><span class="nf">Next</span><span class="p">(</span><span class="m">255</span><span class="p">),</span> <span class="p">(</span><span class="kt">byte</span><span class="p">)</span> <span class="n">RNG</span><span class="p">.</span><span class="nf">Next</span><span class="p">(</span><span class="m">255</span><span class="p">)))));</span>
+
+        <span class="n">ShowDetails</span> <span class="p">=</span> <span class="k">new</span> <span class="n">DelegateCommand</span><span class="p">&lt;</span><span class="n">ItemClickEventArgs</span><span class="p">&gt;(</span><span class="n">OnShowDetails</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">private</span> <span class="k">void</span> <span class="nf">OnShowDetails</span><span class="p">(</span><span class="n">ItemClickEventArgs</span> <span class="n">e</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">ColorBox</span> <span class="n">box</span> <span class="p">=</span> <span class="p">(</span><span class="n">ColorBox</span><span class="p">)</span> <span class="n">e</span><span class="p">.</span><span class="n">ClickedItem</span><span class="p">;</span>
+        <span class="n">PageNavigator</span><span class="p">.</span><span class="nf">NavigateTo</span><span class="p">(</span><span class="s">"BoxDetailsPage"</span><span class="p">,</span> <span class="n">box</span><span class="p">.</span><span class="n">Color</span><span class="p">,</span> <span class="k">new</span> <span class="nf">BoxDetailsViewModel</span><span class="p">()</span> <span class="p">{</span><span class="n">Color</span> <span class="p">=</span> <span class="n">box</span><span class="p">.</span><span class="n">Color</span><span class="p">});</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Next, open the <strong>MainPage.xaml</strong> file and modify the <code class="language-plaintext highlighter-rouge">GridView</code> with an <code class="language-plaintext highlighter-rouge">EventTrigger</code> behavior for the <code class="language-plaintext highlighter-rouge">ItemClick</code> event to execute our new command through an InvokeCommand behavior. By default if you do not supply a CommandParameter on the InvokeCommand behavior it will pass the EventArgs (an ItemClickEventArgs in this case) which is exactly what we’ve coded the MainViewModel to receive on the command.</p>
+
+<p>Here are the relevant changes, first add the namespace to get to the two behavior classes:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;Page</span> <span class="na">x:Class=</span><span class="s">"SampleBoxes.MainPage"</span> <span class="err">...</span>
+    <span class="na">xmlns:Interactivity=</span><span class="s">"using:System.Windows.Interactivity"</span>
+    <span class="na">xmlns:Interactivity1=</span><span class="s">"using:JulMar.Windows.Interactivity"</span>
+    <span class="na">Mvvm:ViewModelLocator.Key=</span><span class="s">"MainViewModel"</span><span class="nt">&gt;</span>
+</code></pre></div></div>
+
+<p>Next, add the triggers collection onto the <code class="language-plaintext highlighter-rouge">GridView</code>:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;GridView</span> <span class="na">Grid.Row=</span><span class="s">"1"</span> <span class="na">Margin=</span><span class="s">"10,9,10,11"</span> <span class="na">Grid.Column=</span><span class="s">"1"</span> <span class="na">ItemsSource=</span><span class="s">"{Binding Boxes}"</span> <span class="na">IsItemClickEnabled=</span><span class="s">"True"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;Interactivity:Interaction.Triggers&gt;</span>
+        <span class="nt">&lt;Interactivity:EventTrigger</span> <span class="na">EventName=</span><span class="s">"ItemClick"</span><span class="nt">&gt;</span>
+            <span class="nt">&lt;Interactivity1:InvokeCommand</span> <span class="na">Command=</span><span class="s">"{Binding ShowDetails}"</span> <span class="nt">/&gt;</span>
+        <span class="nt">&lt;/Interactivity:EventTrigger&gt;</span>
+    <span class="nt">&lt;/Interactivity:Interaction.Triggers&gt;</span>
+    ...
+<span class="nt">&lt;/GridView&gt;</span>
+</code></pre></div></div>
+
+<p>Look back at the <code class="language-plaintext highlighter-rouge">MainViewModel</code> - specifically the <code class="language-plaintext highlighter-rouge">ShowDetails</code> handler. Notice it is using the PageNavigator (imported using MEF) and navigating to the “BoxDetailsPage” which is just a string. The normal Frame navigation uses System.Type objects which ties you to the specific classes. I decided instead to use strings - which is how MVVMHelpers has always tied things together; this can be fragile if you don’t manage it properly but it provides a lot more freedom when connecting views and viewmodels together and when navigating from VMs to views. The question is, “How does the navigation service know which page this corresponds to?” The answer is, a custom attribute named <strong>ExportPage</strong> (although you can also register it directly with the IPageNavigator service if you want to do it in code).</p>
+
+<p>Open the <strong>BoxDetailsPage.xaml.cs</strong> file and add the following to the class declaration:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="nf">ExportPage</span><span class="p">(</span><span class="s">"BoxDetailsPage"</span><span class="p">,</span> <span class="k">typeof</span><span class="p">(</span><span class="n">BoxDetailsPage</span><span class="p">))]</span>
+<span class="k">public</span> <span class="k">sealed</span> <span class="k">partial</span> <span class="k">class</span> <span class="nc">BoxDetailsPage</span> <span class="p">:</span> <span class="n">Page</span>
+<span class="p">{</span>
+    <span class="p">...</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>This will export the page to the navigation service and make it easily found. You can do the same for the <code class="language-plaintext highlighter-rouge">MainPage</code> and then use the page navigation service in App.xaml.cs to get to the first page if you like. If you run the app and then suspend/terminate you will see the navigation stack is preserved, but your VM is not. There are two ways to manage this issue.</p>
+
+<ol>
+  <li>Serialize the <code class="language-plaintext highlighter-rouge">DataContext</code> for the view</li>
+  <li>Add a <code class="language-plaintext highlighter-rouge">ViewModelLocator</code> onto the view to create a <code class="language-plaintext highlighter-rouge">BoxDetailsViewModel</code> (replaced when we navigate, but used during initialization from persistence) and then have the ViewModel load/save state.</li>
+</ol>
+
+<p>I prefer the second, but the first can be useful - it has several steps to it.</p>
+
+<ol>
+  <li>
+    <p>Make the <code class="language-plaintext highlighter-rouge">BoxDetailsViewModel</code> serializable. This means adding <code class="language-plaintext highlighter-rouge">[DataContract]</code> and <code class="language-plaintext highlighter-rouge">[DataMamber]</code> attributes as well as an <code class="language-plaintext highlighter-rouge">OnDeserialized</code> handler to re-hookup the command(s) properly and recompose via MEF since the constructor isn’t invoked in this case.</p>
+
+    <div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="p">[</span><span class="n">DataContract</span><span class="p">]</span>
+ <span class="k">public</span> <span class="k">sealed</span> <span class="k">class</span> <span class="nc">BoxDetailsViewModel</span> <span class="p">:</span> <span class="n">ViewModel</span>
+ <span class="p">{</span>
+     <span class="k">private</span> <span class="kt">string</span> <span class="n">_color</span><span class="p">;</span>
+
+     <span class="p">[</span><span class="n">DataMember</span><span class="p">]</span>
+     <span class="k">public</span> <span class="kt">string</span> <span class="n">Color</span>
+     <span class="p">{</span>
+         <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_color</span><span class="p">;</span> <span class="p">}</span>
+         <span class="k">set</span> <span class="p">{</span> <span class="nf">SetPropertyValue</span><span class="p">(</span><span class="k">ref</span> <span class="n">_color</span><span class="p">,</span> <span class="k">value</span><span class="p">);</span> <span class="p">}</span>
+     <span class="p">}</span>
+
+     <span class="p">[</span><span class="n">Import</span><span class="p">]</span>
+     <span class="k">public</span> <span class="n">IPageNavigator</span> <span class="n">PageNavigator</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+     <span class="k">public</span> <span class="n">IDelegateCommand</span> <span class="n">GoBack</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+     <span class="p">[</span><span class="n">OnDeserialized</span><span class="p">]</span>
+     <span class="k">public</span> <span class="k">void</span> <span class="nf">OnDeserializing</span><span class="p">(</span><span class="n">StreamingContext</span> <span class="n">context</span><span class="p">)</span>
+     <span class="p">{</span>
+         <span class="nf">Initialize</span><span class="p">();</span> <span class="c1">// force refresh of MEF</span>
+         <span class="n">GoBack</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">DelegateCommand</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="n">PageNavigator</span><span class="p">.</span><span class="nf">GoBack</span><span class="p">(),</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">PageNavigator</span><span class="p">.</span><span class="n">CanGoBack</span><span class="p">);</span>
+     <span class="p">}</span>
+
+     <span class="k">public</span> <span class="nf">BoxDetailsViewModel</span><span class="p">()</span>
+     <span class="p">{</span>
+         <span class="n">GoBack</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">DelegateCommand</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="n">PageNavigator</span><span class="p">.</span><span class="nf">GoBack</span><span class="p">(),</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">PageNavigator</span><span class="p">.</span><span class="n">CanGoBack</span><span class="p">);</span>
+     <span class="p">}</span>
+ <span class="p">}</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Implement the <code class="language-plaintext highlighter-rouge">INavigationAware</code> interface on the <strong>BoxDetailsPage.xaml.cs</strong> implementation and save/restore the DataContext.</p>
+
+    <div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="p">[</span><span class="nf">ExportPage</span><span class="p">(</span><span class="s">"BoxDetailsPage"</span><span class="p">,</span> <span class="k">typeof</span><span class="p">(</span><span class="n">BoxDetailsPage</span><span class="p">))]</span>
+ <span class="k">public</span> <span class="k">sealed</span> <span class="k">partial</span> <span class="k">class</span> <span class="nc">BoxDetailsPage</span> <span class="p">:</span> <span class="n">Page</span><span class="p">,</span> <span class="n">INavigationAware</span>
+ <span class="p">{</span>
+     <span class="k">public</span> <span class="k">void</span> <span class="nf">OnNavigatedTo</span><span class="p">(</span><span class="n">NavigatedToEventArgs</span> <span class="n">e</span><span class="p">)</span>
+     <span class="p">{</span>
+         <span class="k">if</span> <span class="p">(</span><span class="n">DataContext</span> <span class="p">==</span> <span class="k">null</span><span class="p">)</span>
+         <span class="p">{</span>
+             <span class="k">if</span> <span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">State</span> <span class="p">!=</span> <span class="k">null</span> <span class="p">&amp;&amp;</span> <span class="n">e</span><span class="p">.</span><span class="n">State</span><span class="p">.</span><span class="nf">ContainsKey</span><span class="p">(</span><span class="s">"DataContext"</span><span class="p">))</span> <span class="n">DataContext</span> <span class="p">=</span> <span class="n">e</span><span class="p">.</span><span class="n">State</span><span class="p">[</span><span class="s">"DataContext"</span><span class="p">];</span>
+         <span class="p">}</span>
+     <span class="p">}</span>
+    
+     <span class="k">public</span> <span class="k">void</span> <span class="nf">OnNavigatingFrom</span><span class="p">(</span><span class="n">NavigatingFromEventArgs</span> <span class="n">e</span><span class="p">)</span>
+     <span class="p">{</span>
+         <span class="k">if</span> <span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">IsSuspending</span><span class="p">)</span>
+         <span class="p">{</span>
+             <span class="n">e</span><span class="p">.</span><span class="n">State</span><span class="p">[</span><span class="s">"DataContext"</span><span class="p">]</span> <span class="p">=</span> <span class="k">this</span><span class="p">.</span><span class="n">DataContext</span><span class="p">;</span> <span class="c1">// save data context</span>
+         <span class="p">}</span>
+     <span class="p">}</span>
+ <span class="p">}</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Add the <code class="language-plaintext highlighter-rouge">BoxDetailsViewModel</code> as a known type in <strong>app.xaml.cs</strong>.</p>
+  </li>
+</ol>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">protected</span> <span class="k">async</span> <span class="k">override</span> <span class="k">void</span> <span class="nf">OnLaunched</span><span class="p">(</span><span class="n">LaunchActivatedEventArgs</span> <span class="n">args</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">IPageNavigator</span> <span class="n">pageNavigator</span> <span class="p">=</span> <span class="n">ServiceLocator</span><span class="p">.</span><span class="n">Instance</span><span class="p">.</span><span class="n">Resolve</span><span class="p">&lt;</span><span class="n">IPageNavigator</span><span class="p">&gt;();</span>
+    <span class="n">pageNavigator</span><span class="p">.</span><span class="n">StateManager</span><span class="p">.</span><span class="n">KnownTypes</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">BoxDetailsViewModel</span><span class="p">));</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Adding those changes will then properly save/restore the ViewModel (from the DataContext) and navigation stack on suspend/resume. As I mentioned, that’s not my primary approach. Instead, I tend to export the ViewModel and wire it up with a locator in the XAML for each Page. Then I’ll pass the specific page I want when I navigate to it (the last parameter is the DataContext). This is set <strong>after</strong> the page is created so it will replace the ViewModelLocator version during initial navigation. Then, I’ll have the ViewModel persist it’s properties so that when the navigation stack is restored, it will be created (by the VMLocator) and then load it’s properties.</p>
+
+<p>To do this, remove all the changes from above, and then wire up the ViewModelLocator to the <strong>BoxDetaislPage.xaml</strong>, export the <code class="language-plaintext highlighter-rouge">BoxDetailsViewModel</code> and then add <strong>ViewModelState</strong> attributes to each of the public properties you need to persist - in this case, just the Color property. Alternatively, you can also implement INavigationAware as we did above in the Page class and it will be called during navigation to save/restore state - this includes during suspend/resume.</p>
+
+<p>So, here’s the ViewModel decorated:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="nf">ExportViewModel</span><span class="p">(</span><span class="s">"BoxDetailsVM"</span><span class="p">)]</span>
+<span class="k">public</span> <span class="k">sealed</span> <span class="k">class</span> <span class="nc">BoxDetailsViewModel</span> <span class="p">:</span> <span class="n">ViewModel</span>
+<span class="p">{</span>
+    <span class="k">private</span> <span class="kt">string</span> <span class="n">_color</span><span class="p">;</span>
+
+    <span class="p">[</span><span class="n">ViewModelState</span><span class="p">]</span>
+    <span class="k">public</span> <span class="kt">string</span> <span class="n">Color</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_color</span><span class="p">;</span> <span class="p">}</span>
+        <span class="k">set</span> <span class="p">{</span> <span class="nf">SetPropertyValue</span><span class="p">(</span><span class="k">ref</span> <span class="n">_color</span><span class="p">,</span> <span class="k">value</span><span class="p">);</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="p">[</span><span class="n">Import</span><span class="p">]</span> <span class="k">public</span> <span class="n">IPageNavigator</span> <span class="n">PageNavigator</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+    <span class="k">public</span> <span class="n">IDelegateCommand</span> <span class="n">GoBack</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="k">public</span> <span class="nf">BoxDetailsViewModel</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="n">GoBack</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">DelegateCommand</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="n">PageNavigator</span><span class="p">.</span><span class="nf">GoBack</span><span class="p">(),</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">PageNavigator</span><span class="p">.</span><span class="n">CanGoBack</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>There is no need to manage serialization of this type since we aren’t storing the type itself - just the color string. This will produce the same result as before.</p>
+
+<p>The sample project is <a href="/samples/SampleBoxes.zip">here</a>.</p>
+
+  </div><a class="u-url" href="/mvvm/2013/03/12/mvvmhelpers-metro-updated.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

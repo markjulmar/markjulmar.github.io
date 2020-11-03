@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Moving Work Items from one Team Project to another | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="Moving Work Items from one Team Project to another" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="I was having lunch with an associate a while back and he mentioned a need to move a work item from one team project to another. While there isn’t any direct support for this from the Team Explorer interface, I figured it couldn’t be too hard to manipulate the underlying database and achieve the results - it’s just SQL Server right? I hadn’t actually looked at the schema mind you, I’m an optimist. It wasn’t quite as simple as I thought - it felt like the database had been designed by the security group and intentionally obscured for privacy. The TFS database is fairly generic (so that it can add arbitrary items into the schema for custom project types) and has been somewhat secured to protect the code itself - the stored procedures are encrypted and SQL Profiler doesn’t give much information on what’s happening. So, I spent a week or so looking at the schema for the Work Item system and a lot of trial and error. End result is that I got a simple application to move work items around. This application does a couple of other things as well - lists projects, active web services, etc. I was mostly playing with the schema and trying to figure things out. It’s just a console application but it does the job. Here’s the code, use at your own risk (a.k.a. if it screws up your system, I can’t help you). The source for the simple test project is included so you can see what was done and incorporate it into your own code base if you like. The program is fairly easy to use - a binary is included with the release. Issuing the command with no parameters generates a simple “Help” page –" />
+<meta property="og:description" content="I was having lunch with an associate a while back and he mentioned a need to move a work item from one team project to another. While there isn’t any direct support for this from the Team Explorer interface, I figured it couldn’t be too hard to manipulate the underlying database and achieve the results - it’s just SQL Server right? I hadn’t actually looked at the schema mind you, I’m an optimist. It wasn’t quite as simple as I thought - it felt like the database had been designed by the security group and intentionally obscured for privacy. The TFS database is fairly generic (so that it can add arbitrary items into the schema for custom project types) and has been somewhat secured to protect the code itself - the stored procedures are encrypted and SQL Profiler doesn’t give much information on what’s happening. So, I spent a week or so looking at the schema for the Work Item system and a lot of trial and error. End result is that I got a simple application to move work items around. This application does a couple of other things as well - lists projects, active web services, etc. I was mostly playing with the schema and trying to figure things out. It’s just a console application but it does the job. Here’s the code, use at your own risk (a.k.a. if it screws up your system, I can’t help you). The source for the simple test project is included so you can see what was done and incorporate it into your own code base if you like. The program is fairly easy to use - a binary is included with the release. Issuing the command with no parameters generates a simple “Help” page –" />
+<link rel="canonical" href="http://localhost:4000/dotnet/2006/07/16/moving-work-items-from-one-team-project-to-another.html" />
+<meta property="og:url" content="http://localhost:4000/dotnet/2006/07/16/moving-work-items-from-one-team-project-to-another.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2006-07-16T19:00:00-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Moving Work Items from one Team Project to another" />
+<script type="application/ld+json">
+{"headline":"Moving Work Items from one Team Project to another","dateModified":"2006-07-16T19:00:00-05:00","datePublished":"2006-07-16T19:00:00-05:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/dotnet/2006/07/16/moving-work-items-from-one-team-project-to-another.html"},"description":"I was having lunch with an associate a while back and he mentioned a need to move a work item from one team project to another. While there isn’t any direct support for this from the Team Explorer interface, I figured it couldn’t be too hard to manipulate the underlying database and achieve the results - it’s just SQL Server right? I hadn’t actually looked at the schema mind you, I’m an optimist. It wasn’t quite as simple as I thought - it felt like the database had been designed by the security group and intentionally obscured for privacy. The TFS database is fairly generic (so that it can add arbitrary items into the schema for custom project types) and has been somewhat secured to protect the code itself - the stored procedures are encrypted and SQL Profiler doesn’t give much information on what’s happening. So, I spent a week or so looking at the schema for the Work Item system and a lot of trial and error. End result is that I got a simple application to move work items around. This application does a couple of other things as well - lists projects, active web services, etc. I was mostly playing with the schema and trying to figure things out. It’s just a console application but it does the job. Here’s the code, use at your own risk (a.k.a. if it screws up your system, I can’t help you). The source for the simple test project is included so you can see what was done and incorporate it into your own code base if you like. The program is fairly easy to use - a binary is included with the release. Issuing the command with no parameters generates a simple “Help” page –","url":"http://localhost:4000/dotnet/2006/07/16/moving-work-items-from-one-team-project-to-another.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Moving Work Items from one Team Project to another</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2006-07-16T19:00:00-05:00" itemprop="datePublished">Jul 16, 2006
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>I was having lunch with an associate a while back and he mentioned a need to move a work item from one team project to another. While there isn’t any direct support for this from the Team Explorer interface, I figured it couldn’t be too hard to manipulate the underlying database and achieve the results - it’s just SQL Server right? I hadn’t actually <em>looked</em> at the schema mind you, I’m an optimist.</p>
+
+<p>It wasn’t quite as simple as I thought - it felt like the database had been designed by the security group and intentionally obscured for privacy. The TFS database is fairly generic (so that it can add arbitrary items into the schema for custom project types) and has been somewhat secured to protect the code itself - the stored procedures are encrypted and SQL Profiler doesn’t give much information on what’s happening.</p>
+
+<p>So, I spent a week or so looking at the schema for the Work Item system and a lot of trial and error. End result is that I got a simple application to move work items around. This application does a couple of other things as well - lists projects, active web services, etc. I was mostly playing with the schema and trying to figure things out. It’s just a console application but it does the job.</p>
+
+<p><a href="/samples/tfscmd.zip">Here’s</a> the code, <strong>use at your own risk (a.k.a. if it screws up your system, I can’t help you)</strong>. The source for the simple test project is included so you can see what was done and incorporate it into your own code base if you like.</p>
+
+<p>The program is fairly easy to use - a binary is included with the release. Issuing the command with no parameters generates a simple “Help” page –</p>
+
+<pre><code class="language-output">C:WorkTfsCmd&gt; **tfscmd**
+TfsCmd [command] [/t tfsserver] [/u user] [/p password] [params]  
+ListProjects - Lists the active projects on the TF server.  
+TfsCmd ListProjects  
+ListServices - Displays the web services exposed by the TF server.  
+TfsCmd ListWebServices  
+WQL - Execute a WorkItem Query.  
+TfsCmd Wql [query]  
+MoveWorkItem - Moves a work item from one Team Project to another  
+TfsCmd MoveWorkItem [id] [ProjectName]
+</code></pre>
+
+<p>Executing a command will use your logged on user/password (domain credentials) unless you supply a <strong>/u</strong> and <strong>/p</strong> parameter. For example, running the <strong>ListProjects</strong> command generates something like:</p>
+
+<pre><code class="language-output">C:WorkTfsCmd&gt; **tfscmd ListProjects**
+Project Name: Test  
+Status: WellFormed  
+Guid: 8c5b175b-b0ef-46bb-9a9e-dde05bb145ac  
+Process Template: MSF for Agile Software Development - v4.0  
+Defined Properties: MSPROJ  
+</code></pre>
+
+<p>Listing the web services just hits the underlying database to get the information:</p>
+
+<pre><code class="language-output">C:WorkTfsCmd&gt; **tfscmd ListServices**
+BuildStoreService = http://(local):8080/Build/v1.0/BuildStore.asmx  
+BuildControllerService = http://(local):8080/Build/v1.0/BuildController.  
+IBISEnablement = http://(local):8080/Build/v1.0/Integration.asmx  
+LinkingProviderService = http://(local):8080/Build/v1.0/Integration.asmx  
+IProjectMaintenance = http://(local):8080/Build/v1.0/Integration.asmx  
+PublishTestResultsBuildService = http://(local):8080/Build/v1.0/PublishT tsBuildService.asmx  
+</code></pre>
+
+<p>Moving work items is fairly easy - just provide the work item id (the numeric identifier) and the new project name - this must match an existing project in your TFS system. The tool will attempt to match up the iteration to a value in the new project - if it cannot, it will default to the first iteration available.</p>
+
+<pre><code class="language-output">C:WorkTfsCmd&gt; **tfscmd MoveWorkItem 1 "Mark's New Project"**  
+Work Item #1: "Create Project Definition" is currently located in project "Test Project (Iteration 0)"  
+Moving work item to "Mark's New Project (Iteration 0)"  
+</code></pre>
+
+<p>If you have the TFS client open, then you should shut it down and reopen it before modifying the moved work item - the client appears to cache bits of information and I had some issues with moved items if I didn’t clear the cache by closing the work item window and reopening it.</p>
+
+<p>Have fun!</p>
+
+  </div><a class="u-url" href="/dotnet/2006/07/16/moving-work-items-from-one-team-project-to-another.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

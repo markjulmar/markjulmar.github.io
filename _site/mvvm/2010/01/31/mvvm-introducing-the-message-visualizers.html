@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>MVVM: Introducing the message visualizers | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="MVVM: Introducing the message visualizers" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="In this post, I will go over the simple message visualizers available in the MVVM Helpers toolkit. Essentially the idea is that it is fairly common to want to display a simple message from the ViewModel to the user. Since the VM is supposed to be testable, we encapsulate this ability into four services, three of which I’ll focus on here:" />
+<meta property="og:description" content="In this post, I will go over the simple message visualizers available in the MVVM Helpers toolkit. Essentially the idea is that it is fairly common to want to display a simple message from the ViewModel to the user. Since the VM is supposed to be testable, we encapsulate this ability into four services, three of which I’ll focus on here:" />
+<link rel="canonical" href="http://localhost:4000/mvvm/2010/01/31/mvvm-introducing-the-message-visualizers.html" />
+<meta property="og:url" content="http://localhost:4000/mvvm/2010/01/31/mvvm-introducing-the-message-visualizers.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2010-01-31T18:00:00-06:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="MVVM: Introducing the message visualizers" />
+<script type="application/ld+json">
+{"headline":"MVVM: Introducing the message visualizers","dateModified":"2010-01-31T18:00:00-06:00","datePublished":"2010-01-31T18:00:00-06:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/mvvm/2010/01/31/mvvm-introducing-the-message-visualizers.html"},"description":"In this post, I will go over the simple message visualizers available in the MVVM Helpers toolkit. Essentially the idea is that it is fairly common to want to display a simple message from the ViewModel to the user. Since the VM is supposed to be testable, we encapsulate this ability into four services, three of which I’ll focus on here:","url":"http://localhost:4000/mvvm/2010/01/31/mvvm-introducing-the-message-visualizers.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">MVVM: Introducing the message visualizers</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2010-01-31T18:00:00-06:00" itemprop="datePublished">Jan 31, 2010
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>In this post, I will go over the simple message visualizers available in the MVVM Helpers toolkit.  Essentially the idea is that it is fairly common to want to display a simple message from the ViewModel to the user.  Since the VM is supposed to be testable, we encapsulate this ability into four services, three of which I’ll focus on here:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Service</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>IMessageVisualizer</strong></td>
+      <td>Displays a title + message to the user and allows them to dismiss it through a set of user-defined buttons.  The button used to dismiss the dialog is returned as the result.</td>
+    </tr>
+    <tr>
+      <td><strong>IErrorVisualizer</strong></td>
+      <td>Displays a title + message to the user to report an error.  The only button displayed is OK, and the visualizer returns true/false.</td>
+    </tr>
+    <tr>
+      <td><strong>INotificationVisualizer</strong></td>
+      <td>Used to manage some short operation that will halt the UI briefly.</td>
+    </tr>
+    <tr>
+      <td><strong>IUIVisualizer</strong></td>
+      <td>Displays a custom modal or modaless UI to the user with an associated ViewModel to drive it.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>To demonstrate the first three visualizer types, we’ll build a very simple MVVM application to display messages.  I start with the project template and remove all the ViewModel and View code to have a blank solution.  Each of the three visualizers we are going to look at take a <code class="language-plaintext highlighter-rouge">string</code> Title and Message as their parameters – we’ll drive it from a unique command for each.  To start with, let’s define a simple data structure that wraps an <code class="language-plaintext highlighter-rouge">ICommand</code> and a textual title:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// Simple command + title text</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="k">public</span> <span class="k">class</span> <span class="nc">TitledCommand</span>
+
+<span class="p">{</span>
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Title to display</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+
+    <span class="k">public</span> <span class="kt">string</span> <span class="n">Title</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Command to execute</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+
+    <span class="k">public</span> <span class="n">ICommand</span> <span class="n">Command</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Constructor</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="c1">/// &lt;param name="title"&gt;&lt;/param&gt;</span>
+    <span class="c1">/// &lt;param name="cmd"&gt;&lt;/param&gt;</span>
+    <span class="k">public</span> <span class="nf">TitledCommand</span><span class="p">(</span><span class="kt">string</span> <span class="n">title</span><span class="p">,</span> <span class="n">ICommand</span> <span class="n">cmd</span><span class="p">)</span>
+
+    <span class="p">{</span>
+        <span class="n">Title</span> <span class="p">=</span> <span class="n">title</span><span class="p">;</span>
+
+        <span class="n">Command</span> <span class="p">=</span> <span class="n">cmd</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Next, in the <strong>MainViewModel.cs</strong> file, we need a <strong>Title</strong> string property – this will be the title for each of the visualziations.  It’s just a simple field-backed INPC property, we’ll bind it to something in the view:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// Main View Model</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="k">public</span> <span class="k">class</span> <span class="nc">MainViewModel</span> <span class="p">:</span> <span class="n">ViewModel</span>
+<span class="p">{</span>
+    <span class="k">private</span> <span class="kt">string</span> <span class="n">_title</span><span class="p">;</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Title for visualizations</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="kt">string</span> <span class="n">Title</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_title</span><span class="p">;</span> <span class="p">}</span>
+        <span class="k">set</span> <span class="p">{</span> <span class="n">_title</span> <span class="p">=</span> <span class="k">value</span><span class="p">;</span> <span class="nf">OnPropertyChanged</span><span class="p">(</span><span class="s">"Title"</span><span class="p">);</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Now we can create a collection of the <strong>TitledCommand</strong> objects and display them to the user for execution.  We will place this collection into the <strong>MainViewModel.cs</strong>.  Let’s populate it with a set of delegating commands for each type of visualization we want to create.  We will use the **DelegatingCommand<T>** version which allows us to type the parameter being passed.  We will assume the inbound parameter is always the message to display and there a string:</T></p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// Main View Model</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="k">public</span> <span class="k">class</span> <span class="nc">MainViewModel</span> <span class="p">:</span> <span class="n">ViewModel</span>
+<span class="p">{</span>
+    <span class="p">...</span>
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Visualization Command list</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="n">IList</span><span class="p">&lt;</span><span class="n">TitledCommand</span><span class="p">&gt;</span> <span class="n">VisualizationCommands</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Constructor</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="nf">MainViewModel</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="n">VisualizationCommands</span> <span class="p">=</span> <span class="k">new</span> <span class="n">List</span><span class="p">&lt;</span><span class="n">TitledCommand</span><span class="p">&gt;</span>
+        <span class="p">{</span>
+            <span class="k">new</span> <span class="nf">TitledCommand</span><span class="p">(</span><span class="s">"Show Message"</span><span class="p">,</span> <span class="k">new</span> <span class="n">DelegatingCommand</span><span class="p">&lt;</span><span class="kt">string</span><span class="p">&gt;(</span><span class="n">OnShowMessage</span><span class="p">,</span>
+                <span class="n">s</span> <span class="p">=&gt;</span> <span class="p">!</span><span class="kt">string</span><span class="p">.</span><span class="nf">IsNullOrEmpty</span><span class="p">(</span><span class="n">Title</span><span class="p">)</span> <span class="p">&amp;&amp;</span> <span class="p">!</span><span class="kt">string</span><span class="p">.</span><span class="nf">IsNullOrEmpty</span><span class="p">(</span><span class="n">s</span><span class="p">))),</span>
+            <span class="k">new</span> <span class="nf">TitledCommand</span><span class="p">(</span><span class="s">"Show Error"</span><span class="p">,</span> <span class="k">new</span> <span class="n">DelegatingCommand</span><span class="p">&lt;</span><span class="kt">string</span><span class="p">&gt;(</span><span class="n">OnShowError</span><span class="p">,</span>
+                <span class="n">s</span> <span class="p">=&gt;</span> <span class="p">!</span><span class="kt">string</span><span class="p">.</span><span class="nf">IsNullOrEmpty</span><span class="p">(</span><span class="n">Title</span><span class="p">)</span> <span class="p">&amp;&amp;</span> <span class="p">!</span><span class="kt">string</span><span class="p">.</span><span class="nf">IsNullOrEmpty</span><span class="p">(</span><span class="n">s</span><span class="p">))),</span>       
+            <span class="k">new</span> <span class="nf">TitledCommand</span><span class="p">(</span><span class="s">"Show Notification"</span><span class="p">,</span>
+                <span class="k">new</span> <span class="n">DelegatingCommand</span><span class="p">&lt;</span><span class="kt">string</span><span class="p">&gt;(</span><span class="n">OnShowNotification</span><span class="p">,</span>
+                <span class="n">s</span> <span class="p">=&gt;</span> <span class="p">!</span><span class="kt">string</span><span class="p">.</span><span class="nf">IsNullOrEmpty</span><span class="p">(</span><span class="n">Title</span><span class="p">))),</span>
+        <span class="p">};</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The <strong>CanExecute</strong> handler for each of them will test the <strong>Title</strong> property – ensure there is a value there, and the inbound parameter (the Message) and make sure there is a value there as well.</p>
+
+<h4 id="imessagevisualizer">IMessageVisualizer</h4>
+
+<p>The IMessageVisualizer is used to show a simple message to the user – it takes a title, message and an enumeration to decide which buttons to display.  The default implementation of the service displays a <strong>MessageBox</strong>.</p>
+
+<p><img src="/images/mvvm-introducing-the-message-visualizers-image_thumb.png" alt="image" title="image" /></p>
+
+<p>The buttons you can display include:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">public</span> <span class="k">enum</span> <span class="n">MessageButtons</span>
+    <span class="p">{</span>
+        <span class="n">OK</span> <span class="p">=</span> <span class="m">0</span><span class="p">,</span>
+        <span class="n">OKCancel</span> <span class="p">=</span> <span class="m">1</span><span class="p">,</span>
+        <span class="n">YesNoCancel</span> <span class="p">=</span> <span class="m">3</span><span class="p">,</span>
+        <span class="n">YesNo</span> <span class="p">=</span> <span class="m">4</span>
+    <span class="p">}</span>
+</code></pre></div></div>
+
+<p>The result from the service is which button was used to dismiss the dialog:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">public</span> <span class="k">enum</span> <span class="n">MessageResult</span>
+    <span class="p">{</span>
+        <span class="n">None</span> <span class="p">=</span> <span class="m">0</span><span class="p">,</span>
+        <span class="n">OK</span> <span class="p">=</span> <span class="m">1</span><span class="p">,</span>
+        <span class="n">Cancel</span> <span class="p">=</span> <span class="m">2</span><span class="p">,</span>
+        <span class="n">Yes</span> <span class="p">=</span> <span class="m">6</span><span class="p">,</span>
+        <span class="n">No</span> <span class="p">=</span> <span class="m">7</span>
+    <span class="p">}</span>
+</code></pre></div></div>
+
+<p>Using the visualizer is very easy – request the service from the service locator using the <strong>Resolve</strong> method (this requires you derive from the <strong>JulMar.Windows.Mvvm.ViewModel</strong> base class, or hit the service locator using the static property):</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">private</span> <span class="k">void</span> <span class="nf">OnShowMessage</span><span class="p">(</span><span class="kt">string</span> <span class="n">message</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">var</span> <span class="n">messageVisualizer</span> <span class="p">=</span> <span class="n">Resolve</span><span class="p">&lt;</span><span class="n">IMessageVisualizer</span><span class="p">&gt;();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">messageVisualizer</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">Result</span> <span class="p">=</span> <span class="n">Enum</span><span class="p">.</span><span class="nf">GetName</span><span class="p">(</span><span class="k">typeof</span> <span class="p">(</span><span class="n">MessageResult</span><span class="p">),</span>
+            <span class="n">messageVisualizer</span><span class="p">.</span><span class="nf">Show</span><span class="p">(</span><span class="n">Title</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">MessageButtons</span><span class="p">.</span><span class="n">YesNoCancel</span><span class="p">));</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Notice that I test to ensure the visualizer is available – remember that services can be replaced or removed – I might do this in my unit tests for example (I actually mock the interface rather than replace it, but you get the point – test to make sure it’s there).</p>
+
+<p>We want to see the result, so I take the resulting enum and convert it to a string and assign it to a new <strong>Result</strong> property on the ViewModel.  This, like <strong>Title</strong>, is just a field-backed string that does a property change notification.</p>
+
+<h4 id="ierrorvisualizer">IErrorVisualizer</h4>
+
+<p>The error visualizer is for cases where you want to display an error dialog to the user with a title and message.  The default implementation displays a <strong>MessageBox</strong> with an OK button</p>
+
+<p><img src="/images/mvvm-introducing-the-message-visualizers-image_thumb_1.png" alt="image" title="image" /></p>
+
+<p>It returns a boolean response indicating that the user clicked the OK button (versus dismissing using the Close “X” button).   It has a similar interface to the message visualizer:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">private</span> <span class="k">void</span> <span class="nf">OnShowError</span><span class="p">(</span><span class="kt">string</span> <span class="n">errorMessage</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">var</span> <span class="n">errorVisualizer</span> <span class="p">=</span> <span class="n">Resolve</span><span class="p">&lt;</span><span class="n">IErrorVisualizer</span><span class="p">&gt;();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">errorVisualizer</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">Result</span> <span class="p">=</span> <span class="n">errorVisualizer</span><span class="p">.</span><span class="nf">Show</span><span class="p">(</span><span class="n">Title</span><span class="p">,</span> <span class="n">errorMessage</span><span class="p">).</span><span class="nf">ToString</span><span class="p">();</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>We will assign the boolean result to the string Result property as well.</p>
+
+<h4 id="inotificationvisualizer">INotificationVisualizer</h4>
+
+<p>This visualizer is for cases where you are doing something in the ViewModel logic, on the UI thread that takes a moment to process.  Sorting a list, or searching an in-memory list might be an example.  True long-running operations should always be on a separate thread and use properties or the message mediator to coordinate with the UI thread.  That said, there are times when you want to do the logic inline with the request and you know it’s going to take a second or two to process it.  Enter the <strong>INotificationVisualizer</strong>.  It takes the same title and message as it’s cousin visualizers but the default implementation does not use them – instead, the default implementation simply changes the cursor to an hourglass (the defacto standard for “please wait”).  This is a service that I often replace with a custom visualzation – a progress bar, thumbar progress on Windows 7, or even a dialog overlay.  Invoking it is simple:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">private</span> <span class="k">void</span> <span class="nf">OnShowNotification</span><span class="p">(</span><span class="kt">string</span> <span class="n">message</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">var</span> <span class="n">notifyVisual</span> <span class="p">=</span> <span class="n">Resolve</span><span class="p">&lt;</span><span class="n">INotificationVisualizer</span><span class="p">&gt;();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">notifyVisual</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="k">using</span> <span class="p">(</span><span class="n">notifyVisual</span><span class="p">.</span><span class="nf">BeginWait</span><span class="p">(</span><span class="n">Title</span><span class="p">,</span> <span class="n">message</span><span class="p">))</span>
+        <span class="p">{</span>
+            <span class="c1">// Sleep for 2sec, pretending to work</span>
+            <span class="n">Thread</span><span class="p">.</span><span class="nf">Sleep</span><span class="p">(</span><span class="m">2000</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The <strong>BeginWait</strong>() method kicks off the notification visual (hourglass cursor in this case).  It returns a disposable object that you invoke Dispose on to return to the normal cursor.  Again, let me stress this is not optimal for a true long-running operation – this locks the UI up until the thread returns so only use this for very short operations.</p>
+
+<h4 id="creating-the-view">Creating the View</h4>
+
+<p>The View for this application will be simple – let’s use an <strong>ItemsControl</strong> to generate a button for each of the exposed commands, two <strong>TextBoxes</strong> to hold the Title and Message, and then a <strong>TextBlock</strong> for the result, here’s what I want it to look like:</p>
+
+<p><img src="/images/mvvm-introducing-the-message-visualizers-image_thumb_2.png" alt="image" title="image" /></p>
+
+<p>I’ll let you go through the XAML – it’s straightforward and should be pretty easy to follow.  The only new thing might be that we’ll set focus to the first focusable element using the <strong>FirstFocusedElement</strong> markup extension:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;Window</span> <span class="na">x:Class=</span><span class="s">"ServicesTest.Views.MainWindow"</span>
+    <span class="na">xmlns=</span><span class="s">"http://schemas.microsoft.com/winfx/2006/xaml/presentation"</span>
+    <span class="na">xmlns:x=</span><span class="s">"http://schemas.microsoft.com/winfx/2006/xaml"</span>
+    <span class="na">xmlns:julmar=</span><span class="s">"http://127.0.0.1:8080/wpfhelpers"</span>
+    <span class="na">xmlns:ViewModels=</span><span class="s">"clr-namespace:ServicesTest.ViewModels"</span>
+    <span class="na">Title=</span><span class="s">"Notification Visualizer Test"</span> <span class="na">Height=</span><span class="s">"300"</span> <span class="na">Width=</span><span class="s">"400"</span> <span class="na">Background=</span><span class="s">"LightYellow"</span>
+    <span class="na">WindowStartupLocation=</span><span class="s">"CenterScreen"</span>
+    <span class="na">FocusManager.FocusedElement=</span><span class="s">"{julmar:FirstFocusedElement}"</span>
+    <span class="na">DataContext=</span><span class="s">"{julmar:ViewModelCreator {x:Type ViewModels:MainViewModel}}"</span><span class="nt">&gt;</span>
+
+ <span class="nt">&lt;Grid</span> <span class="na">Margin=</span><span class="s">"5"</span><span class="nt">&gt;</span>
+     <span class="nt">&lt;Grid.RowDefinitions&gt;</span>
+         <span class="nt">&lt;RowDefinition</span> <span class="na">Height=</span><span class="s">"Auto"</span> <span class="nt">/&gt;</span>
+         <span class="nt">&lt;RowDefinition</span> <span class="na">Height=</span><span class="s">"Auto"</span> <span class="nt">/&gt;</span>
+         <span class="nt">&lt;RowDefinition</span> <span class="na">Height=</span><span class="s">"Auto"</span> <span class="nt">/&gt;</span>
+         <span class="nt">&lt;RowDefinition</span> <span class="nt">/&gt;</span>
+     <span class="nt">&lt;/Grid.RowDefinitions&gt;</span>
+
+     <span class="nt">&lt;Grid.ColumnDefinitions&gt;</span>
+         <span class="nt">&lt;ColumnDefinition</span> <span class="na">Width=</span><span class="s">"Auto"</span> <span class="nt">/&gt;</span>
+         <span class="nt">&lt;ColumnDefinition</span> <span class="nt">/&gt;</span>
+     <span class="nt">&lt;/Grid.ColumnDefinitions&gt;</span>
+
+     <span class="nt">&lt;Label</span> <span class="na">Grid.Column=</span><span class="s">"0"</span> <span class="na">Grid.Row=</span><span class="s">"0"</span> <span class="na">Content=</span><span class="s">"Title:"</span> <span class="nt">/&gt;</span>
+     <span class="nt">&lt;TextBox</span> <span class="na">Grid.Column=</span><span class="s">"1"</span> <span class="na">Grid.Row=</span><span class="s">"0"</span> <span class="na">Margin=</span><span class="s">"5,2"</span> <span class="na">Text=</span><span class="s">"{Binding Title}"</span> <span class="nt">/&gt;</span>
+     <span class="nt">&lt;Label</span> <span class="na">Grid.Column=</span><span class="s">"0"</span> <span class="na">Grid.Row=</span><span class="s">"1"</span> <span class="na">Content=</span><span class="s">"Message:"</span> <span class="nt">/&gt;</span>
+     <span class="nt">&lt;TextBox</span> <span class="na">x:Name=</span><span class="s">"tbMessage"</span> <span class="na">Grid.Column=</span><span class="s">"1"</span> <span class="na">Grid.Row=</span><span class="s">"1"</span> <span class="na">Margin=</span><span class="s">"5,2"</span> <span class="nt">/&gt;</span>
+
+    <span class="nt">&lt;ItemsControl</span> <span class="na">Grid.Row=</span><span class="s">"2"</span> <span class="na">Grid.ColumnSpan=</span><span class="s">"2"</span> <span class="na">Margin=</span><span class="s">"10"</span>
+                  <span class="na">ItemsSource=</span><span class="s">"{Binding VisualizationCommands}"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;ItemsControl.ItemTemplate&gt;</span>
+            <span class="nt">&lt;DataTemplate&gt;</span>
+                <span class="nt">&lt;Button</span> <span class="na">Margin=</span><span class="s">"5"</span> <span class="na">Content=</span><span class="s">"{Binding Title}"</span> <span class="na">Command=</span><span class="s">"{Binding Command}"</span>
+                        <span class="na">CommandParameter=</span><span class="s">"{Binding ElementName=tbMessage, Path=Text}"</span> <span class="nt">/&gt;</span>
+            <span class="nt">&lt;/DataTemplate&gt;</span>
+        <span class="nt">&lt;/ItemsControl.ItemTemplate&gt;</span>
+    <span class="nt">&lt;/ItemsControl&gt;</span>
+
+    <span class="nt">&lt;TextBlock</span> <span class="na">FontSize=</span><span class="s">"24pt"</span> <span class="na">Grid.ColumnSpan=</span><span class="s">"2"</span> <span class="na">Grid.Row=</span><span class="s">"3"</span>
+            <span class="na">HorizontalAlignment=</span><span class="s">"Center"</span> <span class="na">VerticalAlignment=</span><span class="s">"Center"</span>
+            <span class="na">Text=</span><span class="s">"{Binding Result, FallbackValue=None}"</span> <span class="nt">/&gt;</span>
+    <span class="nt">&lt;/Grid&gt;</span>
+<span class="nt">&lt;/Window&gt;</span>
+</code></pre></div></div>
+
+<p>That should do it – if you’d like to just download the project and play with it, it’s available here: <a href="/samples/VisulizerTest.zip">VisualizerTest.zip</a>.  In the next post we’ll take a look at the grand-daddy of the message visualizers in the MVVM Helper toolkit: the <code class="language-plaintext highlighter-rouge">IUIVisualizer</code>!</p>
+
+  </div><a class="u-url" href="/mvvm/2010/01/31/mvvm-introducing-the-message-visualizers.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

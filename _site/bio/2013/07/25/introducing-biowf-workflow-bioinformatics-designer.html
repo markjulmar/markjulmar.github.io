@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Introducing BioWF - Workflow Bioinformatics Designer | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="Introducing BioWF - Workflow Bioinformatics Designer" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="One of the projects that was really interesting was Trident - https://tridentworkflow.codeplex.com/. It provided a graphical designer based on Windows Workflow 3.0 to create scientific analysis applications. The .NET Bio team created some activities to introduce bioinformatics into that platform and it was a sample application that was shown off in some of the training sessions. Unfortunately, WF 3.0 was deprecated when .NET 4.0 shipped (and replaced by a completely different version of Workflow!), and the TSCB project just went dark. It also was quite heavy and slow having requirements on SQL server and some services to actually execute the workflows themselves." />
+<meta property="og:description" content="One of the projects that was really interesting was Trident - https://tridentworkflow.codeplex.com/. It provided a graphical designer based on Windows Workflow 3.0 to create scientific analysis applications. The .NET Bio team created some activities to introduce bioinformatics into that platform and it was a sample application that was shown off in some of the training sessions. Unfortunately, WF 3.0 was deprecated when .NET 4.0 shipped (and replaced by a completely different version of Workflow!), and the TSCB project just went dark. It also was quite heavy and slow having requirements on SQL server and some services to actually execute the workflows themselves." />
+<link rel="canonical" href="http://localhost:4000/bio/2013/07/25/introducing-biowf-workflow-bioinformatics-designer.html" />
+<meta property="og:url" content="http://localhost:4000/bio/2013/07/25/introducing-biowf-workflow-bioinformatics-designer.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2013-07-25T19:00:00-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Introducing BioWF - Workflow Bioinformatics Designer" />
+<script type="application/ld+json">
+{"headline":"Introducing BioWF - Workflow Bioinformatics Designer","dateModified":"2013-07-25T19:00:00-05:00","datePublished":"2013-07-25T19:00:00-05:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/bio/2013/07/25/introducing-biowf-workflow-bioinformatics-designer.html"},"description":"One of the projects that was really interesting was Trident - https://tridentworkflow.codeplex.com/. It provided a graphical designer based on Windows Workflow 3.0 to create scientific analysis applications. The .NET Bio team created some activities to introduce bioinformatics into that platform and it was a sample application that was shown off in some of the training sessions. Unfortunately, WF 3.0 was deprecated when .NET 4.0 shipped (and replaced by a completely different version of Workflow!), and the TSCB project just went dark. It also was quite heavy and slow having requirements on SQL server and some services to actually execute the workflows themselves.","url":"http://localhost:4000/bio/2013/07/25/introducing-biowf-workflow-bioinformatics-designer.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Introducing BioWF - Workflow Bioinformatics Designer</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2013-07-25T19:00:00-05:00" itemprop="datePublished">Jul 25, 2013
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>One of the projects that was really interesting was Trident - <a href="https://tridentworkflow.codeplex.com/">https://tridentworkflow.codeplex.com/</a>.  It provided a graphical designer based on Windows Workflow 3.0 to create scientific analysis applications.  The .NET Bio team created some activities to introduce bioinformatics into that platform and it was a sample application that was shown off in some of the training sessions.  Unfortunately, WF 3.0 was deprecated when .NET 4.0 shipped (and replaced by a completely different version of Workflow!), and the TSCB project just went dark.  It also was quite heavy and slow having requirements on SQL server and some services to actually execute the workflows themselves.</p>
+
+<p>But I really liked the idea of creating simple analysis programs with WF so I took the concept and created a new project - BioWF (<a href="http://markjulmar.github.io/BioWF/">http://markjulmar.github.io/BioWF/</a>) which uses .NET 4.5 and .NET Bio 1.1 to provide a similar capability.  It has two parts to it:</p>
+
+<ol>
+  <li>A GUI designer which re-hosts Workflow 4.5 and provides access to a set of pre-defined activities and the core WF activities.  You can create, edit and save workflows to XML based files.</li>
+  <li>A console based runner which can take a persisted WF and execute it providing both input and output capabilities.</li>
+</ol>
+
+<p>Here’s a screen shot of the GUI app when it is first started:</p>
+
+<p><img src="/images/biowf1.jpg" alt="" title="biowf1" /></p>
+
+<p>You can then drag various activities from the toolbox on the left.  Each activity can be selected and have properties changed in the property explorer on the bottom right of the screen.  As an example, let’s create a sequence and save it to a FASTA file:</p>
+
+<ol>
+  <li>
+    <p>Drag the <code class="language-plaintext highlighter-rouge">CreateSequence</code> activity onto the design surface (right where it says “Drag activity here”.  It should have some validation errors which show up:</p>
+
+    <p><img src="/images/biowf2.jpg" alt="" title="biowf2" /></p>
+
+    <p>The validation errors are shown both on the item and it’s parents - as well as in a list at the bottom of the application.  To correct the error, you need to add some sequence data - this can be supplied as a variable, parameter or literal string which we’ll use here.</p>
+  </li>
+  <li>
+    <p>Type <strong>“AAA-CCC-GGG-TTTT”</strong> into the sequence data box.  Make sure to include the quotes.  Once you tab out, the validation error should disappear.</p>
+
+    <p>The <code class="language-plaintext highlighter-rouge">SaveSequencesToFile</code> activity is what we want to use to write out sequences, but it takes an <code class="language-plaintext highlighter-rouge">IEnumerable&lt;ISequence&gt;</code> as input - what we’ve created is a single sequence.  That’s why there is an <code class="language-plaintext highlighter-rouge">EnumerableFromItem&lt;T&gt;</code> activity.  This takes a single item and generates an Enumerable sequence from it.</p>
+  </li>
+  <li>
+    <p>Drag the <code class="language-plaintext highlighter-rouge">EnumerableFromItem&lt;T&gt;</code> directly below the <code class="language-plaintext highlighter-rouge">CreateSequence</code> activity.  It will prompt you for the type of enumerable to create:</p>
+
+    <p><img src="/images/biowf3.jpg" alt="" title="biowf3" /></p>
+  </li>
+  <li>
+    <p>Select the drop-down and use the “Browse” functionality to show all the known assemblies.  You can use the search box - type <code class="language-plaintext highlighter-rouge">ISequence</code> and it will narrow the search.</p>
+
+    <p><img src="/images/biowf41-1024x603.jpg" alt="" title="biowf4" /></p>
+  </li>
+  <li>
+    <p>Select the <code class="language-plaintext highlighter-rouge">Bio.ISequence</code> object and click OK. Next, we need to connect the output from the <code class="language-plaintext highlighter-rouge">CreateSequence</code> activity to the inputs of the <code class="language-plaintext highlighter-rouge">EnumerableFromItem&lt;T&gt;</code>. This is done through <em>variables.</em></p>
+  </li>
+  <li>
+    <p>Click on the <strong>Variables</strong> button at the bottom of the window to open the variables section.</p>
+
+    <p><img src="/images/biowf5.jpg" alt="" title="biowf5" /></p>
+
+    <p>Next, type the name “sequence” into the name field, and select Bio.ISequence from the type - this has been populated because we used it earlier, but you can always browse for other types when necessary.  The scope should be the outer Sequence activity so it’s visible to all the children.  You can also initialize it, but that’s not necessary (for example you could type <strong>‘New Sequence(Alphabet.DNA, “ACGT”)’</strong>).</p>
+  </li>
+  <li>
+    <p>Type the name of the variable into the Result field for the <code class="language-plaintext highlighter-rouge">CreateSequence</code> activity - this in the property explorer.  A future version might put that right into the designer box for easier access and also allow a drop-down to select existing variables.</p>
+
+    <p><img src="/images/biowf7.jpg" alt="" title="biowf7" /></p>
+  </li>
+  <li>
+    <p>Add a second variable to hold the results from the <code class="language-plaintext highlighter-rouge">EnumerableFromItem&lt;T&gt;</code>.  This will be of type <code class="language-plaintext highlighter-rouge">IEnumerable&lt;ISequence&gt;</code>. Select System.Collections.Generic.IEnumerable from the list first - then it will prompt for a second type:</p>
+
+    <p><img src="/images/biowf8.jpg" alt="" title="biowf8" /></p>
+  </li>
+  <li>
+    <p>Finally, drag the <code class="language-plaintext highlighter-rouge">SaveSequencesToFile</code> activity - set the filename to a string literal (remember the quotes) and the sequence input to the sequences variable you created in step 6.</p>
+
+    <p><img src="/images/biowf9.jpg" alt="" title="biowf9" /></p>
+
+    <p>The final completed workflow should look like this:</p>
+
+    <p><img src="/images/finalbiowf-1024x848.jpg" alt="" title="finalbiowf" /></p>
+
+    <p>Save the workflow to a file by clicking the “Save” or “SaveAs” buttons in the ribbon.  Then you can execute the workflow by clicking the “Run” button.  It will popup a new GUI with the output from the workflow.  If any inputs (arguments) are required they will be prompted for first and then it will execute.</p>
+
+    <p><img src="/images/biowf10.jpg" alt="" title="biowf10" /></p>
+  </li>
+</ol>
+
+<p>This is very much an alpha right now - there are some little bugs here and there and it needs to have more comprehensive activities added, but it’s a good start.  If anyone is interested in helping out, adding features or just using this then please drop me a line!</p>
+
+<p>Feel free to <a href="https://github.com/markjulmar/BioWF">download the source</a> and build it - you will need Visual Studio 2012 (any edition) and Windows 7 or better (where .NET 4.5 is supported).</p>
+
+  </div><a class="u-url" href="/bio/2013/07/25/introducing-biowf-workflow-bioinformatics-designer.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

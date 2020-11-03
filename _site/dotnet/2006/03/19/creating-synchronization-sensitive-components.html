@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Creating synchronization sensitive components | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="Creating synchronization sensitive components" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="One issue that’s always a struggle with building reusable components is managing asynchronous operations. The problem is that depending on the type of application that is going to use the component, the thread used for callbacks and events may or may not be important. For example, with Console based applications, callbacks on different threads might be ok - at least as long as the application itself ensures thread safety. But, with a Windows Forms application, threading is critical - you are not allowed to touch UI controls from any thread other than the main one and so we end up with the Control.BeginInvoke logic in each of our callbacks which sucks." />
+<meta property="og:description" content="One issue that’s always a struggle with building reusable components is managing asynchronous operations. The problem is that depending on the type of application that is going to use the component, the thread used for callbacks and events may or may not be important. For example, with Console based applications, callbacks on different threads might be ok - at least as long as the application itself ensures thread safety. But, with a Windows Forms application, threading is critical - you are not allowed to touch UI controls from any thread other than the main one and so we end up with the Control.BeginInvoke logic in each of our callbacks which sucks." />
+<link rel="canonical" href="http://localhost:4000/dotnet/2006/03/19/creating-synchronization-sensitive-components.html" />
+<meta property="og:url" content="http://localhost:4000/dotnet/2006/03/19/creating-synchronization-sensitive-components.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2006-03-19T18:00:00-06:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Creating synchronization sensitive components" />
+<script type="application/ld+json">
+{"headline":"Creating synchronization sensitive components","dateModified":"2006-03-19T18:00:00-06:00","datePublished":"2006-03-19T18:00:00-06:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/dotnet/2006/03/19/creating-synchronization-sensitive-components.html"},"description":"One issue that’s always a struggle with building reusable components is managing asynchronous operations. The problem is that depending on the type of application that is going to use the component, the thread used for callbacks and events may or may not be important. For example, with Console based applications, callbacks on different threads might be ok - at least as long as the application itself ensures thread safety. But, with a Windows Forms application, threading is critical - you are not allowed to touch UI controls from any thread other than the main one and so we end up with the Control.BeginInvoke logic in each of our callbacks which sucks.","url":"http://localhost:4000/dotnet/2006/03/19/creating-synchronization-sensitive-components.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Creating synchronization sensitive components</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2006-03-19T18:00:00-06:00" itemprop="datePublished">Mar 19, 2006
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>One issue that’s always a struggle with building reusable components is managing asynchronous operations.  The problem is that depending on the type of application that is going to use the component, the thread used for callbacks and events may or may not be important.  For example, with Console based applications, callbacks on different threads might be ok - at least as long as the application itself ensures thread safety.  But, with a Windows Forms application, threading is critical - you are not allowed to touch UI controls from any thread other than the main one and so we end up with the <code class="language-plaintext highlighter-rouge">Control.BeginInvoke</code> logic in each of our callbacks which sucks.</p>
+
+<p>Enter the Synchronization Context - a new feature of .NET 2.0.  Here’s how it works:</p>
+
+<p>You derive your component from <code class="language-plaintext highlighter-rouge">System.ComponentModel.Component.Component</code> and provide your typical asynchronous function – in this example, we will build a PiCalculator:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">class</span> <span class="nc">PiCalculator</span> <span class="p">:</span> <span class="n">Component</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="nf">PiCalculator</span><span class="p">();</span>
+    <span class="k">public</span> <span class="kt">object</span> <span class="nf">CalculatePi</span><span class="p">(</span><span class="kt">int</span> <span class="n">digits</span><span class="p">,</span> <span class="kt">object</span> <span class="n">stateData</span><span class="p">);</span>
+    <span class="k">public</span> <span class="k">void</span> <span class="nf">CancelAsync</span><span class="p">(</span><span class="kt">object</span> <span class="n">asyncTask</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Here, what we’ve done is create a new component with a default constructor and a method called <strong>CalculatePi</strong> which takes the number of digits, an optional piece of state data and returns an object.  With this component, I’d like to have multiple outstanding asynchronous operations and so I need some way to track each one to identify it when it completes, and also to cancel it if it runs too long.</p>
+
+<p>Microsoft’s general pattern for this is to use the <strong>stateData</strong> parameter and have the application pass in some unique value to identify the request. This is an ok way to do it, but it puts several restrictions on our implementation:</p>
+
+<ol>
+  <li>The state data must be supplied.</li>
+  <li>The state data must be unique for each operation.</li>
+</ol>
+
+<p>In addition, there’s the possibility of a race condition if I re-use the state data after canceling an operation.  So, to avoid all of these issues, I have the component return the task identifier as part of the request - this is the <strong>object</strong> return value coming back from <strong>CalculatePi</strong>.  I can then use that object to identify the results, and I can pass it into the component’s <strong>CancelAsync</strong> method to cancel a pending request.</p>
+
+<p>So, how do I get my results?  Through a delegate callback of course!  I need to create a delegate signature that uses it.  The general EventHandler callback signature is: <code class="language-plaintext highlighter-rouge">void Method(object sender, EventArgs e)</code> so, we’ll use a derivative of this as our delegate:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">delegate</span> <span class="k">void</span> <span class="nf">PiCalculationCompletedEventHandler</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">PiCalculationEventArgs</span> <span class="n">e</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>Then we’ll create the class which will be used to report the results.  The class is pretty simple - just a data holder really:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">class</span> <span class="nc">PiCalculationEventArgs</span> <span class="p">:</span> <span class="n">EventArgs</span>
+<span class="p">{</span>
+    <span class="k">private</span> <span class="kt">int</span> <span class="n">_digits</span><span class="p">;</span>
+    <span class="k">private</span> <span class="kt">string</span> <span class="n">_value</span><span class="p">;</span>
+    <span class="k">private</span> <span class="kt">bool</span> <span class="n">_canceled</span><span class="p">;</span>
+    <span class="k">private</span> <span class="kt">object</span> <span class="n">_stateData</span><span class="p">;</span>
+    <span class="k">private</span> <span class="kt">object</span> <span class="n">_taskId</span><span class="p">;</span>
+
+    <span class="k">public</span> <span class="kt">object</span> <span class="n">TaskId</span> <span class="p">{</span> <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_taskId</span><span class="p">;</span> <span class="p">}</span> <span class="p">}</span>
+    <span class="k">public</span> <span class="kt">object</span> <span class="n">State</span> <span class="p">{</span> <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_stateData</span><span class="p">;</span> <span class="p">}</span> <span class="p">}</span>
+    <span class="k">public</span> <span class="kt">bool</span> <span class="n">Canceled</span> <span class="p">{</span> <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_canceled</span><span class="p">;</span> <span class="p">}</span> <span class="p">}</span>
+    <span class="k">public</span> <span class="kt">int</span> <span class="n">Digits</span> <span class="p">{</span> <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_digits</span><span class="p">;</span> <span class="p">}</span> <span class="p">}</span>
+    <span class="k">public</span> <span class="kt">string</span> <span class="n">Result</span> <span class="p">{</span> <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_value</span><span class="p">;</span> <span class="p">}</span> <span class="p">}</span>
+
+    <span class="k">internal</span> <span class="nf">PiCalculationEventArgs</span><span class="p">(</span><span class="kt">object</span> <span class="n">taskId</span><span class="p">,</span> <span class="kt">int</span> <span class="n">digits</span><span class="p">,</span> <span class="kt">string</span> <span class="k">value</span><span class="p">,</span> <span class="kt">object</span> <span class="n">stateData</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">canceled</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">_digits</span> <span class="p">=</span> <span class="n">digits</span><span class="p">;</span>
+        <span class="n">_value</span> <span class="p">=</span> <span class="k">value</span><span class="p">;</span>
+        <span class="n">_canceled</span> <span class="p">=</span> <span class="n">canceled</span><span class="p">;</span>
+        <span class="n">_stateData</span> <span class="p">=</span> <span class="n">stateData</span><span class="p">;</span>
+        <span class="n">_taskId</span> <span class="p">=</span> <span class="n">taskId</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Now we can implement out component.  First, we’ll add a <em>Completed</em> event:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">event</span> <span class="n">PiCalculationCompletedEventHandler</span> <span class="n">CalculationComplete</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>This will be used by the application to hook into the results of our component’s calculation.  The next part is the key to all of this - <strong>AsyncOperation</strong>.  The <strong>AsyncOperation</strong> class is new to 2.0 and provides the facility to perform callbacks on the appropriate thread.  Essentially, it acts as a callback mediator - detecting the type of thread it was created on and then providing the appropriate marshaling code for it’s internal delegate.  You utilize the callback through a new delegate type – <strong>SendOrPostCallback</strong>.  We tie our callback to this delegate type and it will marshal us to the correct threading model.  We can then execute our own internal <strong>CalculationComplete</strong> event.  Here’s the basic skeleton:  First, we will create an internal contained class which will be used to track the request.  This will actually be the object type we return from the <strong>CalculatePi</strong> method:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">AsyncStateData</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="n">AsyncOperation</span> <span class="n">asyncOperation</span><span class="p">;</span>
+    <span class="k">public</span> <span class="k">volatile</span> <span class="kt">bool</span> <span class="n">canceled</span> <span class="p">=</span> <span class="k">false</span><span class="p">;</span>
+    <span class="k">public</span> <span class="k">volatile</span> <span class="kt">bool</span> <span class="n">running</span> <span class="p">=</span> <span class="k">true</span><span class="p">;</span>
+
+    <span class="k">public</span> <span class="nf">AsyncStateData</span><span class="p">(</span><span class="kt">object</span> <span class="n">stateData</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">asyncOperation</span> <span class="p">=</span> <span class="n">AsyncOperationManager</span><span class="p">.</span><span class="nf">CreateOperation</span><span class="p">(</span><span class="n">stateData</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Notice the call to <strong>AsyncOperationManager.CreateOperation</strong>?  This is where we create our <strong>AsyncOperation</strong> class and this factory creator is the context detector.  We will have an <strong>AsyncOperation</strong> for each event we intend to fire back into the client - in our case one for each Pi calculation.  But, I could also create a single instance for the client as well - this is actually what is done in the ITapi3 component to allow it to be integrated onto a Windows Form even though events are being received on a background thread.  The Tapi events are always fired on the appropriate thread - the background one for non-WinForms apps and the UI thread for WinForms apps.</p>
+
+<p>Next, we will create our internal callback - this is the callback that will actually be fired internally and then call the real application event, so we’ll hook that up with an anonymous delegate in the constructor of our component:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">private</span> <span class="n">SendOrPostCallback</span> <span class="n">completionMethodDelegate</span><span class="p">;</span>
+
+<span class="k">public</span> <span class="nf">PiCalculator</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="n">completionMethodDelegate</span> <span class="p">=</span> <span class="k">delegate</span><span class="p">(</span><span class="kt">object</span> <span class="n">evt</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="c1">// Called on the synchronization thread.</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">CalculationComplete</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+            <span class="nf">CalculationComplete</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="p">(</span><span class="n">PiCalculationEventArgs</span><span class="p">)</span><span class="n">evt</span><span class="p">);</span>
+    <span class="p">};</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Now, let’s implement our <code class="language-plaintext highlighter-rouge">CalculatePi</code> method - it’s pretty simple, we’ll use an async delegate to our internal calculator, invoke it and return the <strong>AsyncStateData</strong> structure we create to identify each task submitted to the component.  Then the calculation will be performed on a thread pool thread and we’ll callback to the client when it is finished.</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="kt">object</span> <span class="nf">CalculatePi</span><span class="p">(</span><span class="kt">int</span> <span class="n">digits</span><span class="p">,</span> <span class="kt">object</span> <span class="n">stateData</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">PiDelegate</span> <span class="n">piDel</span> <span class="p">=</span> <span class="n">InternalCalculatePi</span><span class="p">;</span>
+    <span class="n">AsyncStateData</span> <span class="n">asyncData</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">AsyncStateData</span><span class="p">(</span><span class="n">stateData</span><span class="p">);</span>
+    <span class="n">piDel</span><span class="p">.</span><span class="nf">BeginInvoke</span><span class="p">(</span><span class="n">digits</span><span class="p">,</span> <span class="n">asyncData</span><span class="p">,</span> <span class="k">delegate</span><span class="p">(</span><span class="n">IAsyncResult</span> <span class="n">ar</span><span class="p">)</span> <span class="p">{</span> <span class="n">piDel</span><span class="p">.</span><span class="nf">EndInvoke</span><span class="p">(</span><span class="n">ar</span><span class="p">);</span> <span class="p">},</span> <span class="k">null</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">asyncData</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">CancelAsync</code> is pretty simple too – it will simply set the <strong>Canceled</strong> flag of the request:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">void</span> <span class="nf">CancelAsync</span><span class="p">(</span><span class="kt">object</span> <span class="n">asyncTask</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">AsyncStateData</span> <span class="n">asyncData</span> <span class="p">=</span> <span class="n">asyncTask</span> <span class="n">asAsyncStateData</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">asyncData</span> <span class="p">!=</span> <span class="k">null</span> <span class="p">&amp;&amp;</span> <span class="n">asyncData</span><span class="p">.</span><span class="n">running</span> <span class="p">==</span> <span class="k">true</span><span class="p">)</span>
+        <span class="n">asyncData</span><span class="p">.</span><span class="n">canceled</span> <span class="p">=</span> <span class="k">true</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Now, we need to implement our PiCalculator.  We’re going to cheese out here and just “pretend” to calculate Pi since that wasn’t really the point of this component. We’ll define a delegate to use for the async execution and then implement our function:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">private</span> <span class="k">delegate</span> <span class="k">void</span> <span class="nf">PiDelegate</span><span class="p">(</span><span class="kt">int</span> <span class="n">digits</span><span class="p">,</span> <span class="n">AsyncStateData</span> <span class="n">asyncData</span><span class="p">);</span>
+
+<span class="k">private</span> <span class="k">void</span> <span class="nf">InternalCalculatePi</span><span class="p">(</span><span class="kt">int</span> <span class="n">digits</span><span class="p">,</span> <span class="n">AsyncStateData</span> <span class="n">asyncData</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="c1">// This would be a real calculator here..</span>
+    <span class="kt">string</span> <span class="n">PI_DIGITS</span> <span class="p">=</span> <span class="s">"3.141592637309238932482438234724782347234"</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">digits</span> <span class="p">&gt;</span> <span class="n">PI_DIGITS</span><span class="p">.</span><span class="n">Length</span> <span class="p">-</span> <span class="m">2</span><span class="p">)</span>
+        <span class="n">digits</span> <span class="p">=</span> <span class="n">PI_DIGITS</span><span class="p">.</span><span class="n">Length</span> <span class="p">-</span> <span class="m">2</span><span class="p">;</span>
+
+    <span class="kt">int</span> <span class="n">completedDigits</span> <span class="p">=</span> <span class="m">0</span><span class="p">;</span>
+    <span class="k">for</span> <span class="p">(;</span> <span class="p">!</span><span class="n">asyncData</span><span class="p">.</span><span class="n">canceled</span> <span class="p">&amp;&amp;</span> <span class="n">completedDigits</span> <span class="p">&lt;</span> <span class="n">digits</span><span class="p">;</span> <span class="n">completedDigits</span><span class="p">++)</span>
+    <span class="p">{</span>
+        <span class="n">Thread</span><span class="p">.</span><span class="nf">Sleep</span><span class="p">(</span><span class="m">1000</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="n">asyncData</span><span class="p">.</span><span class="n">running</span> <span class="p">=</span> <span class="k">false</span><span class="p">;</span>
+    <span class="kt">string</span> <span class="n">data</span> <span class="p">=</span> <span class="n">PI_DIGITS</span><span class="p">.</span><span class="nf">Substring</span><span class="p">(</span><span class="m">0</span><span class="p">,</span> <span class="n">completedDigits</span> <span class="p">+</span> <span class="m">2</span><span class="p">);</span>
+    <span class="n">asyncData</span><span class="p">.</span><span class="n">asyncOperation</span><span class="p">.</span><span class="nf">PostOperationCompleted</span><span class="p">(</span><span class="n">completionMethodDelegate</span><span class="p">,</span>
+        <span class="k">new</span> <span class="nf">PiCalculationEventArgs</span><span class="p">(</span><span class="n">asyncData</span><span class="p">,</span> <span class="n">digits</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">asyncData</span><span class="p">.</span><span class="n">asyncOperation</span><span class="p">.</span><span class="n">UserSuppliedState</span><span class="p">,</span> <span class="n">asyncData</span><span class="p">.</span><span class="n">canceled</span><span class="p">));</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The key to the callback is the invocation of the <strong>PostOperationCompleted</strong> method from the <strong>AsyncOperation</strong> instance we created.  It is what calls our handler which will in turn call the client.  Once <strong>PostOperationCompleted</strong> is called, no further work may be done with the <strong>AsyncOperation</strong>.  So, it’s not appropriate for progress reporting - instead you can use <strong>PostOperateration</strong> for that which allows for multiple calls.</p>
+
+<p>Now, when using this component, we can simply call it as expected:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">static</span> <span class="k">void</span> <span class="nf">Main</span><span class="p">(</span><span class="kt">string</span><span class="p">[]</span> <span class="n">args</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">ArrayList</span> <span class="n">taskIds</span> <span class="p">=</span> <span class="nf">newArrayList</span><span class="p">();</span>
+    <span class="n">PiCalculator</span> <span class="n">piCalc</span> <span class="p">=</span> <span class="nf">newPiCalculator</span><span class="p">();</span>
+    <span class="n">piCalc</span><span class="p">.</span><span class="n">CalculationComplete</span> <span class="p">+=</span> <span class="k">delegate</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">PiCalculationEventArgs</span> <span class="n">e</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"[{0}] {1} = {2}, Canceled = {3}"</span><span class="p">,</span>
+            <span class="n">Thread</span><span class="p">.</span><span class="n">CurrentThread</span><span class="p">.</span><span class="n">ManagedThreadId</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">Digits</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">Result</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">Canceled</span><span class="p">);</span>
+    <span class="p">};</span>
+
+    <span class="k">foreach</span> <span class="p">(</span><span class="kt">string</span> <span class="n">s</span> <span class="k">in</span> <span class="n">args</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">taskIds</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="n">piCalc</span><span class="p">.</span><span class="nf">CalculatePi</span><span class="p">(</span><span class="n">Convert</span><span class="p">.</span><span class="nf">ToInt32</span><span class="p">(</span><span class="n">s</span><span class="p">),</span> <span class="n">s</span><span class="p">));</span>
+    <span class="p">}</span>
+
+    <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Waiting for results .. press ENTER to cancel."</span><span class="p">);</span> <span class="n">Console</span><span class="p">.</span><span class="nf">ReadLine</span><span class="p">();</span>
+    <span class="k">foreach</span> <span class="p">(</span><span class="kt">object</span> <span class="n">task</span> <span class="k">in</span> <span class="n">taskIds</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">piCalc</span><span class="p">.</span><span class="nf">CancelAsync</span><span class="p">(</span><span class="n">task</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Press ENTER to terminate"</span><span class="p">);</span>
+    <span class="n">Console</span><span class="p">.</span><span class="nf">ReadLine</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Here’s the output:</p>
+
+<div class="language-console highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="go">Waiting for results .. press ENTER to cancel.
+[3] 10 = 3.1415926373, Canceled = False
+[4] 11 = 3.14159263730, Canceled = False
+[5] 14 = 3.14159263730923, Canceled = False
+[5] 15 = 3.141592637309238, Canceled = False
+[5] 17 = 3.14159263730923893, Canceled = False
+
+Press ENTER to terminate
+[5] 20 = 3.1415926373092389324, Canceled = True
+</span></code></pre></div></div>
+
+<p>Not very exciting right?  Notice the thread id in the [brackets] is different for some of the callbacks.  This indicates we are getting called back on different threads - certainly not the main thread which is waiting for console input.  The cool part of this component is that <em>I can use it exactly the same way in a Windows Forms application!</em>  So, I don’t have to <em>know</em> that the callback is on a different thread!  I don’t have to worry about doing a <strong>BeginInvoke</strong> or <strong>Invoke</strong> to get back to the UI thread.  So, here’s an example WinForm application:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">partial</span> <span class="k">class</span> <span class="nc">CalcPiTestForm</span> <span class="p">:</span> <span class="n">Form</span>
+<span class="p">{</span>
+    <span class="n">ArrayList</span> <span class="n">_pendingTasks</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">ArrayList</span><span class="p">();</span>
+
+    <span class="k">public</span> <span class="nf">CalcPiTestForm</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="nf">InitializeComponent</span><span class="p">();</span>
+    <span class="p">}</span>
+
+    <span class="k">private</span> <span class="k">void</span> <span class="nf">CalcPiTestForm_Load</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">EventArgs</span> <span class="n">e</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">piCalculator1</span><span class="p">.</span><span class="n">CalculationComplete</span> <span class="p">+=</span> <span class="k">new</span> <span class="n">UserMath</span><span class="p">.</span><span class="nf">PiCalculationCompletedEventHandler</span><span class="p">(</span><span class="n">piCalculator1_CalculationComplete</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">void</span> <span class="nf">piCalculator1_CalculationComplete</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">UserMath</span><span class="p">.</span><span class="n">PiCalculationEventArgs</span> <span class="n">e</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="k">lock</span><span class="p">(</span><span class="n">_pendingTasks</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="n">_pendingTasks</span><span class="p">.</span><span class="nf">Remove</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">TaskId</span><span class="p">);</span>
+        <span class="p">}</span>
+
+        <span class="c1">// No need to do BeginInvoke here!!</span>
+        <span class="n">listBox1</span><span class="p">.</span><span class="n">Items</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="kt">string</span><span class="p">.</span><span class="nf">Format</span><span class="p">(</span><span class="s">"[{0}] {1} = {2}, Canceled = {3}"</span><span class="p">,</span>
+            <span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">Thread</span><span class="p">.</span><span class="n">CurrentThread</span><span class="p">.</span><span class="n">ManagedThreadId</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">Digits</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">Result</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">Canceled</span><span class="p">));</span>
+    <span class="p">}</span>
+
+    <span class="k">private</span> <span class="k">void</span> <span class="nf">btnCalculate_Click</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">EventArgs</span> <span class="n">e</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">maskedTextBox1</span><span class="p">.</span><span class="n">Text</span><span class="p">.</span><span class="n">Length</span> <span class="p">&gt;</span> <span class="m">0</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="k">lock</span><span class="p">(</span><span class="n">_pendingTasks</span><span class="p">)</span>
+                <span class="n">_pendingTasks</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="n">piCalculator1</span><span class="p">.</span><span class="nf">CalculatePi</span><span class="p">(</span><span class="n">Convert</span><span class="p">.</span><span class="nf">ToInt32</span><span class="p">(</span><span class="n">maskedTextBox1</span><span class="p">.</span><span class="n">Text</span><span class="p">)));</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">private</span> <span class="k">void</span> <span class="nf">btnCancel_Click</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">EventArgs</span> <span class="n">e</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="k">lock</span><span class="p">(</span><span class="n">_pendingTasks</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="k">foreach</span> <span class="p">(</span><span class="kt">object</span> <span class="n">task</span> <span class="k">in</span> <span class="n">_pendingTasks</span><span class="p">)</span>
+                <span class="n">piCalculator1</span><span class="p">.</span><span class="nf">CancelAsync</span><span class="p">(</span><span class="n">task</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><img src="/images/pi-calculator.jpg" alt="" /></p>
+
+<p>Notice the output here – we haven’t done anything special with the component’s callbacks, but now the callback is <em>always</em> on thread [1].  This is the magic of <strong>AsyncOperation</strong> and synchronization contexts.  Now go out there and write some thread-aware components!  If you’d like this entire sample, <a href="/samples/asyncop.zip">here is the project</a></p>
+
+  </div><a class="u-url" href="/dotnet/2006/03/19/creating-synchronization-sensitive-components.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

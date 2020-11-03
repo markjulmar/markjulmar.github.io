@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Problem with MEF in Windows 8 style apps (Metro) | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="Problem with MEF in Windows 8 style apps (Metro)" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="I noticed when I use NuGet to add MVVMHelpers, the app refuses to start. I get the following error:" />
+<meta property="og:description" content="I noticed when I use NuGet to add MVVMHelpers, the app refuses to start. I get the following error:" />
+<link rel="canonical" href="http://localhost:4000/mvvm/2012/08/23/problem-with-mef-in-windows-8-style-apps-metro.html" />
+<meta property="og:url" content="http://localhost:4000/mvvm/2012/08/23/problem-with-mef-in-windows-8-style-apps-metro.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2012-08-23T19:00:00-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Problem with MEF in Windows 8 style apps (Metro)" />
+<script type="application/ld+json">
+{"headline":"Problem with MEF in Windows 8 style apps (Metro)","dateModified":"2012-08-23T19:00:00-05:00","datePublished":"2012-08-23T19:00:00-05:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/mvvm/2012/08/23/problem-with-mef-in-windows-8-style-apps-metro.html"},"description":"I noticed when I use NuGet to add MVVMHelpers, the app refuses to start. I get the following error:","url":"http://localhost:4000/mvvm/2012/08/23/problem-with-mef-in-windows-8-style-apps-metro.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Problem with MEF in Windows 8 style apps (Metro)</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2012-08-23T19:00:00-05:00" itemprop="datePublished">Aug 23, 2012
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>I noticed when I use NuGet to add MVVMHelpers, the app refuses to start.  I get the following error:</p>
+
+<blockquote>
+  <p>“Unable to activate Windows Store app xxx, The activation request failed with error ‘The app didn’t start’.”</p>
+</blockquote>
+
+<p><img src="/images/vserr_metro.png" alt="" title="Metro App Error" /></p>
+
+<p>Wow. Totally unhelpful - even chasing down the event logs didn’t really help much other than to show me a lot of weird errors get logged from Metro apps about tiles!</p>
+
+<p>After experimenting a bit, it turns out the fix is quite simple.  MVVMHelpers relies on MEF for composition and dependency injection.  The MEF package (<strong>Microsoft.Composition</strong>) which also gets included, adds an <strong>app.config</strong> with a bunch of assembly binding instructions for version redirection - this is what is causing the failure.  I presume these are for the desktop version of .NET and just don’t work with Windows 8 apps. Here’s what got added to mine:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;runtime&gt;</span>
+    <span class="nt">&lt;assemblyBinding</span> <span class="na">xmlns=</span><span class="s">"urn:schemas-microsoft-com:asm.v1"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;dependentAssembly&gt;</span>
+            <span class="nt">&lt;assemblyIdentity</span> <span class="na">name=</span><span class="s">"System.Composition.TypedParts"</span> <span class="na">publicKeyToken=</span><span class="s">"b03f5f7f11d50a3a"</span> <span class="na">culture=</span><span class="s">"neutral"</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;bindingRedirect</span> <span class="na">oldVersion=</span><span class="s">"0.0.0.0-1.0.15.0"</span> <span class="na">newVersion=</span><span class="s">"1.0.15.0"</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/dependentAssembly&gt;</span>
+        <span class="nt">&lt;dependentAssembly&gt;</span>
+            <span class="nt">&lt;assemblyIdentity</span> <span class="na">name=</span><span class="s">"System.Composition.Hosting"</span> <span class="na">publicKeyToken=</span><span class="s">"b03f5f7f11d50a3a"</span> <span class="na">culture=</span><span class="s">"neutral"</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;bindingRedirect</span> <span class="na">oldVersion=</span><span class="s">"0.0.0.0-1.0.15.0"</span> <span class="na">newVersion=</span><span class="s">"1.0.15.0"</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/dependentAssembly&gt;</span>
+        <span class="nt">&lt;dependentAssembly&gt;</span>
+            <span class="nt">&lt;assemblyIdentity</span> <span class="na">name=</span><span class="s">"System.Composition.Runtime"</span> <span class="na">publicKeyToken=</span><span class="s">"b03f5f7f11d50a3a"</span> <span class="na">culture=</span><span class="s">"neutral"</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;bindingRedirect</span> <span class="na">oldVersion=</span><span class="s">"0.0.0.0-1.0.15.0"</span> <span class="na">newVersion=</span><span class="s">"1.0.15.0"</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/dependentAssembly&gt;</span>
+        <span class="nt">&lt;dependentAssembly&gt;</span>
+            <span class="nt">&lt;assemblyIdentity</span> <span class="na">name=</span><span class="s">"System.Composition.AttributedModel"</span> <span class="na">publicKeyToken=</span><span class="s">"b03f5f7f11d50a3a"</span> <span class="na">culture=</span><span class="s">"neutral"</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;bindingRedirect</span> <span class="na">oldVersion=</span><span class="s">"0.0.0.0-1.0.15.0"</span> <span class="na">newVersion=</span><span class="s">"1.0.15.0"</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/dependentAssembly&gt;</span>
+    <span class="nt">&lt;/assemblyBinding&gt;</span>
+<span class="nt">&lt;/runtime&gt;</span>
+</code></pre></div></div>
+
+<p>Remove the <strong>app.config</strong> to solve the problem. I hope that saves somebody some time and grief! Happy coding!</p>
+
+  </div><a class="u-url" href="/mvvm/2012/08/23/problem-with-mef-in-windows-8-style-apps-metro.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

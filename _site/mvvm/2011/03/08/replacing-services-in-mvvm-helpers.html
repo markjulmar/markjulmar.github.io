@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Replacing Services in MVVM Helpers | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="Replacing Services in MVVM Helpers" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="One of the key features in any good library is to provide a wide set of services for applications to use, but also some level of flexibility to replace those services when the built-in implementation aren’t what is needed." />
+<meta property="og:description" content="One of the key features in any good library is to provide a wide set of services for applications to use, but also some level of flexibility to replace those services when the built-in implementation aren’t what is needed." />
+<link rel="canonical" href="http://localhost:4000/mvvm/2011/03/08/replacing-services-in-mvvm-helpers.html" />
+<meta property="og:url" content="http://localhost:4000/mvvm/2011/03/08/replacing-services-in-mvvm-helpers.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2011-03-08T18:00:00-06:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Replacing Services in MVVM Helpers" />
+<script type="application/ld+json">
+{"headline":"Replacing Services in MVVM Helpers","dateModified":"2011-03-08T18:00:00-06:00","datePublished":"2011-03-08T18:00:00-06:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/mvvm/2011/03/08/replacing-services-in-mvvm-helpers.html"},"description":"One of the key features in any good library is to provide a wide set of services for applications to use, but also some level of flexibility to replace those services when the built-in implementation aren’t what is needed.","url":"http://localhost:4000/mvvm/2011/03/08/replacing-services-in-mvvm-helpers.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Replacing Services in MVVM Helpers</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2011-03-08T18:00:00-06:00" itemprop="datePublished">Mar 8, 2011
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>One of the key features in any good library is to provide a wide set of services for applications to use, but also some level of flexibility to replace those services when the built-in implementation aren’t what is needed.</p>
+
+<p>MVVM Helpers provides this capability using the Managed Extensibility Framework (MEF) which is built into .NET 4.0 and provided on <a href="http://mef.codeplex.com">http://mef.codeplex.com</a> for .NET 3.5.  MEF allows you to compose your application dynamically – looking up concrete implementations for interfaces or base classes through a set of registered catalogs.  MVVM Helpers automatically registers the current AppBase directory (where the .EXE loads from) as the primary catalog directory and puts all the JulMar assemblies at the end of the search list.  This allows the application to replace any service except MEF itself.  In addition, one of the features added to MVVMHelpers 4.03 was the ability to add other search paths (extension directories for example).</p>
+
+<p>As an example, let’s build a simple application that uses the built-in <strong>IMessageVisualizer</strong> and <strong>INotificationVisualizer</strong> services.</p>
+
+<p>I’ll start with a brand-new WPF application and add MVVMHelpers through NuGet – a new service from Microsoft for adding dependencies easily:</p>
+
+<p><img src="/images/image_thumb.png" alt="image" title="image" /></p>
+
+<p>Next, let’s add a single button and a TextBlock to the window, in two equally spaced rows – binding the first to a command called “CalculatePi” and the second to some text “PiText”.</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;Grid&gt;</span>
+    <span class="nt">&lt;Grid.RowDefinitions&gt;</span>
+        <span class="nt">&lt;RowDefinition</span> <span class="nt">/&gt;</span>
+        <span class="nt">&lt;RowDefinition</span> <span class="nt">/&gt;</span>
+    <span class="nt">&lt;/Grid.RowDefinitions&gt;</span>
+    <span class="nt">&lt;Button</span> <span class="na">Content=</span><span class="s">"Do Some Long-Running Work"</span> <span class="na">Command=</span><span class="s">"{Binding CalculatePi}"</span>
+             <span class="na">HorizontalAlignment=</span><span class="s">"Center"</span> <span class="na">VerticalAlignment=</span><span class="s">"Center"</span> <span class="na">Padding=</span><span class="s">"10,5"</span> <span class="nt">/&gt;</span>
+    <span class="nt">&lt;TextBlock</span> <span class="na">Text=</span><span class="s">"{Binding PiText}"</span> <span class="na">Foreground=</span><span class="s">"Blue"</span> <span class="na">FontSize=</span><span class="s">"16pt"</span> <span class="na">Grid.Row=</span><span class="s">"1"</span>
+                                 <span class="na">HorizontalAlignment=</span><span class="s">"Center"</span> <span class="na">VerticalAlignment=</span><span class="s">"Center"</span> <span class="nt">/&gt;</span>
+<span class="nt">&lt;/Grid&gt;</span>
+</code></pre></div></div>
+
+<p>Next, we’ll create a new ViewModel, I’ll name it MainViewModel to hold these two data elements (an <strong>ICommand</strong> and a <strong>string</strong>).  In the sample I’m using the ViewModelCreator extension to bind the View and the ViewModel, but you could use your technique of preference – here’s my markup:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;Window</span> <span class="na">x:Class=</span><span class="s">"ServiceReplacement.MainWindow"</span>
+        <span class="na">xmlns=</span><span class="s">"http://schemas.microsoft.com/winfx/2006/xaml/presentation"</span>
+        <span class="na">xmlns:x=</span><span class="s">"http://schemas.microsoft.com/winfx/2006/xaml"</span>
+        <span class="na">xmlns:julmar=</span><span class="s">"http://127.0.0.1:8080/wpfhelpers"</span>
+        <span class="na">xmlns:ViewModels=</span><span class="s">"clr-namespace:ServiceReplacement.ViewModels"</span>
+        <span class="na">DataContext=</span><span class="s">"{julmar:ViewModelCreator ViewModelType={x:Type ViewModels:MainViewModel}}"</span>
+        <span class="na">Title=</span><span class="s">"MainWindow"</span> <span class="na">Height=</span><span class="s">"350"</span> <span class="na">Width=</span><span class="s">"525"</span><span class="nt">&gt;</span>
+</code></pre></div></div>
+
+<p>In the new <strong>MainViewModel</strong> class, I’ll first derive it from the <strong>JulMar.Mvvm.ViewModel</strong> base class – I do this because that class exposes everything from it’s base <strong>SimpleViewModel</strong>, but also provides direct access to the service resolver through a <code class="language-plaintext highlighter-rouge">Resolve&lt;T&gt;</code> method.  Next, I’ll add the two properties and stub out the command:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">class</span> <span class="nc">MainViewModel</span> <span class="p">:</span> <span class="n">ViewModel</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="n">ICommand</span> <span class="n">CalculatePi</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+    <span class="k">private</span> <span class="kt">string</span> <span class="n">_piText</span><span class="p">;</span>
+    <span class="k">public</span> <span class="kt">string</span> <span class="n">PiText</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_piText</span><span class="p">;</span> <span class="p">}</span>
+        <span class="k">set</span>
+        <span class="p">{</span>
+            <span class="n">_piText</span> <span class="p">=</span> <span class="k">value</span><span class="p">;</span>
+            <span class="nf">OnPropertyChanged</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="n">PiText</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">public</span> <span class="nf">MainViewModel</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="n">CalculatePi</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">DelegatingCommand</span><span class="p">(</span><span class="n">OnCalculatePi</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="k">private</span> <span class="k">void</span> <span class="nf">OnCalculatePi</span><span class="p">()</span>
+    <span class="p">{</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Notice the use of the expression tree version of <strong>OnPropertyChanged</strong> – you can pass a compile-safe expression to indicate a specific property has changed (or use the string text, or pass nothing to indicate everything has changed). As always, pick the variety you prefer. Now, let’s provide a long-running operation in our OnCalculatePi method, we’ll use a new Task (new to .NET 4.0):</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Task</span><span class="p">.</span><span class="n">Factory</span><span class="p">.</span><span class="nf">StartNew</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="p">{</span> <span class="n">Thread</span><span class="p">.</span><span class="nf">Sleep</span><span class="p">(</span><span class="m">5000</span><span class="p">);</span> <span class="n">PiText</span> <span class="p">=</span> <span class="n">Math</span><span class="p">.</span><span class="n">PI</span><span class="p">.</span><span class="nf">ToString</span><span class="p">();</span> <span class="p">});</span>
+</code></pre></div></div>
+
+<p>Here we will wait for 5 seconds, and then populate our <strong>PiText</strong> property with the text. Ok, now that we’ve got all that out of the way, let’s use the <strong>IMessageVisualizer</strong> service to make sure the user <em>really</em> wants to calculate PI. Recall the interface:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">interface</span> <span class="nc">IMessageVisualizer</span>
+<span class="p">{</span>
+    <span class="n">MessageResult</span> <span class="nf">Show</span><span class="p">(</span><span class="kt">string</span> <span class="n">title</span><span class="p">,</span> <span class="kt">string</span> <span class="n">message</span><span class="p">,</span> <span class="n">MessageButtons</span> <span class="n">buttons</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>This is then implemented internally by MVVM Helpers as a <strong>MessageBox.Show</strong>. We’ll add this as a single test up-front.</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">private</span> <span class="k">void</span> <span class="nf">OnCalculatePi</span><span class="p">()</span>
+<span class="p">{</span>
+   <span class="n">IMessageVisualizer</span> <span class="n">messageVisualizer</span> <span class="p">=</span> <span class="n">Resolve</span><span class="p">&lt;</span><span class="n">IMessageVisualizer</span><span class="p">&gt;();</span>
+   <span class="kt">var</span> <span class="n">result</span> <span class="p">=</span> <span class="n">messageVisualizer</span><span class="p">.</span><span class="nf">Show</span><span class="p">(</span><span class="s">"Calculating Pi"</span><span class="p">,</span>
+            <span class="s">"This operation takes a long time. Are you sure you want to proceed?"</span><span class="p">,</span>
+                     <span class="n">MessageButtons</span><span class="p">.</span><span class="n">YesNo</span><span class="p">);</span>
+   <span class="k">if</span> <span class="p">(</span><span class="n">result</span> <span class="p">==</span> <span class="n">MessageResult</span><span class="p">.</span><span class="n">Yes</span><span class="p">)</span>
+   <span class="p">{</span>
+      <span class="n">Task</span><span class="p">.</span><span class="n">Factory</span><span class="p">.</span><span class="nf">StartNew</span><span class="p">(()</span> <span class="p">=&gt;</span>
+      <span class="p">{</span>
+         <span class="n">Thread</span><span class="p">.</span><span class="nf">Sleep</span><span class="p">(</span><span class="m">5000</span><span class="p">);</span>
+         <span class="n">PiText</span> <span class="p">=</span> <span class="n">Math</span><span class="p">.</span><span class="n">PI</span><span class="p">.</span><span class="nf">ToString</span><span class="p">();</span>
+      <span class="p">});</span>
+   <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Note that we could also use the following as a field in our class – this would be injected by MEF as part of the view construction.</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="n">Import</span><span class="p">]</span>
+<span class="n">IMessageVisualizer</span> <span class="n">messageVisualizer</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Here’ we’ll just use the <code class="language-plaintext highlighter-rouge">Resolve&lt;T&gt;</code> method, but if you prefer Dependency Injection the above works nicely. Running this, produces the expected result:</p>
+
+<p><img src="/images/image_thumb_1.png" alt="image" title="image" /></p>
+
+<p>Next, just to flesh this out, let’s add a call to the <strong>INotificationVisualizer</strong> to provide feedback that an operation is proceeding – recall the interface for this:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">interface</span> <span class="nc">INotificationVisualizer</span> <span class="p">{</span> <span class="n">IDisposable</span> <span class="nf">BeginWait</span><span class="p">(</span><span class="kt">string</span> <span class="n">title</span><span class="p">,</span> <span class="kt">string</span> <span class="n">message</span><span class="p">);</span> <span class="p">}</span>
+</code></pre></div></div>
+
+<p>You call <strong>BeginWait</strong> to start a notification – it returns an <strong>IDisposable</strong> element, once you are done waiting, you dispose that object and the notification is destroyed. The built-in implementation simply provides an hourglass while it’s running – no visualization is actually produced by default. We can add this into our task fairly easily through a continuation:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">private</span> <span class="k">void</span> <span class="nf">OnCalculatePi</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="n">IMessageVisualizer</span> <span class="n">messageVisualizer</span> <span class="p">=</span> <span class="n">Resolve</span><span class="p">&lt;</span><span class="n">IMessageVisualizer</span><span class="p">&gt;();</span>
+    <span class="kt">var</span> <span class="n">result</span> <span class="p">=</span> <span class="n">messageVisualizer</span><span class="p">.</span><span class="nf">Show</span><span class="p">(</span><span class="s">"Calculating Pi"</span><span class="p">,</span>
+            <span class="s">"This operation takes a long time. Are you sure you want to proceed?"</span><span class="p">,</span> <span class="n">MessageButtons</span><span class="p">.</span><span class="n">YesNo</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">result</span> <span class="p">==</span> <span class="n">MessageResult</span><span class="p">.</span><span class="n">Yes</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">IDisposable</span> <span class="n">waitNotify</span> <span class="p">=</span> <span class="n">Resolve</span><span class="p">&lt;</span><span class="n">INotificationVisualizer</span><span class="p">&gt;().</span><span class="nf">BeginWait</span><span class="p">(</span><span class="s">"Working"</span><span class="p">,</span> <span class="s">"Calculating Pi.. Please Wait"</span><span class="p">);</span>
+        <span class="n">Task</span><span class="p">.</span><span class="n">Factory</span><span class="p">.</span><span class="nf">StartNew</span><span class="p">(()</span> <span class="p">=&gt;</span>
+        <span class="p">{</span>
+            <span class="n">Thread</span><span class="p">.</span><span class="nf">Sleep</span><span class="p">(</span><span class="m">5000</span><span class="p">);</span>
+            <span class="n">PiText</span> <span class="p">=</span> <span class="n">Math</span><span class="p">.</span><span class="n">PI</span><span class="p">.</span><span class="nf">ToString</span><span class="p">();</span>
+        <span class="p">}).</span><span class="nf">ContinueWith</span><span class="p">(</span><span class="n">t</span> <span class="p">=&gt;</span> <span class="n">waitNotify</span><span class="p">.</span><span class="nf">Dispose</span><span class="p">(),</span> <span class="n">TaskScheduler</span><span class="p">.</span><span class="nf">FromCurrentSynchronizationContext</span><span class="p">());</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Running this will produce an hourglass while we are waiting for the operation to complete – perfectly reasonable, but perhaps not what we want in this case. Let’s say for example that we’d like a transparent dialog to be displayed with a spinning wait indicator:</p>
+
+<p><img src="/images/image_thumb_2.png" alt="image" title="image" /></p>
+
+<p>This is easily done once you understand the service registration process. Recall that I mentioned that MVVM Helpers places the JulMar assemblies (Julmar.Core, Julmar.Helpers and JulMar.Behaviors) last in the service chain. This simply means that any registered implementation of a service that MEF finds <em>first</em> will be used in place of the default implementation in the MVVM Helpers libraries. It’s actually very easy to do:</p>
+
+<p>As a first step, we need to add a reference to <strong>System.ComponentModel.Composition</strong> – this is used already (as it’s where all the MEF code lives), but in order to expose our own service implementations we need to explicitly add a reference to the application. Replacing a service is really done by providing an implementation for the given service interface (<strong>INotificationService</strong> in this case) and then adding an <strong>[ExportService]</strong> attribute to the implementation.</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="nf">ExportService</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">INotificationVisualizer</span><span class="p">))]</span>
+<span class="k">class</span> <span class="nc">NotificationVisualizer</span> <span class="p">:</span> <span class="n">INotificationVisualizer</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="n">IDisposable</span> <span class="nf">BeginWait</span><span class="p">(</span><span class="kt">string</span> <span class="n">title</span><span class="p">,</span> <span class="kt">string</span> <span class="n">message</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="p">...</span> <span class="n">code</span> <span class="n">goes</span> <span class="n">here</span> <span class="p">...</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>By simply making sure this class is in an assembly that is placed in the AppBase (where your .EXE lives), it will get used anytime something requests the <strong>INotificationVisualizer</strong>. The implementation provided in the sample code displays a notification dialog – where the IDisposable returned object closes the dialog for you. The cool part of this is you don’t change anything in your ViewModel code – it simply invokes the same notification service, but now a dialog is displayed while we are busy sleeping on Pi..</p>
+
+<p>You can use this technique for any of the built-in services, or even use it to create your own services – I often add a logging service for example:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">interface</span> <span class="nc">ITraceService</span>
+<span class="p">{</span>
+    <span class="k">void</span> <span class="nf">Trace</span><span class="p">(</span><span class="n">TraceEventType</span> <span class="n">traceType</span><span class="p">,</span> <span class="kt">string</span> <span class="n">data</span><span class="p">);</span>
+    <span class="k">void</span> <span class="nf">Trace</span><span class="p">(</span><span class="n">TraceEventType</span> <span class="n">traceType</span><span class="p">,</span> <span class="kt">string</span> <span class="n">format</span><span class="p">,</span> <span class="k">params</span> <span class="kt">object</span><span class="p">[]</span> <span class="n">data</span><span class="p">);</span>
+    <span class="p">...</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>I place this interface in some common base assembly that everything in my solutions shares, and then provide an implementation in the main application project -</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="nf">ExportService</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">ITraceService</span><span class="p">))]</span>
+<span class="k">class</span> <span class="nc">TraceService</span> <span class="p">:</span> <span class="n">ITraceService</span>
+<span class="p">{</span>
+   <span class="k">private</span> <span class="k">readonly</span> <span class="n">TraceSource</span> <span class="n">_traceSource</span><span class="p">;</span>
+
+   <span class="k">public</span> <span class="nf">TraceService</span><span class="p">()</span>
+   <span class="p">{</span>
+      <span class="n">_traceSource</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">TraceSource</span><span class="p">(</span><span class="s">"app.trace"</span><span class="p">);</span>
+   <span class="p">}</span>
+
+   <span class="k">public</span> <span class="k">void</span> <span class="nf">Trace</span><span class="p">(</span><span class="n">TraceEventType</span> <span class="n">traceType</span><span class="p">,</span> <span class="kt">string</span> <span class="n">data</span><span class="p">)</span>
+   <span class="p">{</span>
+      <span class="n">_traceSource</span><span class="p">.</span><span class="nf">TraceEvent</span><span class="p">(</span><span class="n">traceType</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="n">data</span><span class="p">);</span>
+   <span class="p">}</span>
+
+   <span class="k">public</span> <span class="k">void</span> <span class="nf">Trace</span><span class="p">(</span><span class="n">TraceEventType</span> <span class="n">traceType</span><span class="p">,</span> <span class="kt">string</span> <span class="n">format</span><span class="p">,</span> <span class="k">params</span> <span class="kt">object</span><span class="p">[]</span> <span class="n">data</span><span class="p">)</span>
+   <span class="p">{</span>
+      <span class="n">_traceSource</span><span class="p">.</span><span class="nf">TraceEvent</span><span class="p">(</span><span class="n">traceType</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="n">format</span><span class="p">,</span> <span class="n">data</span><span class="p">);</span>
+   <span class="p">}</span>
+   <span class="p">...</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>This then makes the service available through the service locator automatically – no need to register or do anything tricky with it. If you’d like to place your services and extensions (such as UI visualization) into another directory, you can do that as well – just make sure to add a catalog as part of your application constructor. For example – if you want to use the folder “Extensions” for all your add-ins, you can add the directory through the Application constructor:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="nf">App</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="n">MefComposer</span><span class="p">.</span><span class="n">Instance</span><span class="p">.</span><span class="nf">AddCatalogResolver</span><span class="p">(</span><span class="k">new</span> <span class="nf">DirectoryCatalog</span><span class="p">(</span><span class="s">"Extensions"</span><span class="p">,</span> <span class="s">"*.dll"</span><span class="p">));</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>This tells MEF to search the given catalog for dependencies as well – again, it will be searched <strong>before</strong> the Julmar core assemblies. Just make sure the directory actually exists or MEF will throw an exception during the first composition (when the MainWindow comes up).</p>
+
+<p>You can also use MEF directly if you choose to have complete control over the catalog structure.</p>
+
+<p>Hopefully that gives some background on service resolution – the full sample is located <a href="/samples/ServiceReplacement.zip">here</a>.</p>
+
+<p>Happy Coding!</p>
+
+  </div><a class="u-url" href="/mvvm/2011/03/08/replacing-services-in-mvvm-helpers.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

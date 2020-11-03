@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>SOS: finding the method bound to an EventHandler with WinDbg. | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="SOS: finding the method bound to an EventHandler with WinDbg." />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="I was preparing a sample memory leak application for an Advanced C# class at Microsoft this past week and debugging through it with SOS.DLL (“Son of Strike”). My prepared application was an ASP.NET application that would leak memory by holding references to the page objects after they had completed their work. I did this by having the page hook up an event handler to a global event and then never remove the handler. This, of course, is bad form because the System.Web.UI.Page object is intended to be a transient object - it goes away at the end of the request - in production code, I would really bind the event to a handler in global.asax instead. But as I said, this was a sample. So, I was debugging through it prior to the class just to make sure it exhibited the behavior I was looking for. I run the web page a few times, noted my working set going up and never coming back down. Next, I used ADPLUS.VBS to take a hang dump of the process. I then loaded this dump up into WinDBG and started poking around. First, I looked at the heap and sure enough I saw a bunch of page objects:" />
+<meta property="og:description" content="I was preparing a sample memory leak application for an Advanced C# class at Microsoft this past week and debugging through it with SOS.DLL (“Son of Strike”). My prepared application was an ASP.NET application that would leak memory by holding references to the page objects after they had completed their work. I did this by having the page hook up an event handler to a global event and then never remove the handler. This, of course, is bad form because the System.Web.UI.Page object is intended to be a transient object - it goes away at the end of the request - in production code, I would really bind the event to a handler in global.asax instead. But as I said, this was a sample. So, I was debugging through it prior to the class just to make sure it exhibited the behavior I was looking for. I run the web page a few times, noted my working set going up and never coming back down. Next, I used ADPLUS.VBS to take a hang dump of the process. I then loaded this dump up into WinDBG and started poking around. First, I looked at the heap and sure enough I saw a bunch of page objects:" />
+<link rel="canonical" href="http://localhost:4000/dotnet/2006/08/31/sos-finding-the-method-bound-to-an-eventhandler-with-windbg.html" />
+<meta property="og:url" content="http://localhost:4000/dotnet/2006/08/31/sos-finding-the-method-bound-to-an-eventhandler-with-windbg.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2006-08-31T19:00:00-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="SOS: finding the method bound to an EventHandler with WinDbg." />
+<script type="application/ld+json">
+{"headline":"SOS: finding the method bound to an EventHandler with WinDbg.","dateModified":"2006-08-31T19:00:00-05:00","datePublished":"2006-08-31T19:00:00-05:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/dotnet/2006/08/31/sos-finding-the-method-bound-to-an-eventhandler-with-windbg.html"},"description":"I was preparing a sample memory leak application for an Advanced C# class at Microsoft this past week and debugging through it with SOS.DLL (“Son of Strike”). My prepared application was an ASP.NET application that would leak memory by holding references to the page objects after they had completed their work. I did this by having the page hook up an event handler to a global event and then never remove the handler. This, of course, is bad form because the System.Web.UI.Page object is intended to be a transient object - it goes away at the end of the request - in production code, I would really bind the event to a handler in global.asax instead. But as I said, this was a sample. So, I was debugging through it prior to the class just to make sure it exhibited the behavior I was looking for. I run the web page a few times, noted my working set going up and never coming back down. Next, I used ADPLUS.VBS to take a hang dump of the process. I then loaded this dump up into WinDBG and started poking around. First, I looked at the heap and sure enough I saw a bunch of page objects:","url":"http://localhost:4000/dotnet/2006/08/31/sos-finding-the-method-bound-to-an-eventhandler-with-windbg.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">SOS: finding the method bound to an EventHandler with WinDbg.</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2006-08-31T19:00:00-05:00" itemprop="datePublished">Aug 31, 2006
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>I was preparing a sample memory leak application for an Advanced C# class at Microsoft this past week and debugging through it with SOS.DLL (“Son of Strike”). My prepared application was an ASP.NET application that would leak memory by holding references to the page objects after they had completed their work. I did this by having the page hook up an event handler to a global event and then never remove the handler.</p>
+
+<p>This, of course, is bad form because the System.Web.UI.Page object is intended to be a transient object - it goes away at the end of the request - in production code, I would really bind the event to a handler in <strong>global.asax</strong> instead. But as I said, this was a sample.</p>
+
+<p>So, I was debugging through it prior to the class just to make sure it exhibited the behavior I was looking for. I run the web page a few times, noted my working set going up and never coming back down. Next, I used <strong>ADPLUS.VBS</strong> to take a hang dump of the process. I then loaded this dump up into WinDBG and started poking around. First, I looked at the heap and sure enough I saw a bunch of page objects:</p>
+
+<pre><code class="language-output">0:000&gt; .load sos
+0:000&gt; !DumpHeap -stat
+total 36955 objects
+Statistics:
+      MT    Count    TotalSize Class Name
+7b4ecd7c        1           12 System.Windows.Forms.ButtonInternal.ButtonPopupAdapter
+7b481f00        1           12 System.Windows.Forms.LinkLabel+LinkComparer
+7b475ca8        1           12 System.Windows.Forms.FormCollection
+7b474f8c        1           12 System.Windows.Forms.Layout.DefaultLayout
+7b4749e0        1           12 System.Windows.Forms.ClientUtils+WeakRefCollection
+7b473ca8        1           12 System.Windows.Forms.Layout.ArrangedElementCollection
+7a755834        1           12 System.Diagnostics.PerformanceCounterCategoryType
+7a753394        1           12 System.Diagnostics.TraceOptions
+7a71a710        1           12 System.Net.TimeoutValidator
+.......
+00166030      891       169744      Free
+054d24d4     3128       187680 System.Web.UI.LiteralControl
+**0548cbd4      519       197220 ASP.default_aspx** 791242ec     1545       297960 System.Collections.Hashtable+bucket[]
+79124670     1185      1090500 System.Char[]
+79124228    11961      1279380 System.Object[]
+790fa3e0    19149      1561392 System.String
+Total 110069 objects
+</code></pre>
+
+<p>So, next I used <strong>DumpHeap</strong> to just look at this specific type by giving it a metadata token:</p>
+
+<pre><code class="language-output">0:000&gt; !DumpHeap -mt 0548cbd4        
+ Address       MT     Size
+.....     
+01854ff0 0548cbd4      380     
+01860130 0548cbd4      380     
+0186b2b4 0548cbd4      380     
+018773f8 0548cbd4      380     
+01882538 0548cbd4      380     
+0188d6bc 0548cbd4      380     
+01898840 0548cbd4      380     
+018a39c4 0548cbd4      380     
+018aeb48 0548cbd4      380     
+total 519 objects
+Statistics:
+      MT    Count    TotalSize Class Name
+0548cbd4      519       197220 ASP.default_aspx
+Total 519 objects
+</code></pre>
+
+<p>I then used the <em>very</em> cool <strong>GCRoot</strong> command to determine why a page instance was still rooted and therefore not collectable.</p>
+
+<blockquote>
+  <p><strong>Note:</strong> it appears that GCRoot doesn’t work well inside VS.NET 2005 - apparently the SOS debugging extension is using some debugger API which isn’t fully supported in VS.NET, so you need to familiarize yourself with WinDBG to do this.</p>
+</blockquote>
+
+<pre><code class="language-output">0:000&gt; !gcroot 018aeb48 
+Note: Roots found on stacks may be false positives. Run "!help gcroot" for
+more info.
+Scan Thread 0 OSTHread 3a8
+Scan Thread 2 OSTHread e8
+Scan Thread 3 OSTHread 1a8
+Scan Thread 6 OSTHread 7d4
+Scan Thread 7 OSTHread 2b4
+Scan Thread 8 OSTHread fdc
+Scan Thread 9 OSTHread eac
+DOMAIN(001E5E08):HANDLE(Pinned):12312f0:Root:0226c498(System.Object[])-&gt;
+018af940(System.EventHandler)-&gt;
+0186c0ac(System.Object[])-&gt;
+018af920(System.EventHandler)-&gt;
+018aeb48(ASP.default_aspx)
+</code></pre>
+
+<p>With this output, I can tell that my default_aspx object is being kept alive through an EventHandler as I expected. The interesting thing about this output is I cannot tell which event handler is keeping it alive - i.e. there is nothing in this root list that points to a specific object holding it other than a object[]. That essentially means this is a static event and there isn’t an actual object around on the heap for it. This just makes the debugging exercise more interesting - after all if it were an instance event then I would see the class name at the top of the root list and we could stop right here.</p>
+
+<p>So, my next step is to dump the event handler to try to identify what method it is wrapping - I could then search the code for this method and find out where it is being bound. I dump out the <strong>EventHandler</strong> object:</p>
+
+<pre><code class="language-output">0:000&gt; !do 018af920
+Name: System.EventHandler
+MethodTable: 7910d61c
+EEClass: 790c3a7c
+Size: 32(0x20) bytes
+ (C:WINDOWSassemblyGAC_32mscorlib2.0.0.0__b77a5c561934e089mscorlib.dll)
+Fields:
+      MT    Field   Offset                 Type VT     Attr    Value Name
+790f9c18  40000f9        4        System.Object  0 instance 018aeb48 _target
+79109208  40000fa        8 ...ection.MethodBase  0 instance 00000000 _methodBase
+790fe160  40000fb        c        System.IntPtr  0 instance 88962888 _methodPtr
+790fe160  40000fc       10        System.IntPtr  0 instance        0 _methodPtrAux
+790f9c18  4000106       14        System.Object  0 instance 00000000 _invocationList
+790fe160  4000107       18        System.IntPtr  0 instance        0 _invocationCount
+</code></pre>
+
+<p>From this I get the internals of the EventHandler object. It gives me some specific information:</p>
+
+<ul>
+  <li>**<em>target** is the object the delegate is holding onto - my <strong>default_aspx</strong> in this case. The value _better</em> match up with my original object!</li>
+  <li><strong>_methodBase</strong> is used for dynamic code and is null here.</li>
+  <li><strong>_methodPtr</strong> is the method associated with the instance, or possibly a dynamically generated thunk for static methods. This is what I’m interested in.</li>
+  <li><strong>_methodPtrAux</strong> is used for static methods; this holds the method descriptor and the <strong>_methodPtr</strong> is a dynamically generated block of code to remove the <strong>this</strong> reference. Noting that this is null, I can infer that this is an instance method bound to the delegate.</li>
+  <li><strong>_invocationList</strong> and <strong>_invocationCount</strong> are used for Multicast Delegates – these are both zero indicating that this is a single delegate and there is no chain to follow.</li>
+</ul>
+
+<p>My next step is to try to get a valid method name from the <strong>_methodPtr</strong> so I convert that to hex and pass it into IP2MD.</p>
+
+<pre><code class="language-output">0:000&gt; !ip2md 0n88962888 
+Failed to request MethodData, not in JIT code range
+</code></pre>
+
+<p>This is a pretty common error and simply means that the method may not have been JITted yet, or may be a dynamic block of code which never went through the JIT compiler. In .NET 1.1 we could start dumping method descriptors and trying to match up the address (DumpClass -md) for this class and it’s base class.</p>
+
+<p>However, under .NET 2.0 this rarely works anymore - the address doesn’t appear to ever match up to a valid descriptor. However, it clearly is part of the managed heap due to it’s address. So, failing to locate this address, I tried disassembling the code:</p>
+
+<pre><code class="language-output">0:000&gt; !u 0n88962888 
+Unmanaged code
+054d7748 e862289b74      call    mscorwks!LogHelp_TerminateOnAssert+0x3f5f (79e89faf)
+054d774d 5e              pop     esi
+054d774e cc              int     3
+054d774f cc              int     3
+054d7750 38c8            cmp     al,cl
+054d7752 48              dec     eax
+054d7753 05a0774d05      add     eax,54D77A0h
+054d7758 0100            add     dword ptr [eax],eax
+054d775a 0011            add     byte ptr [ecx],dl
+054d775c 0000            add     byte ptr [eax],al
+</code></pre>
+
+<p>Humph. This doesn’t even look like valid code to me.. this looks like random data, so I dumped it out:</p>
+
+<pre><code class="language-output">0:000&gt; dd 0n88962888 
+054d7748  9b2862e8 cccc5e74 **0548c838 054d77a0**
+054d7758  11000001 90000000 054d77a0 11000002
+054d7768  90000004 00000000 054d77a0 00000000
+</code></pre>
+
+<p>The third and fourth DWORD look interesting because they appear to fall in the managed heap as well – so I began to dump them out trying to figure out what they were. I found that the first value is a method descriptor:</p>
+
+<pre><code class="language-output">0:000&gt; !dumpmd 0548c838 
+Method Name: _Default.OnDatabaseHasChanged(System.Object, System.EventArgs)
+Class: 054ab574
+MethodTable: 0548c86c
+mdToken: 06000004
+Module: 0548c35c
+IsJitted: no
+m_CodeOrIL: ffffffff
+</code></pre>
+
+<p>It is the real method bound to the delegate instance. The other DWORD appears to be an metadata reference to the event owner itself:</p>
+
+<pre><code class="language-output">0:000&gt; !dumpmt 054d77a0
+EEClass: 0551940c
+Module: 048ac9ec
+Name: DatabaseMonitor
+mdToken: 02000002  (C:WINDOWSMicrosoft.NETFrameworkv2.0.50727Temporary ASP.NET Filesleakypage2a399ab5b1e04c63App_Code.onwg1zqj.dll)
+BaseSize: 0xc
+ComponentSize: 0x0
+Number of IFaces in IFaceMap: 0
+Slots in VTable: 8
+</code></pre>
+
+<p>From here I can see the module that this code is defined in (the dynamically generated App_Code directory) and the name (<strong>DatabaseMonitor</strong>). This gives me enough information to stop here and begin looking at the code itself - specifically where default.aspx binds it’s OnDatabaseHasChanged method to the DatabaseMonitor static class defined somewhere in the App_Code directory. If I didn’t have the source code available, I could locate the module and then save it out to a file through the <strong>savemodule</strong> command:</p>
+
+<pre><code class="language-output">0:000&gt; lm m App_Code_onwg1zqj
+start    end        module name
+04de0000 04de8000   App_Code_onwg1zqj C (no symbols)           
+0:000&gt; !savemodule 04de0000 c:appcode.dll
+3 sections in file
+section 0 - VA=2000, VASize=504, FileAddr=200, FileSize=600
+section 1 - VA=4000, VASize=2c8, FileAddr=800, FileSize=400
+section 2 - VA=6000, VASize=c, FileAddr=c00, FileSize=200
+</code></pre>
+
+<p>I could then ILDasm or Reflector the generated assembly and look for my bug from that.</p>
+
+<p>I <strong>love</strong> SOS and WinDBG.. if only they could match up managed source code to the image I’d abandon VS.NET as a debugger altogether..</p>
+
+  </div><a class="u-url" href="/dotnet/2006/08/31/sos-finding-the-method-bound-to-an-eventhandler-with-windbg.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

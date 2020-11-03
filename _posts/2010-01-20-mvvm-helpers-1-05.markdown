@@ -1,0 +1,31 @@
+---
+title: MVVM Helpers 1.05
+date: 2010-01-20T00:00:00.0000000
+layout: post
+categories: mvvm
+tags: mvvm dotnet
+---
+
+With this post I am starting a new series - I hope to be more consistent in posting at least once or twice a week. To that end, I am going to focus on the WPF/MVVM helper library I use daily. I released an earlier version of it onto the web and have gotten a lot of comments which has been great, so I am releasing the latest version which has a **lot** of changes.
+
+[MVVMHelpers on GitHub](https://github.com/markjulmar/mvvmhelpers)
+
+Read on for the basics of the project structure and files.
+
+## Project Structure
+
+The code is broken into two assemblies: **Julmar.Wpf.Helpers** and **Julmar.Wpf.Behaviors**. The helpers assembly contains core WPF helper classes and MVVM support and the behaviors assembly depends on the **System.Windows.Interactivity** support and provides Blend-based behaviors for a variety of situations.
+
+### Building and Usage
+
+There are pre-built assemblies included in the distribution, but you are free to build the source on your own - I don't include the certificate file (so I can tell versions that I have built) but you are free to delete the certificate from the solution or replace it with your own and build your own binaries from the source code. Or you can take any of the source code, modify it however you like and add it directly to your project.
+
+### Credits
+
+As with most projects, this library has benefited significantly from the community. The WPF Disciples list on has been a particular source for ideas and even source code. There are some source files in the project that I did not author, or where I took a bit of code and modified it to suit my purposes. I have tried to make sure people get credit where appropriate in the source code itself, if I missed anyone I am truly sorry.
+
+### Documentation
+
+As I mentioned earlier, my goal is to produce a set of blog posts that detail how to use the library, but there is also some documentation on each class included in the distribution in the form of a .CHM (Windows Help File). I encourage anyone who wants to use this library to check that out.
+
+![Solution.jpg](/images/Solution.jpg)

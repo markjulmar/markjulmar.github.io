@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>MVVM: Service Locator | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="MVVM: Service Locator" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="In this post, we’ll explore the service locator (called ServiceProvider in the library) and introduce the specific services included with the MVVM Helper library (as of 1.05 anyway)." />
+<meta property="og:description" content="In this post, we’ll explore the service locator (called ServiceProvider in the library) and introduce the specific services included with the MVVM Helper library (as of 1.05 anyway)." />
+<link rel="canonical" href="http://localhost:4000/mvvm/2010/01/26/mvvm-service-locator.html" />
+<meta property="og:url" content="http://localhost:4000/mvvm/2010/01/26/mvvm-service-locator.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2010-01-26T18:00:00-06:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="MVVM: Service Locator" />
+<script type="application/ld+json">
+{"headline":"MVVM: Service Locator","dateModified":"2010-01-26T18:00:00-06:00","datePublished":"2010-01-26T18:00:00-06:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/mvvm/2010/01/26/mvvm-service-locator.html"},"description":"In this post, we’ll explore the service locator (called ServiceProvider in the library) and introduce the specific services included with the MVVM Helper library (as of 1.05 anyway).","url":"http://localhost:4000/mvvm/2010/01/26/mvvm-service-locator.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">MVVM: Service Locator</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2010-01-26T18:00:00-06:00" itemprop="datePublished">Jan 26, 2010
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>In this post, we’ll explore the service locator (called <strong>ServiceProvider</strong> in the library) and introduce the specific services included with the MVVM Helper library (as of 1.05 anyway).</p>
+
+<h3 id="what-is-the-service-locator">What is the Service Locator?</h3>
+
+<p>In a nutshell, the service locator is a <em>resolver</em> for services that your application might need or use.  It relates a type key to a specific object implementation.  This is nothing new – the service locator design pattern has been around forever and is considered a core J2EE pattern (see <a href="http://java.sun.com/blueprints/corej2eepatterns/Patterns/ServiceLocator.html" title="http://java.sun.com/blueprints/corej2eepatterns/Patterns/ServiceLocator.html">ServiceLocator.html</a> for that definition).  In the MVVM Helpers library, this pattern is implemented in the <strong>JulMar.Windows.Mvvm.ServiceProvider</strong> class in <strong>JulMar.Wpf.Helpers.dll</strong>.  In retrospect, I’d prefer it be in a different namespace, but that’s where I stuck it initially.  Here’s what it looks like:</p>
+
+<p><img src="/images/ServiceProviderDefinition_thumb.jpg" alt="ServiceProviderDefinition" title="ServiceProviderDefinition" /></p>
+
+<p>Notice that it implements the <strong>IServiceProvider</strong> interface – this is a base .NET interface used for service resolution and a form of it can be found in the Visual Studio extensibility API, Windows Workflow and a variety of other projects.  The basis for the interface is you call the <strong>GetService</strong> method, passing a System.Type (generally an interface or abstract class type) and it returns the concrete implementation if the resolver knows about it.  This model allows the host to decide what the concrete implementation should be – for example in the Workflow world, the system needs to treat output completely differently for a Console App vs. a web application.  So, a console host might add a service for output that prints a string to the console window, while a web application might define the same service as a redirection to an output page.</p>
+
+<h3 id="ok-i-get-that-now-how-do-i-use-it">Ok, I get that, now how do I use it?</h3>
+
+<p>It’s easy.  From a client perspective, you simply request a service using the interface or class key.  As an example, in the previous post I mentioned the <strong>IMessageVisualizer</strong> interface which allows a ViewModel to popup a message box to notify the user about something.  Given that the VM is supposed to be somewhat technology agnostic and unit testable, we want to hide the implementation of displaying output behind an interface and that’s exactly what <strong>IMessageVisualizer</strong> is for.  To get the concrete implementation, we ask the <strong>ServiceProvider</strong>.  To do that, we need to define an instance of a provider – each instance has it’s own private collection of services that it manages.</p>
+
+<p>For simplicity, the base <strong>JulMar.Windows.Mvvm.ViewModel</strong> class defines a public static <strong>ServiceProvider</strong> property:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">class</span> <span class="nc">ViewModel</span> <span class="p">:</span> <span class="n">SimpleViewModel</span><span class="p">,</span> <span class="n">IDisposable</span>
+<span class="p">{</span>
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Service resolver for view models.  Allows derived</span>
+    <span class="c1">/// types to add/remove</span>
+    <span class="c1">/// services from mapping.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="k">static</span> <span class="k">readonly</span> <span class="n">ServiceProvider</span> <span class="n">ServiceProvider</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>This property can be accessed anywhere in your project and it’s the specific instance that the default services are registered in (more on that in a second).  To get the message visualizer you could do this:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">var</span> <span class="n">messageVisualizer</span> <span class="p">=</span> <span class="n">ViewModel</span><span class="p">.</span><span class="n">ServiceProvider</span><span class="p">.</span><span class="nf">GetService</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">IMessageVisualizer</span><span class="p">))</span> <span class="k">as</span> <span class="n">IMessageVisualizer</span><span class="p">;</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">messageVisualizer</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="c1">// Use message visualizer</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>This invokes the <strong>IServiceProvider.GetService</strong> method to retrieve the service. Since that’s somewhat verbose, there is a typed helper method that cuts down your keystrokes and casts the return type automatically:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">var</span> <span class="n">messageVisualizer</span> <span class="p">=</span> <span class="n">ViewModel</span><span class="p">.</span><span class="n">ServiceProvider</span><span class="p">.</span><span class="n">Resolve</span><span class="p">&lt;</span><span class="n">IMessageVisualizer</span><span class="p">&gt;();</span>
+</code></pre></div></div>
+
+<p>As a shortcut, if you are deriving from the <strong>ViewModel</strong> base class it provides a convenience <code class="language-plaintext highlighter-rouge">Resolve&lt;T&gt;</code> method that cuts it to:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">var</span> <span class="n">messageVisualizer</span> <span class="p">=</span> <span class="n">Resolve</span><span class="p">&lt;</span><span class="n">IMessageVisualizer</span><span class="p">&gt;();</span>
+</code></pre></div></div>
+
+<p>Notice the null check to see if the service exists?  This is because services are dynamic, you register services with the service provider – so if the type key has not been registered the <strong>Resolve</strong> will return null to indicate an unsupported service.</p>
+
+<h3 id="service-registration">Service Registration</h3>
+
+<p>That brings us to registering and unregistering services.  This is accomplished through the <strong>ServiceProvider.Add</strong> and <strong>ServiceProvider.Remove</strong> methods:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">class</span> <span class="nc">ServiceProvider</span> <span class="p">:</span> <span class="n">IServiceProvider</span>
+<span class="p">{</span>
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Adds a new service to the resolver list</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="c1">/// &lt;param name="type"&gt;</span>
+    <span class="c1">/// Service Type (typically an interface)&lt;/param&gt;</span>
+    <span class="c1">/// &lt;param name="value"&gt;Object that implements service&lt;/param&gt;</span>
+    <span class="k">public</span> <span class="k">void</span> <span class="nf">Add</span><span class="p">(</span><span class="n">Type</span> <span class="n">type</span><span class="p">,</span> <span class="kt">object</span> <span class="k">value</span><span class="p">);</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Remove a service</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="c1">/// &lt;param name="type"&gt;Type to remove&lt;/param&gt;</span>
+    <span class="k">public</span> <span class="k">void</span> <span class="nf">Remove</span><span class="p">(</span><span class="n">Type</span> <span class="n">type</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The <strong>Add</strong> method takes a type – you want to use an interface or abstract/virtual base class for extensibility, and an object that implements that interface/base class.</p>
+
+<p>Once the type is registered, future calls to <strong>GetService</strong> (or **Resolve<T>**) will return the given object instance.  Note that some implementations of this pattern allow for lazy instantiation and per-call instance services (i.e. where you get a unique instance on each call to **GetService**).  I’ve not found a need for either of these and so this implementation is very simple.  Thinking about it, I’d probably register an instance that has a method to create the per-call items I need anyway.</T></p>
+
+<p>The <strong>Remove</strong> method takes the type key and throws away the instance it is associated with – future calls made to retrieve the service will return null.</p>
+
+<h4 id="an-example-spell-checking">An Example: Spell Checking</h4>
+
+<p>Say for instance you needed a spell checking service for your application, and multiple ViewModels (and perhaps even view code behind files) will need access to it.  You could use the <strong>ServiceProvider</strong> to cache off your service and then access that instance as a singleton anywhere in your application – or even in other modules that are aware of the interface type.  That’s the idea behind this pattern, it allows you to loosely connect things together and bind them at runtime very easily.</p>
+
+<p>So, first, I’d define a spell checking service interface (note this is an example so I’m keeping it <em>very</em> simple):</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">interface</span> <span class="nc">ISpellCheckService</span>
+<span class="p">{</span>
+    <span class="kt">bool</span> <span class="nf">CheckSpelling</span><span class="p">(</span><span class="kt">string</span> <span class="n">text</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Next, I’d have some concrete implementation of the above interface.  Let’s pretend I called it <strong>DictionarySpellChecker</strong>.  Then, somewhere in my application I add this service to the <strong>ServiceProvider</strong>, I might do this in my <strong>Application</strong> class:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">partial</span> <span class="k">class</span> <span class="nc">App</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="nf">App</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="c1">// Register the spell checker service</span>
+        <span class="n">ViewModel</span><span class="p">.</span><span class="n">ServiceProvider</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">ISpellCheckService</span><span class="p">),</span> <span class="k">new</span> <span class="nf">DictionarySpellChecker</span><span class="p">());</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Then, any class that needs access to the spell check service simply needs to access the proper <strong>ServiceProvider:</strong></p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">var</span> <span class="n">spellChecker</span> <span class="p">=</span> <span class="n">ViewModel</span><span class="p">.</span><span class="n">ServiceProvider</span><span class="p">.</span><span class="n">Resolve</span><span class="p">&lt;</span><span class="n">ISpellCheckService</span><span class="p">&gt;();</span>
+</code></pre></div></div>
+
+<h4 id="creating-your-own-serviceprovider-instance">Creating your own ServiceProvider instance</h4>
+
+<p>Note that here I’m using the ViewModel’s service provider – but that’s just because I know it’s there.  You can use the service provider independently of the ViewModel class.  All you need to do is:</p>
+
+<ol>
+  <li>Create an instance of the <strong>ServiceProvider</strong> class</li>
+  <li>Register your services against that specific instance</li>
+  <li>Make the instance available to anyone who needs the services (i.e. through a singleton property.</li>
+</ol>
+
+<p>You can create as many service providers as you need to encapsulate your services.</p>
+
+<h3 id="built-in-services">Built in services</h3>
+
+<p>The last thing I want to touch on are the built in services in the MVVM Helper library.  There are several services that can be registered, used or replaced in the library for your convenience.  In future blog posts I will detail each service specifically, but I’ll mention them here because they use the <strong>ServiceProvider</strong> as a resolver.</p>
+
+<p>In the project template it registers all the services through a static method call – this is done in the Application constructor:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">partial</span> <span class="k">class</span> <span class="nc">App</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="nf">App</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="c1">// Register the typical services (UI, Error, etc.)</span>
+        <span class="n">ViewModel</span><span class="p">.</span><span class="nf">RegisterKnownServiceTypes</span><span class="p">();</span>
+           <span class="p">...</span>
+   <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>This call to <strong>ViewModel.RegisterKnownServiceTypes</strong> is required to use the built-in services; without it, none of them are registered.  If you look into the <strong>ViewModel</strong> source code, the definition for this method is:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// This method registers known WPF services with the</span>
+<span class="c1">/// service provider.</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="k">public</span> <span class="k">static</span> <span class="k">void</span> <span class="nf">RegisterKnownServiceTypes</span><span class="p">()</span>
+<span class="p">{</span>
+   <span class="n">ServiceProvider</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">IErrorVisualizer</span><span class="p">),</span>
+                       <span class="k">new</span> <span class="nf">ErrorVisualizer</span><span class="p">());</span>
+   <span class="n">ServiceProvider</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">IMessageVisualizer</span><span class="p">),</span>
+                       <span class="k">new</span> <span class="nf">MessageVisualizer</span><span class="p">());</span>
+   <span class="n">ServiceProvider</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">INotificationVisualizer</span><span class="p">),</span>  
+                      <span class="k">new</span> <span class="nf">NotificationVisualizer</span><span class="p">());</span>
+   <span class="n">ServiceProvider</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">IUIVisualizer</span><span class="p">),</span> <span class="k">new</span> <span class="nf">UIVisualizer</span><span class="p">());</span>
+   <span class="n">ServiceProvider</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">IMessageMediator</span><span class="p">),</span>
+                       <span class="k">new</span> <span class="nf">MessageMediator</span><span class="p">());</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>As you can see, it’s just doing what what you would expect – registering a specific implementation for each service interface type.  The services are:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Service</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>IErrorVisualizer</strong></td>
+      <td>Presents an error dialog as a <strong>MessageBox</strong> with an OK button to dismiss it.</td>
+    </tr>
+    <tr>
+      <td><strong>IMessageVisualizer</strong></td>
+      <td>Presents a message dialog as a <strong>MessageBox</strong> with a selectable button set.</td>
+    </tr>
+    <tr>
+      <td><strong>INotificationVisualizer</strong></td>
+      <td>Allows long-running modal operations to present some wait notification (defaults to changing the cursor to an hourglass).</td>
+    </tr>
+    <tr>
+      <td><strong>IUIVisualizer</strong></td>
+      <td>Presents a custom modal or modeless dialog to the user associated with a <strong>ViewModel</strong>.</td>
+    </tr>
+    <tr>
+      <td><strong>IMessageMediator</strong></td>
+      <td>Message transfer service that allows loosely connecting <strong>ViewModels</strong> together.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="replacing-services">Replacing services</h3>
+
+<p>Each service interface has a default implementation registered against it.  If you don’t like the implementation, or prefer to have your own custom implementation, simply add the service again <em>after it was registered</em>.</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">partial</span> <span class="k">class</span> <span class="nc">App</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="nf">App</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="c1">// Register the typical services (UI, Error, etc.)</span>
+        <span class="c1">// for this application.</span>
+        <span class="n">ViewModel</span><span class="p">.</span><span class="nf">RegisterKnownServiceTypes</span><span class="p">();</span>
+        <span class="c1">// Replace the notification visualizer with our cool version..</span>
+        <span class="n">ViewModel</span><span class="p">.</span><span class="n">ServiceProvider</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">INotificationVisualizer</span><span class="p">),</span> <span class="k">new</span> <span class="nf">NotifyWaitBox</span><span class="p">());</span>
+   <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>This will replace the default instance with a new provider – any future calls to retrieve the service will return your new instance.  This can be done at any time, and as many times as you like (as an example, consider a theme service you dynamically replace at runtime as the user selects the theme).</p>
+
+<h3 id="final-warnings">Final Warnings</h3>
+
+<p>There is one warning I need to impart on the service locator.  It holds hard references to the registered instances.  That means if you want the instance to be Garbage Collected prior to the application terminating, you must remove the key from the service provider. This normally isn’t an issue as most services are lifetime services and are intended to be around until the end, but if you are using a transient service and only need it for a short period please remember this point so you don’t create an unintentional memory “leak”.</p>
+
+<p>In the next post we’ll cover the Message, Error and Notification visualization services.  Stay tuned MVVM fans!</p>
+
+  </div><a class="u-url" href="/mvvm/2010/01/26/mvvm-service-locator.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

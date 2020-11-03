@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>MVVM: IUIVisualizer and event management with behaviors | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="MVVM: IUIVisualizer and event management with behaviors" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="In this post, we will look at the IUIVisualizer, and bring together some of the concepts we’ve talked about already through a new sample – a simple picture viewer:" />
+<meta property="og:description" content="In this post, we will look at the IUIVisualizer, and bring together some of the concepts we’ve talked about already through a new sample – a simple picture viewer:" />
+<link rel="canonical" href="http://localhost:4000/mvvm/2010/02/04/mvvm-iuivisualizer-and-event-management-with-behaviors.html" />
+<meta property="og:url" content="http://localhost:4000/mvvm/2010/02/04/mvvm-iuivisualizer-and-event-management-with-behaviors.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2010-02-04T18:00:00-06:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="MVVM: IUIVisualizer and event management with behaviors" />
+<script type="application/ld+json">
+{"headline":"MVVM: IUIVisualizer and event management with behaviors","dateModified":"2010-02-04T18:00:00-06:00","datePublished":"2010-02-04T18:00:00-06:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/mvvm/2010/02/04/mvvm-iuivisualizer-and-event-management-with-behaviors.html"},"description":"In this post, we will look at the IUIVisualizer, and bring together some of the concepts we’ve talked about already through a new sample – a simple picture viewer:","url":"http://localhost:4000/mvvm/2010/02/04/mvvm-iuivisualizer-and-event-management-with-behaviors.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">MVVM: IUIVisualizer and event management with behaviors</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2010-02-04T18:00:00-06:00" itemprop="datePublished">Feb 4, 2010
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>In this post, we will look at the <code class="language-plaintext highlighter-rouge">IUIVisualizer</code>, and bring together some of the concepts we’ve talked about already through a new sample – a simple picture viewer:</p>
+
+<p><img src="/images/mvvm-iuivisualizer-and-event-management-with-behaviors-image_thumb.png" alt="image" title="image" /></p>
+
+<p>The application grabs all the images from the user’s photo folder and then displays each one onto the surface of a corkboard.  You can change the properties of an image, remove an image or add additional images.  It’s not designed to be a true image application ala photoSuru, it’s really more of a sample of MVVM practices with the helper library.  Here’s some of the coding examples present in the sample:</p>
+
+<ul>
+  <li>It registers a <code class="language-plaintext highlighter-rouge">ISelectFile</code> service and implements it as an OpenFileDialog.</li>
+  <li>It displays a “Picture Properties” dialog using the <code class="language-plaintext highlighter-rouge">IUIVisualizer</code> service.</li>
+  <li>It maps mouse DoubleClick on an image into a command in the ViewModel to display the properties.</li>
+  <li>It provides drag support through a behavior on the style.</li>
+</ul>
+
+<p>Let’s look at this four features in particular.  Download the sample from here:</p>
+
+<p><a href="/samples/PictureViewer.zip">PictureViewer</a></p>
+
+<p>Open the project in Visual Studio, it should build and run without any issues.  The project structure is pretty much like all the other samples I’ve blogged about – I’m trying to keep to a consistent model:</p>
+
+<p><img src="/images/mvvm-iuivisualizer-and-event-management-with-behaviors-image_thumb_1.png" alt="image" title="image" /></p>
+
+<h4 id="service-registration">Service Registration</h4>
+
+<p>If you look at the <strong>App.xaml.cs</strong> code behind, you’ll find the registration work being done in the constructor:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="nf">App</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="c1">// Register the typical services (UI, Error, etc.) for this application.</span>
+    <span class="n">ViewModel</span><span class="p">.</span><span class="nf">RegisterKnownServiceTypes</span><span class="p">();</span>
+
+    <span class="c1">// Register the file selector service.</span>
+    <span class="n">ViewModel</span><span class="p">.</span><span class="n">ServiceProvider</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">ISelectFile</span><span class="p">),</span> <span class="k">new</span> <span class="nf">OpenFileDialogSelector</span><span class="p">());</span>
+
+    <span class="c1">// Register the UI dialogs.</span>
+    <span class="kt">var</span> <span class="n">uiVisualizer</span> <span class="p">=</span> <span class="n">ViewModel</span><span class="p">.</span><span class="n">ServiceProvider</span><span class="p">.</span><span class="n">Resolve</span><span class="p">&lt;</span><span class="n">IUIVisualizer</span><span class="p">&gt;();</span>
+        <span class="n">uiVisualizer</span><span class="p">.</span><span class="nf">Register</span><span class="p">(</span><span class="s">"ShowElementProperties"</span><span class="p">,</span> <span class="k">typeof</span><span class="p">(</span><span class="n">PropertyWindow</span><span class="p">));</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>First, note that it registers the standard services – that’s something I always do, even if I don’t anticipate needing them all, it doesn’t hurt to have them there. Next, it adds the file selector service by calling <code class="language-plaintext highlighter-rouge">ServiceProvider.Add</code> on the <code class="language-plaintext highlighter-rouge">ViewModel</code> class.  The interface is defined as a single method:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">namespace</span> <span class="nn">PictureViewer.Interfaces</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="k">interface</span> <span class="nc">ISelectFile</span>
+    <span class="p">{</span>
+        <span class="kt">string</span> <span class="nf">SelectFile</span><span class="p">(</span><span class="kt">string</span> <span class="n">fileFilters</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The registration ties this interface to an implementation that displays the <code class="language-plaintext highlighter-rouge">OpenFileDialog</code>, for testing purposes, that would be replaced with a minimum of two implementations: one that returns null/empty and one that returns a valid filename to test both cases.</p>
+
+<p>The final line in the <strong>app.xaml.cs</strong> file registers a UI dialog to display the properties of the image.  This is done through the <code class="language-plaintext highlighter-rouge">IUIVisualizer</code> interface which is defined in the helper library:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">namespace</span> <span class="nn">JulMar.Windows.Interfaces</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="k">interface</span> <span class="nc">IUIVisualizer</span>
+    <span class="p">{</span>
+        <span class="k">void</span> <span class="nf">Register</span><span class="p">(</span><span class="kt">string</span> <span class="n">key</span><span class="p">,</span> <span class="n">Type</span> <span class="n">winType</span><span class="p">);</span>
+        <span class="kt">bool</span> <span class="nf">Unregister</span><span class="p">(</span><span class="kt">string</span> <span class="n">key</span><span class="p">);</span>
+        <span class="kt">bool</span> <span class="nf">Show</span><span class="p">(</span><span class="kt">string</span> <span class="n">key</span><span class="p">,</span> <span class="kt">object</span> <span class="n">state</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">setOwner</span><span class="p">,</span> <span class="n">EventHandler</span><span class="p">&lt;</span><span class="n">UICompletedEventArgs</span><span class="p">&gt;</span> <span class="n">completedProc</span><span class="p">);</span>
+        <span class="kt">bool</span><span class="p">?</span> <span class="nf">ShowDialog</span><span class="p">(</span><span class="kt">string</span> <span class="n">key</span><span class="p">,</span> <span class="kt">object</span> <span class="n">state</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Notice the <code class="language-plaintext highlighter-rouge">Register</code> and <code class="language-plaintext highlighter-rouge">Unregister</code> methods take a string defined as a “key”.  This is the key that invokers will use to display the UI visually; I often use the typename of the View, but you can use any string here as long as you are consistent in registration vs. invocation.  In this sample, I’ve used the key <code class="language-plaintext highlighter-rouge">“ShowElementProperties”</code> – we’ll see in a moment how it is displayed.  The second parameter for the Register method takes the Type to display.  The type must be a WPF Window-derived type (i.e. <code class="language-plaintext highlighter-rouge">NavigationWindow</code> or <code class="language-plaintext highlighter-rouge">Window</code>) and will represent the View in our MVVM pattern.</p>
+
+<h4 id="displaying-a-ui-with-iuivisualizer">Displaying a UI with IUIVisualizer</h4>
+
+<p>In the <code class="language-plaintext highlighter-rouge">PictureViewModel</code> type, there is an <code class="language-plaintext highlighter-rouge">ICommand</code> that is used to drive the Property window:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// Command to show the image properties.</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="k">public</span> <span class="n">ICommand</span> <span class="n">ShowPropertiesCommand</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+</code></pre></div></div>
+
+<p>The default constructor fills that in with a <code class="language-plaintext highlighter-rouge">DelegatingCommand</code> to jump to a method of the ViewModel:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="nf">PictureViewModel</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="n">_picture</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">PictureInfo</span><span class="p">();</span>
+    <span class="n">ShowPropertiesCommand</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">DelegatingCommand</span><span class="p">(</span><span class="n">ShowProperties</span><span class="p">);</span>
+    <span class="n">SelectNewImageFile</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">DelegatingCommand</span><span class="p">(</span><span class="n">OnSelectNewFile</span><span class="p">);</span>
+    <span class="n">RemovePicture</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">DelegatingCommand</span><span class="p">(</span>
+                  <span class="p">()</span> <span class="p">=&gt;</span> <span class="nf">SendMessage</span><span class="p">(</span><span class="n">MainViewModel</span><span class="p">.</span><span class="n">RemovePictureMessage</span><span class="p">,</span> <span class="k">this</span><span class="p">));</span>
+<span class="p">}</span>
+
+<span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// Display the UI associated with this picture</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="k">internal</span> <span class="k">void</span> <span class="nf">ShowProperties</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="kt">var</span> <span class="n">uiVisualizer</span> <span class="p">=</span> <span class="n">Resolve</span><span class="p">&lt;</span><span class="n">IUIVisualizer</span><span class="p">&gt;();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">uiVisualizer</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">uiVisualizer</span><span class="p">.</span><span class="nf">ShowDialog</span><span class="p">(</span><span class="s">"ShowElementProperties"</span><span class="p">,</span> <span class="k">this</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The handler method is marked as <code class="language-plaintext highlighter-rouge">internal</code> because the <code class="language-plaintext highlighter-rouge">MainViewModel</code> forwards it’s own command to this same method handler (from the menu and toolbar).  Notice that the method first gets the <code class="language-plaintext highlighter-rouge">IUIVisualizer</code> service; you must use the same service instance where you registered the UI view.  Next, it calls <code class="language-plaintext highlighter-rouge">ShowDialog</code> to display a modal view.  It takes two parameters – the view key, and the view model.</p>
+
+<p>A <em>modal view</em> is one that forces the user to interact and dismiss the dialog before they can continue working with the other elements in the application.  It is what, as an example, applications often use for Options dialogs.  <code class="language-plaintext highlighter-rouge">ShowDialog</code> will display the View associated with the given string key (<code class="language-plaintext highlighter-rouge">“ShowElementProperties”</code>).  The second parameter is the ViewModel you want to associate to it – in this case we are passing the associated picture we want to work with.  The dialog is then displayed and allows the user to edit the picture properties:</p>
+
+<p><img src="/images/mvvm-iuivisualizer-and-event-management-with-behaviors-image_thumb_2.png" alt="image" title="image" /></p>
+
+<p>The XAML code for this view is contained in the PropertyWindow.xaml file – it has a couple of interesting elements to it which you will see when you interact with this dialog:</p>
+
+<ol>
+  <li>
+    <p><strong>Watermarked Text display</strong>: if you remove the title, it will display some grayed out text in it’s place “Enter the Title Here”:</p>
+
+    <p><img src="/images/mvvm-iuivisualizer-and-event-management-with-behaviors-image_thumb_3.png" alt="image" title="image" /></p>
+  </li>
+  <li>
+    <p><strong>Numeric TextBox</strong>:  if you move your mouse cursor over the X/Y/Width/Height boxes you will see a sizing arrow that allows you to drag and change the values without typing.  You can also double-click to change the values and it enforces numeric text box behavior.</p>
+
+    <p><img src="/images/mvvm-iuivisualizer-and-event-management-with-behaviors-image_thumb_4.png" alt="image" title="image" /></p>
+  </li>
+</ol>
+
+<p>Both of these are accomplished with Blend Behaviors. There are plenty of resources on the web about these so I won’t go into detail on their creation – check the library source code if you want to see how they work, but using them involves taking a dependency on two assemblies:</p>
+
+<ol>
+  <li><strong>System.Windows.Interactivity.dll</strong></li>
+  <li><strong>JulMar.Wpf.Behaviors.dll</strong></li>
+</ol>
+
+<p>Both of these are included in the Dependencies folder.  The first comes from the Blend SDK and is freely redistributable with your project.  To use them, you add the behavior to the visual element in question, for example, the watermarked textbox behavior gets applied like this:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;TextBox</span> <span class="na">Text=</span><span class="s">"{Binding Title}"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;Interactivity:Interaction.Behaviors&gt;</span>
+    <span class="nt">&lt;julmar:WatermarkTextBoxBehavior</span> <span class="na">Text=</span><span class="s">"Enter the Title Here"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;/Interactivity:Interaction.Behaviors&gt;</span>
+  <span class="nt">&lt;TextBox.Style&gt;</span>
+    <span class="nt">&lt;Style</span> <span class="na">TargetType=</span><span class="s">"TextBox"</span> <span class="na">BasedOn=</span><span class="s">"{StaticResource {x:Type TextBox}}"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;Setter</span> <span class="na">Property=</span><span class="s">"FontStyle"</span> <span class="na">Value=</span><span class="s">"Normal"</span><span class="nt">/&gt;</span>
+      <span class="nt">&lt;Style.Triggers&gt;</span>
+        <span class="nt">&lt;Trigger</span> <span class="na">Property=</span><span class="s">"julmar:WatermarkTextBoxBehavior.IsWatermarked"</span> <span class="na">Value=</span><span class="s">"True"</span><span class="nt">&gt;</span>
+          <span class="nt">&lt;Setter</span> <span class="na">Property=</span><span class="s">"FontStyle"</span> <span class="na">Value=</span><span class="s">"Italic"</span><span class="nt">/&gt;</span>
+          <span class="nt">&lt;Setter</span> <span class="na">Property=</span><span class="s">"Foreground"</span> <span class="na">Value=</span><span class="s">"LightGray"</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/Trigger&gt;</span>
+      <span class="nt">&lt;/Style.Triggers&gt;</span>
+    <span class="nt">&lt;/Style&gt;</span>
+  <span class="nt">&lt;/TextBox.Style&gt;</span>
+<span class="nt">&lt;/TextBox&gt;</span>
+</code></pre></div></div>
+
+<p>I’ve also applied a Trigger to change the font/colors when the TextBox is watermarked.</p>
+
+<p>The numeric behavior looks like this:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;TextBox</span> <span class="na">Grid.Row=</span><span class="s">"5"</span> <span class="na">Text=</span><span class="s">"{Binding Width, UpdateSourceTrigger=PropertyChanged}"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;Interactivity:Interaction.Behaviors&gt;</span>
+        <span class="nt">&lt;julmar:NumericTextBoxBehavior</span> <span class="na">AllowMouseDrag=</span><span class="s">"True"</span> <span class="nt">/&gt;</span>
+    <span class="nt">&lt;/Interactivity:Interaction.Behaviors&gt;</span>
+<span class="nt">&lt;/TextBox&gt;</span>
+</code></pre></div></div>
+
+<p>Notice that I’ve changed the <code class="language-plaintext highlighter-rouge">Binding.UpdateSourceTrigger</code> to be <strong>PropertyChanged</strong> – this is so the dragging effect works properly and updates the value in the underlying view model.</p>
+
+<h4 id="ways-to-invoke-commands-in-the-view">Ways to invoke commands in the view</h4>
+
+<p>So let’s look now at how we get the command executed.  Switching to the <strong>MainWindow.xaml</strong> you will find three places where the Show Properties command is wired up.</p>
+
+<p>First, it can be invoked using a keyboard accelerator. This requires using a <code class="language-plaintext highlighter-rouge">BindableCommand</code> from the library, placing it into resources and then binding against that.  The command we will be executing is the one on the <code class="language-plaintext highlighter-rouge">MainViewModel</code> so it requires the actual picture element as a parameter:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;Window.Resources&gt;</span>
+    <span class="nt">&lt;julmar:BindableCommand</span> <span class="na">x:Key=</span><span class="s">"propsCommand"</span> <span class="na">Command=</span><span class="s">"{Binding ShowPropertiesCommand}"</span> <span class="na">CommandParameter=</span><span class="s">"{Binding SelectedPicture}"</span> <span class="nt">/&gt;</span>
+<span class="nt">&lt;/Window.Resources&gt;</span>
+<span class="nt">&lt;Window.InputBindings&gt;</span>
+    <span class="nt">&lt;KeyBinding</span> <span class="na">Key=</span><span class="s">"r"</span> <span class="na">Modifiers=</span><span class="s">"Ctrl+Alt"</span> <span class="na">Command=</span><span class="s">"{StaticResource propsCommand}"</span> <span class="nt">/&gt;</span>
+<span class="nt">&lt;/Window.InputBindings&gt;</span>
+</code></pre></div></div>
+
+<p>The MainViewModel simply forwards this command onto the PictureViewModel using a typed <code class="language-plaintext highlighter-rouge">DelegatingCommand</code>:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">ShowPropertiesCommand</span> <span class="p">=</span> <span class="k">new</span> <span class="n">DelegatingCommand</span><span class="p">&lt;</span><span class="n">PictureViewModel</span><span class="p">&gt;(</span><span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span><span class="p">.</span><span class="nf">ShowProperties</span><span class="p">(),</span> <span class="n">p</span> <span class="p">=&gt;</span> <span class="n">p</span> <span class="p">!=</span> <span class="k">null</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>Next, we can invoke the command using the menu and toolbar:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;MenuItem</span> <span class="na">Header=</span><span class="s">"_Edit"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;MenuItem</span> <span class="na">Header=</span><span class="s">"Add _New Picture"</span> <span class="na">Command=</span><span class="s">"{Binding AddNewCommand}"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;MenuItem</span> <span class="na">Header=</span><span class="s">"_Remove Picture"</span> <span class="na">Command=</span><span class="s">"{Binding RemoveCommand}"</span> <span class="na">CommandParameter=</span><span class="s">"{Binding SelectedPicture}"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;Separator/&gt;</span>
+  <span class="nt">&lt;MenuItem</span> <span class="na">Header=</span><span class="s">"P_roperties"</span> <span class="na">Command=</span><span class="s">"{Binding ShowPropertiesCommand}"</span> <span class="na">CommandParameter=</span><span class="s">"{Binding SelectedPicture}"</span><span class="nt">/&gt;</span>
+<span class="nt">&lt;/MenuItem&gt;</span>
+   ...
+
+<span class="nt">&lt;ToolBar</span> <span class="na">DockPanel.Dock=</span><span class="s">"Top"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;Button</span> <span class="na">ToolTip=</span><span class="s">"Add New Picture"</span> <span class="na">Command=</span><span class="s">"{Binding AddNewCommand}"</span> <span class="na">Content=</span><span class="s">"+"</span> <span class="na">FontWeight=</span><span class="s">"Bold"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;Button</span> <span class="na">ToolTip=</span><span class="s">"Remove Picture"</span> <span class="na">Command=</span><span class="s">"{Binding RemoveCommand}"</span> <span class="na">CommandParameter=</span><span class="s">"{Binding SelectedPicture}"</span> <span class="na">Content=</span><span class="s">"-"</span> <span class="na">FontWeight=</span><span class="s">"Bold"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;Button</span> <span class="na">ToolTip=</span><span class="s">"Properties"</span> <span class="na">Command=</span><span class="s">"{Binding ShowPropertiesCommand}"</span> <span class="na">CommandParameter=</span><span class="s">"{Binding SelectedPicture}"</span><span class="nt">/&gt;</span>
+   ...
+<span class="nt">&lt;/ToolBar&gt;</span>
+</code></pre></div></div>
+
+<p>Note that here we are also binding to the <strong>MainViewModel</strong> command – so we must supply the parameter using the <strong>CommandParameter</strong>.  The final invocation place is when you double-click on the picture itself.  This is done a little differently if you’ve not done much WPF work.</p>
+
+<h4 id="a-quick-segway--view-code-behind-vs-view-models">A quick segway – View code behind vs. View Models</h4>
+
+<p>First, the display of images is actually housed in a <strong>ListBox</strong>.  It turns out that anytime you need to display multiple things grouped somehow, and allow the user to select one or more of those things, a ListBox is almost always the way to go.  WPF allows us to customize the visuals however we like, so here the panel has been replaced with a <strong>Canvas</strong> (allowing pixel positioning), and each item is drawn as a <strong>DataTemplate</strong>.  The template decides how to render each item in the ListBox – the PictureViewModel in this case.  In the sample, it is rendering an image and an optional TextBlock that is turned on and off through a property (and can be changed through the tool bar).  I encourage you to look at the code to see how all that is done.</p>
+
+<p>One of the core things necessary in MVVM is the ability to interact with visuals and then <em>sometimes</em> push notifications of that interaction back to the view model.  I say “sometimes” because it’s perfectly acceptable to place code into the code behind for the XAML as well. Where you put the logic depends on whether it is view-specific and whether you want to test it independently of the view.  If it’s not view specific OR you want to test it, then move it into the view model.  An example of something that we probably don’t care about is closing the application – I’ve wired it up to a command here just to show that you can, but it’s completely unnecessary to do that.  The view model isn’t doing any closing logic, so it would be fine to wire a handler into the MainWindow.xaml.cs and just call “this.Close()” in there.</p>
+
+<p>Ok, so back to the double-click implementation.  In the <strong>DataTemplate</strong> assigned to the <strong>ListBox.ItemTemplate</strong> property you will find the definition for the image itself:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;Image</span> <span class="na">x:Name=</span><span class="s">"imageHolder"</span> <span class="na">Width=</span><span class="s">"{Binding Width}"</span> <span class="na">Height=</span><span class="s">"{Binding Height}"</span>
+      <span class="na">Source=</span><span class="s">"{Binding Image}"</span> <span class="na">Stretch=</span><span class="s">"Fill"</span>
+       <span class="na">HorizontalAlignment=</span><span class="s">"Center"</span> <span class="na">VerticalAlignment=</span><span class="s">"Center"</span><span class="nt">&gt;</span>
+
+    <span class="nt">&lt;Interactivity:Interaction.Triggers&gt;</span>
+        <span class="nt">&lt;julmar:DoubleClickTrigger&gt;</span>
+        <span class="nt">&lt;julmar:InvokeCommand</span> <span class="na">Command=</span><span class="s">"{Binding ShowPropertiesCommand}"</span> <span class="nt">/&gt;</span>
+        <span class="nt">&lt;/julmar:DoubleClickTrigger&gt;</span>
+        <span class="nt">&lt;/Interactivity:Interaction.Triggers&gt;</span>
+    <span class="nt">&lt;/Image&gt;</span>
+</code></pre></div></div>
+
+<p>Note the use of the Interaction.Triggers tag – this is also part of the Blend behavior implementation.  In this case, we are <em>triggering</em> off something (property change, event, etc.) and then performance some <em>action</em>.  In the <strong>JulMar.Wpf.Behaviors</strong> assembly you will find a whole bunch of triggers, behaviors and actions.  In this case, I am using the <code class="language-plaintext highlighter-rouge">DoubleClickTrigger</code> which monitors for a quick double tap of the left mouse button.  When that happens, it runs the list of actions associated with it – in this case, it invokes the ShowPropertiesCommand.  Now, here we are defining the trigger behavior on the UI that is bound to an actual <code class="language-plaintext highlighter-rouge">PictureViewModel</code> (note the property bindings on the image and you will see that I’m telling you the truth!) So here the command being invoked is the PictureViewModel command – so no parameter is necessary.</p>
+
+<h4 id="dragposition-behavior">Drag/Position Behavior</h4>
+
+<p>The last thing I want to point out is the dragging behavior.  This is also done through a Blend behavior, but it is being applied in a slightly different way: through a Style.</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;ListBox.ItemContainerStyle&gt;</span>
+    <span class="nt">&lt;Style</span> <span class="na">TargetType=</span><span class="s">"ListBoxItem"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;Setter</span> <span class="na">Property=</span><span class="s">"julmar:DragPositionBehavior.IsEnabled"</span> <span class="na">Value=</span><span class="s">"True"</span> <span class="nt">/&gt;</span>
+        <span class="nt">&lt;Setter</span> <span class="na">Property=</span><span class="s">"Canvas.Left"</span> <span class="na">Value=</span><span class="s">"{Binding X, Mode=TwoWay}"</span> <span class="nt">/&gt;</span>
+        <span class="nt">&lt;Setter</span> <span class="na">Property=</span><span class="s">"Canvas.Top"</span> <span class="na">Value=</span><span class="s">"{Binding Y, Mode=TwoWay}"</span> <span class="nt">/&gt;</span>
+        <span class="nt">&lt;Setter</span> <span class="na">Property=</span><span class="s">"IsSelected"</span> <span class="na">Value=</span><span class="s">"{Binding IsSelected, Mode=TwoWay}"</span> <span class="nt">/&gt;</span>
+        ...
+</code></pre></div></div>
+
+<p>Now, for those who have used Blend behaviors a lot, you may now that it is currently not possible to apply behaviors through Styles.  This is a restriction of the Attached Property definition being used – the collection cannot be associated on a style.  This is a very unfortunate problem because it makes my scenario very hard: I want to drag and reposition these items around through the mouse.  If I put the behavior onto the DataTemplate then I move the <em>content</em> but not the item container itself (the thing that provides selection and focus rendering)  So I would end up with a very weird visualization where you click on an item and the focus rectangle is drawn in a completely different place than the item itself!</p>
+
+<p>So, in my set of behaviors, many of them allow you to setup the behavior <em>both through Blend</em> and through Style setters (or directly on an element without the full Blend syntax).  I do this by adding an attached property onto the behavior class and then injecting my behavior into the element where the attached property is set.  I’ll show this in a future blog post to give an example for those who’d like to do the same for their own behaviors.</p>
+
+<p>Another question I’ve fielded is why did I even create this behavior at all when the Blend sample already exists to do this?  Well, the short answer is because I had a specific goal in mind here – this behavior knows about Canvas panels.  If the behavior is attached to an element in a Canvas, it changes the position by changing the <code class="language-plaintext highlighter-rouge">Canvas.Left</code> and <code class="language-plaintext highlighter-rouge">Canvas.Top</code> properties.  If not, it uses a <code class="language-plaintext highlighter-rouge">RenderTransform</code>.  The supplied blend sample only uses RenderTransform (at least when I last looked at it).</p>
+
+  </div><a class="u-url" href="/mvvm/2010/02/04/mvvm-iuivisualizer-and-event-management-with-behaviors.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

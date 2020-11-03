@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>WPF + Prism + Biology! | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="WPF + Prism + Biology!" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="I spend a lot of time in WPF – both in teaching it around the world, and also in assigning in development of applications for various companies. I also work a bit in the Bioinformatics space – doing applications and research in genomics. This post is the start of a series which will combine these efforts and attempt to give others some helpful ideas on doing bioinformatics with .NET – and creating visualizations with WPF!" />
+<meta property="og:description" content="I spend a lot of time in WPF – both in teaching it around the world, and also in assigning in development of applications for various companies. I also work a bit in the Bioinformatics space – doing applications and research in genomics. This post is the start of a series which will combine these efforts and attempt to give others some helpful ideas on doing bioinformatics with .NET – and creating visualizations with WPF!" />
+<link rel="canonical" href="http://localhost:4000/wpf/2011/11/16/wpf-prism-biology.html" />
+<meta property="og:url" content="http://localhost:4000/wpf/2011/11/16/wpf-prism-biology.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2011-11-16T18:00:00-06:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="WPF + Prism + Biology!" />
+<script type="application/ld+json">
+{"headline":"WPF + Prism + Biology!","dateModified":"2011-11-16T18:00:00-06:00","datePublished":"2011-11-16T18:00:00-06:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/wpf/2011/11/16/wpf-prism-biology.html"},"description":"I spend a lot of time in WPF – both in teaching it around the world, and also in assigning in development of applications for various companies. I also work a bit in the Bioinformatics space – doing applications and research in genomics. This post is the start of a series which will combine these efforts and attempt to give others some helpful ideas on doing bioinformatics with .NET – and creating visualizations with WPF!","url":"http://localhost:4000/wpf/2011/11/16/wpf-prism-biology.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">WPF + Prism + Biology!</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2011-11-16T18:00:00-06:00" itemprop="datePublished">Nov 16, 2011
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>I spend a lot of time in WPF – both in teaching it around the world, and also in assigning in development of applications for various companies.  I also work a bit in the Bioinformatics space – doing applications and research in genomics.  This post is the start of a series which will combine these efforts and attempt to give others some helpful ideas on doing bioinformatics with .NET – and creating visualizations with WPF!</p>
+
+<h3 id="net-and-biology">.NET and Biology?</h3>
+
+<p>To start out, let me introduce a somewhat unknown library from Microsoft Research that I’ll be using – .NET Bio (<a href="http://bio.codeplex.com">http://bio.codeplex.com</a>).  .NET Bio is actually several things bundled into one.  It is a set of usable command line tools which perform tasks such as alignments, assembly and file conversion.  It is also a reusable class library that has support to program common bio tasks using .NET.  It is this latter area that I want to tackle first, although we might delve into the tools periodically too.  It’s a bit primitive in places, but a great foundation to build upon, and highly extensible so if it doesn’t have what you need, it’s fairly simple to add it yourself.</p>
+
+<h3 id="prism">Prism</h3>
+
+<p>Prism (<a href="http://compositewpf.codeplex.com">http://compositewpf.codeplex.com</a>) is a library for build composite UI applications using WPF.  It’s owned and maintained by Microsoft Patterns and Practices (P&amp;P) and essentially gives you the ability to create complex applications by combining various bits and pieces together.  These pieces can interact with each other without being tightly coupled – which is great for larger, enterprise style applications, or applications where you plan to extend the features.  It allows you to define your UI in terms of “regions” where you plug in various UI elements at runtime.  These UI modules are defined independently of the main application structure – and are dynamically composed into the UI and can access and even expose services for other modules to consume.  There was a nice overview of Prism in a past issue of MSDN – <a href="http://msdn.microsoft.com/en-us/magazine/cc785479.aspx" title="http://msdn.microsoft.com/en-us/magazine/cc785479.aspx">http://msdn.microsoft.com/en-us/magazine/cc785479.aspx</a> if you are interested in more details on the framework.</p>
+
+<h3 id="ok-so-whats-first">Ok, so what’s first?</h3>
+
+<p>I was recently playing with Prism, and wanted to see if I could build something extensible that showed off Prism but also showed off the Biology features of .NET Bio – without being too complex to understand.  Here’s what I came up with:</p>
+
+<p><img src="/images/image_thumb1.png" alt="image" title="image" /></p>
+
+<p>This is the <strong>SequenceAnalyzer</strong>.  I plan to add additional features to it over time, but for now it has a simple feature set:</p>
+
+<ul>
+  <li>It loads all supported file types.</li>
+  <li>It displays the loaded sequences from files in a list and allows you to select one</li>
+  <li>It shows the sequence data (with coloring applied)</li>
+  <li>It shows the statistics (frequency count) from the selected sequence</li>
+</ul>
+
+<p>In addition, it performs the above in a decoupled fashion, using different modules for each piece.  It has three basic modules:</p>
+
+<ol>
+  <li>Ribbon</li>
+  <li>Sequence List</li>
+  <li>Sequence Details (nucleotide view and statistics)</li>
+</ol>
+
+<p>In addition, it uses some of the new Prism v4 features to trigger UI behavior from a ViewModel, this is used when you right-click on a sequence in the sequence list.  It drives an action (in the WPF.Behaviors assembly) to display a <strong>MessageBox</strong> prompt to decide whether to delete the sequence from the list.</p>
+
+<p><img src="/images/wpf-prism-biology-image_thumb2.png" alt="image" title="image" /></p>
+
+<h3 id="using-net-bio">Using .NET Bio</h3>
+
+<p>The usage of .NET Bio is performed in a few places.  First, the <strong>Sequence.Data</strong> module is where we parse out sequences – this just uses the native parsing capability with one extra twist.  If the framework cannot identify the file type itself, we scan the supported extensions to see if we can identify it on our own:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="n">IEnumerable</span><span class="p">&lt;</span><span class="n">ISequence</span><span class="p">&gt;</span> <span class="nf">Load</span><span class="p">(</span><span class="kt">string</span> <span class="n">filename</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">var</span> <span class="n">parser</span> <span class="p">=</span> <span class="n">SequenceParsers</span><span class="p">.</span><span class="nf">FindParserByFileName</span><span class="p">(</span><span class="n">filename</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">parser</span> <span class="p">==</span> <span class="k">null</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="kt">string</span> <span class="n">extension</span> <span class="p">=</span> <span class="n">Path</span><span class="p">.</span><span class="nf">GetExtension</span><span class="p">(</span><span class="n">filename</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(!</span><span class="kt">string</span><span class="p">.</span><span class="nf">IsNullOrEmpty</span><span class="p">(</span><span class="n">extension</span><span class="p">))</span>
+        <span class="p">{</span>
+            <span class="n">parser</span> <span class="p">=</span> <span class="n">SequenceParsers</span><span class="p">.</span><span class="n">All</span><span class="p">.</span><span class="nf">FirstOrDefault</span><span class="p">(</span><span class="n">sp</span> <span class="p">=&gt;</span> <span class="n">sp</span><span class="p">.</span><span class="n">SupportedFileTypes</span><span class="p">.</span><span class="nf">Contains</span><span class="p">(</span><span class="n">extension</span><span class="p">));</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">parser</span> <span class="p">!=</span> <span class="k">null</span> <span class="p">?</span> <span class="n">parser</span><span class="p">.</span><span class="nf">Parse</span><span class="p">()</span> <span class="p">:</span> <span class="k">null</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>In addition, we use the <code class="language-plaintext highlighter-rouge">SequenceStatistics</code> class to analyze the sequence that has been selected.  This is done in the <code class="language-plaintext highlighter-rouge">SequenceStatisticsViewModel</code> class:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="n">IEnumerable</span><span class="p">&lt;</span><span class="n">Tuple</span><span class="p">&lt;</span><span class="kt">char</span><span class="p">,</span> <span class="kt">double</span><span class="p">&gt;&gt;</span> <span class="n">Statistics</span>
+<span class="p">{</span>
+    <span class="k">get</span>
+    <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">_sequence</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="n">SequenceStatistics</span> <span class="n">stats</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">SequenceStatistics</span><span class="p">(</span><span class="n">_sequence</span><span class="p">);</span>
+            <span class="k">foreach</span> <span class="p">(</span><span class="kt">byte</span> <span class="n">symbol</span> <span class="k">in</span> <span class="n">_sequence</span><span class="p">.</span><span class="n">Alphabet</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="k">yield</span> <span class="k">return</span> <span class="n">Tuple</span><span class="p">.</span><span class="nf">Create</span><span class="p">((</span><span class="kt">char</span><span class="p">)</span> <span class="n">symbol</span><span class="p">,</span> <span class="n">stats</span><span class="p">.</span><span class="nf">GetFraction</span><span class="p">(</span><span class="n">symbol</span><span class="p">));</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="reading-the-code">Reading the code</h3>
+
+<p>I tried to keep to fairly simple coding so it could be easily understood – in addition, all the classes and methods are heavily commented for clarity.  Here’s the entire project:</p>
+
+<p><a href="/samples/SequenceAnalyzer.zip">SequenceAnalyzer.zip</a></p>
+
+<p>This includes the source code, pre-built binaries and a sample <strong>.fasta</strong> file you can load.  You should be able to load other data files as well.</p>
+
+<p>The solution has the following projects:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Project</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Contracts</strong></td>
+      <td>This project contains the interfaces and shared types which all of the other projects need access to.</td>
+    </tr>
+    <tr>
+      <td><strong>SequenceData</strong></td>
+      <td>This project contains the sequence loading service – it exposes this service via Prism to interested parties.  There is no UI in this project.</td>
+    </tr>
+    <tr>
+      <td><strong>SequenceAnalyzer</strong></td>
+      <td>This project is the primary UI host – it initializes the Prism bootstrapper and creates the UI regions where everything is placed.</td>
+    </tr>
+    <tr>
+      <td><strong>SequenceDetailsUI</strong></td>
+      <td>This project is generates the sequence detail UI elements – the nucleotide display and the statistics charts.  It relies on a <a href="http://wpf.amcharts.com/quick">3rd party, open-source charting toolkit</a>.</td>
+    </tr>
+    <tr>
+      <td><strong>SequenceLoaderUI</strong></td>
+      <td>This project contains the loader UI (<strong>OpenFileDialog</strong>) and the currently loaded sequences list which drives selection for the application.</td>
+    </tr>
+    <tr>
+      <td><strong>SequenceRibbonUI</strong></td>
+      <td>This project contains the Ribbon docked to the top of the main window.</td>
+    </tr>
+    <tr>
+      <td><strong>WPF.Behaviors</strong></td>
+      <td>This project contains an implementation of a <strong>MessageBoxPromptAction</strong> for Prism to use when we close the application.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>In future blog posts, we’ll look in detail at some of the above elements, and also extend this to include other functionality for analyzing the sequences.</p>
+
+  </div><a class="u-url" href="/wpf/2011/11/16/wpf-prism-biology.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

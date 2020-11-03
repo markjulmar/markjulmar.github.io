@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Part 3: Shifting focus to the first available element in WPF | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="Part 3: Shifting focus to the first available element in WPF" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="We’ve seen how to programmatically control focus and that’s all great stuff, but one thing I like to do with WPF is see how much of the repetitive or UI-specific code I can move into the XAML and keep out of the code behind. We can use the FocusManager.FocusedElement property to shift focus in XAML but it only works when the element exists in the main XAML file. If you use UserControls it turns out that the approach doesn’t work because that element is loaded separately and not available when the initial focus is being determined." />
+<meta property="og:description" content="We’ve seen how to programmatically control focus and that’s all great stuff, but one thing I like to do with WPF is see how much of the repetitive or UI-specific code I can move into the XAML and keep out of the code behind. We can use the FocusManager.FocusedElement property to shift focus in XAML but it only works when the element exists in the main XAML file. If you use UserControls it turns out that the approach doesn’t work because that element is loaded separately and not available when the initial focus is being determined." />
+<link rel="canonical" href="http://localhost:4000/wpf/2008/09/11/part-3-shifting-focus-to-the-first-available-element-in-wpf.html" />
+<meta property="og:url" content="http://localhost:4000/wpf/2008/09/11/part-3-shifting-focus-to-the-first-available-element-in-wpf.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2008-09-11T19:00:00-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Part 3: Shifting focus to the first available element in WPF" />
+<script type="application/ld+json">
+{"headline":"Part 3: Shifting focus to the first available element in WPF","dateModified":"2008-09-11T19:00:00-05:00","datePublished":"2008-09-11T19:00:00-05:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/wpf/2008/09/11/part-3-shifting-focus-to-the-first-available-element-in-wpf.html"},"description":"We’ve seen how to programmatically control focus and that’s all great stuff, but one thing I like to do with WPF is see how much of the repetitive or UI-specific code I can move into the XAML and keep out of the code behind. We can use the FocusManager.FocusedElement property to shift focus in XAML but it only works when the element exists in the main XAML file. If you use UserControls it turns out that the approach doesn’t work because that element is loaded separately and not available when the initial focus is being determined.","url":"http://localhost:4000/wpf/2008/09/11/part-3-shifting-focus-to-the-first-available-element-in-wpf.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Part 3: Shifting focus to the first available element in WPF</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2008-09-11T19:00:00-05:00" itemprop="datePublished">Sep 11, 2008
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>We’ve seen how to programmatically control focus and that’s all great stuff, but one thing I like to do with WPF is see how much of the repetitive or UI-specific code I can move into the XAML and keep out of the code behind.  We can use the <strong>FocusManager.FocusedElement</strong> property to shift focus in XAML but it only works when the element exists in the main XAML file.  If you use UserControls it turns out that the approach doesn’t work because that element is loaded separately and not available when the initial focus is being determined.</p>
+
+<p>In my specific case, I have a wizard-style application which utilizes a TabControl to move between the pages.  The first page looks like this:</p>
+
+<p><img src="/images/TabPage_01.jpg" alt="" /></p>
+
+<p>The XAML layout for window1.xaml looks something like this:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;TabControl</span> <span class="na">x:Name=</span><span class="s">"Pages"</span> <span class="na">SelectedIndex=</span><span class="s">"0"</span><span class="nt">&gt;</span>  
+   <span class="nt">&lt;FocusTest:Page1</span> <span class="nt">/&gt;</span>  
+   <span class="nt">&lt;FocusTest:Page2</span> <span class="nt">/&gt;</span>  
+   <span class="nt">&lt;FocusTest:FinalPage</span> <span class="nt">/&gt;</span>  
+<span class="nt">&lt;/TabControl&gt;</span>
+</code></pre></div></div>
+
+<p>What I want is to have focus immediately positioned within the first text box but it turns out that you can’t get WPF to do this directly from XAML - because the TextBox isn’t a direct descendent of Window - it’s part of the Page1 user control.  You can try putting the focus shift into the user control but it turns out that it won’t work there either - it’s got to be assigned to the focus scope which is the window.</p>
+
+<p>So it might seem we are stuck with adding code behind logic (blech!) but all is not lost!  When I hit situations like this, I try to think about how to solve the problem generically so I can reuse my solution.  In this case, I decided to build a <strong>MarkupExtension</strong> to locate the first focusable element descendent.</p>
+
+<p>If you are not familiar with markup extensions, they are a corner piece in the XAML extensibility story.  They allow for dynamic property assignment - where the value is determined at runtime vs. XAML compile time.  That’s exactly what I need here - I want to find that TextBox at runtime and shift focus to it - just like I would have done in the code behind.</p>
+
+<p>Creating a markup extension is trivial - you just extend the <strong>MarkupExtension</strong> base class and implement the <strong>ProvideValue</strong> method.  In this case, when provide value is called, I have to do several steps:</p>
+
+<ol>
+  <li>If the element we are bound to is not loaded yet, we need to wait for it.  We won’t be able to find the child in the visual tree if the parent isn’t yet loaded.</li>
+  <li>Once it <em>is</em> loaded, search the children and find the first control we can give focus to.  That means, the control is visible, focusable and enabled.</li>
+  <li>Assign logical focus to the new control in the closest focus scope parent, or just return the value if the property being assigned to is not <strong>FocusManager.FocusedElement</strong>.</li>
+</ol>
+
+<p>I decided to try to make a generic markup extension that could be used outside my scenario so I added a little bit of code to see if we are assigning to <strong>FocusManager.FocusedElement</strong> and act differently in that specific case - otherwise the extension just returns the value.</p>
+
+<p>With this new extension, I can now add a single line of code to each user control:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;UserControl</span> <span class="na">x:Class=</span><span class="s">"FocusTest.Page2"</span>  
+   <span class="na">xmlns:FocusTest=</span><span class="s">"clr-namespace:FocusTest"</span>  
+   <span class="na">FocusManager.FocusedElement=</span><span class="s">"{FocusTest:FirstFocusedElement}"</span><span class="nt">&gt;</span>
+</code></pre></div></div>
+
+<p>Now, when I run the application, focus is always assigned to the first control it can be assigned to.  It turns out that I can go one step better and <strong>always</strong> assign focus when the page becomes visible in my wizard - remember we have to wait for the control to finish loading to find the element.. this is done by hooking the <strong>FrameworkElement.Loaded</strong> event.  This event is raised each time the TabControl shifts to a new tab - so if we never unhook our handler, our focus management code is called each time the tab page becomes visible.  This might not be the required behavior so I added a simple property to the markup extension called OneTime to control that behavior.</p>
+
+<p>There’s a bit too much code to blog here, but if you want to try this out yourself, here’s the test project.. feel free to use this however you like.  <a href="/samples/FocusTest.zip">FocusTest.zip (17.88 KB)</a></p>
+
+<blockquote>
+  <p><strong>Update:</strong>
+<a href="http://agsmith.wordpress.com/category/wpf/">Andrew Smith</a> pointed out that the code would assign focus to a focus scope if it ran across one - which could happen if you have a toolbar or menu present in the UI.  I didn’t in the sample (or in my production app) but I could certainly see that being a common reality.  I changed the above code to deliberately skip focus scopes and their children and keep going down the tree until it finds the first child.  Thanks Andrew!</p>
+</blockquote>
+
+  </div><a class="u-url" href="/wpf/2008/09/11/part-3-shifting-focus-to-the-first-available-element-in-wpf.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

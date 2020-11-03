@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>WPF MVVM Helper Library (WPF + MVVM = testability) | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="WPF MVVM Helper Library (WPF + MVVM = testability)" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="There’s been a lot of talk about the Model-View-ViewModel pattern recently and it’s usage around the WPF and Silverlight technology stack. When teaching WPF, I always introduce students to MVVM as part of the Essential WPF class, it’s an incredibly useful pattern that really separates the UI from the code behind behavior. One of the things I give the students is a library to do MVVM - I also use it in my consulting work. With all the focus on it lately, I figured maybe it’s time to release it to the public." />
+<meta property="og:description" content="There’s been a lot of talk about the Model-View-ViewModel pattern recently and it’s usage around the WPF and Silverlight technology stack. When teaching WPF, I always introduce students to MVVM as part of the Essential WPF class, it’s an incredibly useful pattern that really separates the UI from the code behind behavior. One of the things I give the students is a library to do MVVM - I also use it in my consulting work. With all the focus on it lately, I figured maybe it’s time to release it to the public." />
+<link rel="canonical" href="http://localhost:4000/mvvm/2009/04/16/wpf-mvvm-helper-library-wpf-mvvm-testability.html" />
+<meta property="og:url" content="http://localhost:4000/mvvm/2009/04/16/wpf-mvvm-helper-library-wpf-mvvm-testability.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2009-04-16T19:00:00-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="WPF MVVM Helper Library (WPF + MVVM = testability)" />
+<script type="application/ld+json">
+{"headline":"WPF MVVM Helper Library (WPF + MVVM = testability)","dateModified":"2009-04-16T19:00:00-05:00","datePublished":"2009-04-16T19:00:00-05:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/mvvm/2009/04/16/wpf-mvvm-helper-library-wpf-mvvm-testability.html"},"description":"There’s been a lot of talk about the Model-View-ViewModel pattern recently and it’s usage around the WPF and Silverlight technology stack. When teaching WPF, I always introduce students to MVVM as part of the Essential WPF class, it’s an incredibly useful pattern that really separates the UI from the code behind behavior. One of the things I give the students is a library to do MVVM - I also use it in my consulting work. With all the focus on it lately, I figured maybe it’s time to release it to the public.","url":"http://localhost:4000/mvvm/2009/04/16/wpf-mvvm-helper-library-wpf-mvvm-testability.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">WPF MVVM Helper Library (WPF + MVVM = testability)</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2009-04-16T19:00:00-05:00" itemprop="datePublished">Apr 16, 2009
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>There’s been a lot of talk about the Model-View-ViewModel pattern recently and it’s usage around the WPF and Silverlight technology stack.  When teaching WPF, I always introduce students to MVVM as part of the Essential WPF class, it’s an incredibly useful pattern that really separates the UI from the code behind behavior.  One of the things I give the students is a library to do MVVM - I also use it in my consulting work.  With all the focus on it lately, I figured maybe it’s time to release it to the public.</p>
+
+<p>A bit of history – the library is really just a place where I dump all kinds of useful utility classes, helpers, wrappers, etc. that I tend to use a lot.  I started it about 3 years ago and it wasn’t originally intended to be just an MVVM implementation so you’ll find it’s got all kinds of stuff in it, not all of which is MVVM specific.  It’s evolution owes a lot to various blog posts, WPF Disciples, and other WPF leaders; I certainly didn’t invent anything radically new but borrowed heavily from all kinds of places as I built various classes I needed for my own work.  These classes tended to evolve with new functionality (either due to necessity, or because a good idea occurred to me or someone else). For example, there was a recent thread on the Mediator pattern (initiated by Marlon Grech and added on by Josh Smith, Laurent Bugnion and others); I already had a message mediator in place but the idea of using an attribute to hook it up was a great one that I adopted into my library just because I like the idea.  The Delegating command pattern is one you see in a lot of places - including the Prism implementation.  The event routing attached behavior was made possible by a couple of blog posts by Mike Hilberg and John Gossman. So, be aware that as you use this code, it owes a lot to a variety of people.  That said, any bugs or issues are completely mine and I take full credit for them.</p>
+
+<p>So, what all is here?  Well, quite a bit.  As I said, this is a collection of helpers I’ve built and reused over the years doing WPF consulting and instruction.  When MVVM came to my notice I worked on trying to completely separate the XAML side so I’ll focus on those classes here.</p>
+
+<p>The basic idea is to derive your ViewModel classes from one of three base classes depending on what you need:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">JulMar.Windows.Mvvm.ViewModel</code> - supports basic <code class="language-plaintext highlighter-rouge">INotifyPropertyChanged</code> and Close/Activate eventing to the view.</li>
+  <li><code class="language-plaintext highlighter-rouge">JulMar.Windows.Mvvm.ValidatingViewModel</code> - supports everything above, adds Validation through <code class="language-plaintext highlighter-rouge">IDataErrorInfo</code> support</li>
+  <li><code class="language-plaintext highlighter-rouge">JulMar.Windows.Mvvm.EditingViewModel</code> - supports basic + validation + <code class="language-plaintext highlighter-rouge">IEditableObject</code></li>
+</ul>
+
+<p>Next, in each view (XAML) you set the <code class="language-plaintext highlighter-rouge">DataContext</code> property to your view model, the library has a <code class="language-plaintext highlighter-rouge">MarkupExtension</code> to do the work for you -</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;Window</span> <span class="na">x:Class=</span><span class="s">"TestMvvm.MainWindow"</span> <span class="na">xmlns:me=</span><span class="s">"clr-namespace:TestMvvm"</span>  
+         <span class="na">DataContext=</span><span class="s">"{julmar:ViewModelCreator ViewModelType={x:Type me:WinViewModel}}"</span><span class="nt">&gt;</span>
+</code></pre></div></div>
+
+<p>This creates the view and also wires up support for closing the view and activating the view through the ViewModel class (using the <strong>RaiseCloseRequest</strong> and <strong>RaiseActivateRequest</strong> methods).</p>
+
+<p>Everything is driven off <code class="language-plaintext highlighter-rouge">ICommand</code> - you can bind commands to the lifetime of the view (so you can detect activation, deactivation, loading, closing) through the <strong>LifetimeEvents</strong> attached behavior:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;Window</span> <span class="na">x:Class=</span><span class="s">"TestMvvm.MainWindow"</span>  
+        <span class="na">julmar:LifetimeEvent.Activated=</span><span class="s">"{Binding ActivatedCommand}"</span>
+        <span class="na">julmar:LifetimeEvent.Close=</span><span class="s">"{Binding CloseCommand}"</span>
+        <span class="na">julmar:LifetimeEvent.Loaded=</span><span class="s">"{Binding LoadedCommand}"</span>
+        <span class="na">julmar:LifetimeEvent.Deactivated=</span><span class="s">"{Binding DeactivatedCommand}"</span> <span class="nt">&gt;</span>
+</code></pre></div></div>
+
+<p>These execute the bound command in the ViewModel when those events occur in the view.  If you need other events styles you can use the EventCommander attached behavior which allows any arbitrary event to be wired to a command.  This can be placed on any <code class="language-plaintext highlighter-rouge">UIElement</code>:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;julmar:EventCommander.Mappings&gt;</span>
+    <span class="nt">&lt;julmar:CommandEvent</span> <span class="na">Command=</span><span class="s">"{Binding MouseEnterCommand}"</span> <span class="na">Event=</span><span class="s">"MouseEnter"</span> <span class="nt">/&gt;</span>
+    <span class="nt">&lt;julmar:CommandEvent</span> <span class="na">Command=</span><span class="s">"{Binding MouseLeaveCommand}"</span> <span class="na">Event=</span><span class="s">"MouseLeave"</span> <span class="nt">/&gt;</span>  
+<span class="nt">&lt;julmar:EventCommander.Mappings&gt;</span>
+</code></pre></div></div>
+
+<p>You can also wire up keyboard and mouse gestures to commands using the <strong>InputBinder</strong> attached property:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;julmar:InputBinder.Bindings&gt;</span>  
+    <span class="nt">&lt;julmar:KeyBinding</span> <span class="na">Command=</span><span class="s">"{Binding ExitCommand}"</span> <span class="na">Key=</span><span class="s">"F3"</span> <span class="na">Modifiers=</span><span class="s">"ALT"</span> <span class="nt">/&gt;</span>
+    <span class="nt">&lt;julmar:MouseBinding</span> <span class="na">Command=</span><span class="s">"{Binding ExitCommand}"</span> <span class="na">Gesture=</span><span class="s">"Control+RightClick"</span> <span class="nt">/&gt;</span>  
+<span class="nt">&lt;julmar:InputBinder.Bindings&gt;</span>
+</code></pre></div></div>
+
+<p>This replaces the traditional <strong>InputBindings</strong> collection with a data bindable version - it also supports <strong>CommandParameter</strong> objects on each <strong>KeyBinding</strong> or <strong>MouseBinding</strong>.  You can use it on any element which supports input bindings.</p>
+
+<p>There are some helper classes implemented through interfaces and a (very) simple <strong>ServiceProvider</strong> to locate them:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">IErrorVisualizer</code> - to display errors (title + message).  Default implementation displays <code class="language-plaintext highlighter-rouge">MessageBox</code> with OK button.</li>
+  <li><code class="language-plaintext highlighter-rouge">IMessageVisualer</code> - to display messages with a prompt.  Default implementation uses <code class="language-plaintext highlighter-rouge">MessageBox</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">INotificationVisualizer</code> - to display a wait prompt.  Default implementation uses an hourglass cursor.</li>
+  <li><code class="language-plaintext highlighter-rouge">IUIVisualizer</code> - to display other views through a key.  Supports both modal and modaless display.</li>
+</ul>
+
+<p>You use the <strong>ServiceProvider</strong> to find the services - the base <code class="language-plaintext highlighter-rouge">ViewModel</code> class has support built in for it:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Resolve</span><span class="p">&lt;</span><span class="n">IErrorVisualizer</span><span class="p">&gt;().</span><span class="nf">Show</span><span class="p">(</span><span class="s">"An Error Occurred"</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">Description</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>You can register the default implementation for all of the above in the <strong>App.xaml.cs</strong> file -</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">ViewModel</span><span class="p">.</span><span class="nf">RegisterKnownServiceTypes</span><span class="p">();</span>
+</code></pre></div></div>
+
+<p>You can also provide your own implementation through the <strong>ServiceProvider</strong> itself.  The <strong>ViewModel</strong> class has a public static field:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">ServiceProvider</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">IErrorVisualizer</span><span class="p">),</span> <span class="k">new</span> <span class="nf">MyErrorVisualizer</span><span class="p">());</span>
+</code></pre></div></div>
+
+<p>This replaces or adds the given service (using the type as the key) to the registry database.  You then use <strong>Resolve</strong> to find the service at runtime in any view.  Creating secondary views is done through the <strong>IUIVisualizer</strong> interface.  The default implementation provides a registry and must be added explicitly to use it:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">IUIVisualizer</span> <span class="n">controller</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">UIVisualizer</span><span class="p">(</span>
+            <span class="k">new</span> <span class="n">Dictionary</span> <span class="p">{</span>  
+                <span class="p">{</span><span class="n">Dialogs</span><span class="p">.</span><span class="n">AddNewPage</span><span class="p">,</span> <span class="k">typeof</span><span class="p">(</span><span class="n">AddNewPageWindow</span><span class="p">)},</span>  
+                <span class="p">{</span><span class="n">Dialogs</span><span class="p">.</span><span class="n">ManagePages</span><span class="p">,</span> <span class="k">typeof</span><span class="p">(</span><span class="n">BrowseWindow</span><span class="p">)},</span>  
+                <span class="p">{</span><span class="n">Dialogs</span><span class="p">.</span><span class="n">NewLogon</span><span class="p">,</span> <span class="k">typeof</span><span class="p">(</span><span class="n">LoginDialog</span><span class="p">)}</span>  
+            <span class="p">});</span>
+
+<span class="n">ServiceProvider</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="n">IUIVisualizer</span><span class="p">),</span> <span class="n">controller</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>This adds three UI dialogs to the visualizer - the key is a simple string, the second parameter is a <strong>Type</strong> object that represents the <strong>Window</strong> to create.  You then get the window to display through the <strong>IUIVisualizer</strong> interface:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">LoginViewData</span> <span class="n">ld</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">LoginViewData</span><span class="p">();</span>
+
+<span class="n">IUIVisualizer</span> <span class="n">uiController</span> <span class="p">=</span> <span class="n">ServiceProvider</span><span class="p">.</span><span class="nf">Resolve</span><span class="p">();</span>  
+<span class="k">if</span> <span class="p">(</span><span class="n">uiController</span><span class="p">.</span><span class="nf">ShowDialog</span><span class="p">(</span><span class="n">Dialogs</span><span class="p">.</span><span class="n">NewLogon</span><span class="p">,</span> <span class="n">ld</span><span class="p">).</span><span class="n">Value</span> <span class="p">==</span> <span class="k">true</span><span class="p">)</span>  
+<span class="p">{</span>  
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>This shows the login dialog, using the <strong>LoginViewData</strong> as the <strong>DataContext</strong> (ViewModel).  It displays it as a modal dialog and returns the final result.  You can also display modaless dialogs which take an optional completion proc:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="kt">bool</span> <span class="nf">Show</span><span class="p">(</span><span class="kt">string</span> <span class="n">key</span><span class="p">,</span> <span class="kt">object</span> <span class="n">state</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">setOwner</span><span class="p">,</span> <span class="n">EventHandler</span> <span class="n">completedProc</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The completed procedure is invoked when/if the window ever closes.  Again, the state passed is the data context and if it derives from ViewModel the appropriate Closing/Activated events will be wired up to the events in the ViewModel.</p>
+
+<p>I’ve been using this library for quite a while and it works great (for me).  I provide it here with full source code so you can diagnose any issues you have, or just look through it.  Feel free to use it however you like.  I don’t claim this to be the end-all implementation - as I said much of the ideas expressed in here can be found elsewhere.  There is also a help file provided and a simple example of how to use some of the classes provided that I whipped up for fun.</p>
+
+<p><a href="https://github.com/markjulmar/mvvmhelpers">Here’s the GitHub repo with all the code and samples</a></p>
+
+<p>Enjoy - let me know if you have any issues or think of a good addition!  Just remember I put no guarantee on this code - consider it a sample for you to do whatever you like with.</p>
+
+  </div><a class="u-url" href="/mvvm/2009/04/16/wpf-mvvm-helper-library-wpf-mvvm-testability.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>WPF Data Providers | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="WPF Data Providers" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="One of the nifty new features of the WPF platform is the pluggable data providers. It ships with two out of the box:" />
+<meta property="og:description" content="One of the nifty new features of the WPF platform is the pluggable data providers. It ships with two out of the box:" />
+<link rel="canonical" href="http://localhost:4000/wpf/2007/01/16/wpf-data-providers.html" />
+<meta property="og:url" content="http://localhost:4000/wpf/2007/01/16/wpf-data-providers.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2007-01-16T18:00:00-06:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="WPF Data Providers" />
+<script type="application/ld+json">
+{"headline":"WPF Data Providers","dateModified":"2007-01-16T18:00:00-06:00","datePublished":"2007-01-16T18:00:00-06:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/wpf/2007/01/16/wpf-data-providers.html"},"description":"One of the nifty new features of the WPF platform is the pluggable data providers. It ships with two out of the box:","url":"http://localhost:4000/wpf/2007/01/16/wpf-data-providers.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">WPF Data Providers</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2007-01-16T18:00:00-06:00" itemprop="datePublished">Jan 16, 2007
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>One of the nifty new features of the WPF platform is the pluggable data providers.  It ships with two out of the box:</p>
+
+<p><strong>ObjectDataProvider:</strong> allows you to execute binding expressions against an object and it’s methods<br />
+<strong>XmlDataProvider:</strong> loads an XML data source and makes it available as a binding source</p>
+
+<p>Both of these derive from the abstract class <strong>System.Data.DataSourceProvider</strong> which implements the binding glue (<strong>INotifyPropertyChanged</strong>) needed for data binding.  A side note here is that you could write your own custom data provider if you needed to, although if the data is exposed through a .NET object, then the ObjectDataProvider is probably sufficient.</p>
+
+<p>Using the providers is fairly easy – let’s say we have some XML data that looks like this:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?xml version="1.0" encoding="utf-8"?&gt;</span>
+<span class="nt">&lt;taxrecords&gt;</span>
+  <span class="nt">&lt;entry</span> <span class="na">name=</span><span class="s">"Opal Harrison"</span> <span class="na">state=</span><span class="s">"AL"</span> <span class="na">income=</span><span class="s">"$51,466.81"</span> <span class="na">age=</span><span class="s">"27"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;entry</span> <span class="na">name=</span><span class="s">"Eugene Black"</span> <span class="na">state=</span><span class="s">"FL"</span> <span class="na">income=</span><span class="s">"$13,314.89"</span> <span class="na">age=</span><span class="s">"71"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;entry</span> <span class="na">name=</span><span class="s">"Opal Chang"</span> <span class="na">state=</span><span class="s">"NC"</span> <span class="na">income=</span><span class="s">"$225,115.15"</span> <span class="na">age=</span><span class="s">"41"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;entry</span> <span class="na">name=</span><span class="s">"Gary Waters"</span> <span class="na">state=</span><span class="s">"WI"</span> <span class="na">income=</span><span class="s">"$151,788.49"</span> <span class="na">age=</span><span class="s">"39"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;entry</span> <span class="na">name=</span><span class="s">"Xavier Davis"</span> <span class="na">state=</span><span class="s">"AK"</span> <span class="na">income=</span><span class="s">"$136,344.97"</span> <span class="na">age=</span><span class="s">"66"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;entry</span> <span class="na">name=</span><span class="s">"Stacy Harrison"</span> <span class="na">state=</span><span class="s">"TX"</span> <span class="na">income=</span><span class="s">"$122,432.82"</span> <span class="na">age=</span><span class="s">"32"</span><span class="nt">/&gt;</span>
+<span class="nt">&lt;/taxrecords&gt;</span>
+</code></pre></div></div>
+
+<p>The goal is to put this data into a <code class="language-plaintext highlighter-rouge">ListBox</code> - displaying the fields in the following format:</p>
+
+<pre><code class="language-output">Name  
+State, Age, Income
+</code></pre>
+
+<p>We could clearly do all of this from procedural code – create an <code class="language-plaintext highlighter-rouge">XmlReader</code> object, load the data and render each <code class="language-plaintext highlighter-rouge">XmlNode</code> into the listbox.  However, this is the 21st century and so we want to avoid coding as much as we can and utilize the underlying framework support instead!</p>
+
+<p>We can get the data loaded into a collection source through the <code class="language-plaintext highlighter-rouge">XmlDataProvider</code>.  This is easily done in XAML:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;XmlDataProvider</span> <span class="na">Source=</span><span class="s">"largeXmlFile.xml"</span> <span class="na">x:Key=</span><span class="s">"xmlData"</span> <span class="na">XPath=</span><span class="s">"/taxrecords"</span> <span class="nt">/&gt;</span>
+</code></pre></div></div>
+
+<p>This will look for the file “largeXmlFile.xml”, create an <code class="language-plaintext highlighter-rouge">XmlDocument</code> and load the file into memory.  Notice we supply an XPath expression as part of this to indicate what we’d like the data provider to hand us as the collection itself.  In this case, we want to see everything under the node “taxrecords” which is the root of the document.  An interesting facet of this provider is that it performs it’s work asynchronously – you can see this behavior when you load very large XML files.  The UI will come up first, completely empty and then suddenly be populated with data.  The behavior can be adjusted through the <strong>IsAsynchronous</strong> property of the data provider.  Setting this to <strong>false</strong> will delay the display of the UI until the data is fully available.</p>
+
+<p>Another interesting thing about this class is that we can define the XML data inline within the XAML document.  You do this with the <strong>x:XData</strong> tag:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;XmlDataProvider</span> <span class="na">x:Key=</span><span class="s">"xmlData"</span> <span class="na">XPath=</span><span class="s">"/taxrecords"</span><span class="nt">&gt;</span>  
+    <span class="nt">&lt;x:Data&gt;</span>  
+        <span class="nt">&lt;taxrecords&gt;</span>
+            <span class="nt">&lt;entry</span> <span class="na">name=</span><span class="s">"Opal Harrison"</span> <span class="na">state=</span><span class="s">"AL"</span> <span class="na">income=</span><span class="s">"$51,466.81"</span> <span class="na">age=</span><span class="s">"27"</span> <span class="nt">/&gt;</span>
+            <span class="nt">&lt;entry</span> <span class="na">name=</span><span class="s">"Eugene Black"</span> <span class="na">state=</span><span class="s">"FL"</span> <span class="na">income=</span><span class="s">"$13,314.89"</span> <span class="na">age=</span><span class="s">"71"</span> <span class="nt">/&gt;</span>  
+                ...
+        <span class="nt">&lt;/taxrecords&gt;</span>
+    <span class="nt">&lt;/x:Data&gt;</span>  
+<span class="nt">&lt;/XmlDataProvider&gt;</span>
+</code></pre></div></div>
+
+<p>The next step is to bind this data to a ListBox control - this is a normal Data Binding expression:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;ListBox</span> <span class="na">Name=</span><span class="s">"lb1"</span> <span class="na">Margin=</span><span class="s">"10"</span> <span class="na">IsSynchronizedWithCurrentItem=</span><span class="s">"True"</span>
+    <span class="na">ItemsSource=</span><span class="s">"{Binding Source={StaticResource xmlData, XPath=entry}}"</span><span class="nt">&gt;</span>
+</code></pre></div></div>
+
+<p>Notice how we use a new property of the <code class="language-plaintext highlighter-rouge">BindingExpression</code> called <strong>XPath</strong>.  This property allows you to identify which element(s) you want to load from the XML data source.  It is specific to this data provider and allows for any XPath expression to be supplied. This will succesfully load each of the <code class="language-plaintext highlighter-rouge">"/taxrecord/entry"</code> nodes into the ListBox, but the data itself will show up as a blank line.  This, of course, is because the data is really an XmlNode object which the ListBox has no idea how to display.  To fix this, we supply a DataTemplate to render our data:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;ListBox.ItemTemplate&gt;</span>  
+    <span class="nt">&lt;DataTemplate&gt;</span>  
+        <span class="nt">&lt;StackPanel&gt;</span>  
+            <span class="nt">&lt;TextBlock</span> <span class="na">FontWeight=</span><span class="s">"Bold"</span> <span class="na">Text=</span><span class="s">"{Binding XPath=@name}"</span> <span class="nt">/&gt;</span>
+            <span class="nt">&lt;StackPanel</span> <span class="na">Orientation=</span><span class="s">"Horizontal"</span><span class="nt">&gt;</span>  
+                <span class="nt">&lt;TextBlock</span> <span class="na">Text=</span><span class="s">"{Binding XPath=@state}"</span> <span class="nt">/&gt;</span>
+                <span class="nt">&lt;TextBlock</span> <span class="na">Text=</span><span class="s">", "</span> <span class="nt">/&gt;</span>
+                <span class="nt">&lt;TextBlock</span> <span class="na">Text=</span><span class="s">"{Binding XPath=@age}"</span> <span class="nt">/&gt;</span>
+                <span class="nt">&lt;TextBlock</span> <span class="na">Text=</span><span class="s">", "</span> <span class="nt">/&gt;</span>
+                <span class="nt">&lt;TextBlock</span> <span class="na">Text=</span><span class="s">"{Binding XPath=@income}"</span> <span class="nt">/&gt;</span>
+            <span class="nt">&lt;/StackPanel&gt;</span>  
+        <span class="nt">&lt;/StackPanel&gt;</span>  
+    <span class="nt">&lt;/DataTemplate&gt;</span>  
+<span class="nt">&lt;/ListBox.ItemTemplate&gt;</span>
+</code></pre></div></div>
+
+<p>Again, we use the <code class="language-plaintext highlighter-rouge">XPath</code> property to define what piece of information we are binding to – attributes of our entry in this case. This template will give us the format we are looking for:</p>
+
+<p><img src="/images/AsyncDataBind.jpg" alt="" /></p>
+
+<p>We can add sorting, filtering and grouping using the normal <strong>CollectionViewSource</strong> support.  Here is a XAML file which will present the above UI complete with sorting by the age element.  Notice how the XPath expression now moves to the CollectionView.  This is because the CollectionViewSource creates a <strong>ListCollectionView</strong> to manage the XML nodes because the data provider supports the <strong>IList</strong> interface.  The binding expression on the listbox is now simply a binding to the collection view.</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;Window</span> <span class="na">xmlns=</span><span class="s">"http://schemas.microsoft.com/winfx/2006/xaml/presentation"</span>
+        <span class="na">xmlns:cm=</span><span class="s">"clr-namespace:System.ComponentModel;assembly=WindowsBase"</span>
+        <span class="na">xmlns:x=</span><span class="s">"http://schemas.microsoft.com/winfx/2006/xaml"</span>
+        <span class="na">Title=</span><span class="s">"AsyncDataBind"</span> <span class="na">Height=</span><span class="s">"300"</span> <span class="na">Width=</span><span class="s">"300"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;Window.Resources&gt;</span>
+    <span class="nt">&lt;XmlDataProvider</span> <span class="na">Source=</span><span class="s">"largeXmlFile.xml"</span> <span class="na">IsAsynchronous=</span><span class="s">"True"</span> <span class="na">x:Key=</span><span class="s">"xmlData"</span> <span class="na">XPath=</span><span class="s">"/taxrecords"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;CollectionViewSource</span> <span class="na">x:Key=</span><span class="s">"collView"</span> <span class="na">Source=</span><span class="s">"{Binding Source={StaticResource xmlData},XPath=entry}"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;CollectionViewSource.SortDescriptions&gt;</span>
+        <span class="nt">&lt;cm:SortDescription</span> <span class="na">PropertyName=</span><span class="s">"@age"</span> <span class="na">Direction=</span><span class="s">"Ascending"</span><span class="nt">/&gt;</span>
+      <span class="nt">&lt;/CollectionViewSource.SortDescriptions&gt;</span>
+    <span class="nt">&lt;/CollectionViewSource&gt;</span>
+  <span class="nt">&lt;/Window.Resources&gt;</span>
+  <span class="nt">&lt;Grid&gt;</span>
+    <span class="nt">&lt;Grid.RowDefinitions&gt;</span>
+      <span class="nt">&lt;RowDefinition</span> <span class="na">Height=</span><span class="s">"*"</span><span class="nt">/&gt;</span>
+      <span class="nt">&lt;RowDefinition</span> <span class="na">Height=</span><span class="s">"Auto"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;/Grid.RowDefinitions&gt;</span>
+    <span class="nt">&lt;ListBox</span> <span class="na">Name=</span><span class="s">"lb1"</span> <span class="na">Margin=</span><span class="s">"10"</span> <span class="na">IsSynchronizedWithCurrentItem=</span><span class="s">"True"</span> <span class="na">ItemsSource=</span><span class="s">"{Binding Source={StaticResource collView}}"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;ListBox.ItemTemplate&gt;</span>
+        <span class="nt">&lt;DataTemplate&gt;</span>
+          <span class="nt">&lt;StackPanel&gt;</span>
+            <span class="nt">&lt;TextBlock</span> <span class="na">FontWeight=</span><span class="s">"Bold"</span> <span class="na">Text=</span><span class="s">"{Binding XPath=@name}"</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;StackPanel</span> <span class="na">Orientation=</span><span class="s">"Horizontal"</span><span class="nt">&gt;</span>
+              <span class="nt">&lt;TextBlock</span> <span class="na">Text=</span><span class="s">"{Binding XPath=@state}"</span><span class="nt">/&gt;</span>
+              <span class="nt">&lt;TextBlock</span> <span class="na">Text=</span><span class="s">", "</span><span class="nt">/&gt;</span>
+              <span class="nt">&lt;TextBlock</span> <span class="na">Text=</span><span class="s">"{Binding XPath=@age}"</span><span class="nt">/&gt;</span>
+              <span class="nt">&lt;TextBlock</span> <span class="na">Text=</span><span class="s">", "</span><span class="nt">/&gt;</span>
+              <span class="nt">&lt;TextBlock</span> <span class="na">Text=</span><span class="s">"{Binding XPath=@income}"</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;/StackPanel&gt;</span>
+          <span class="nt">&lt;/StackPanel&gt;</span>
+        <span class="nt">&lt;/DataTemplate&gt;</span>
+      <span class="nt">&lt;/ListBox.ItemTemplate&gt;</span>
+    <span class="nt">&lt;/ListBox&gt;</span>
+    <span class="nt">&lt;Button</span> <span class="na">Grid.Row=</span><span class="s">"1"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;StackPanel</span> <span class="na">Orientation=</span><span class="s">"Horizontal"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;TextBlock</span> <span class="na">Text=</span><span class="s">"{Binding ElementName=lb1, Path=Items.Count}"</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;TextBlock</span> <span class="na">Text=</span><span class="s">" Items"</span><span class="nt">/&gt;</span>
+      <span class="nt">&lt;/StackPanel&gt;</span>
+    <span class="nt">&lt;/Button&gt;</span>
+  <span class="nt">&lt;/Grid&gt;</span>
+<span class="nt">&lt;/Window&gt;</span>
+</code></pre></div></div>
+
+<p>Data binding in WPF is extremely powerful – I am constantly amazed at how much procedural code you can dump in favor of markup with creative bindings.  In the next post I’ll talk a bit more about asynchronous bindings outside of the two data providers.</p>
+
+<p>Until then..</p>
+
+  </div><a class="u-url" href="/wpf/2007/01/16/wpf-data-providers.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

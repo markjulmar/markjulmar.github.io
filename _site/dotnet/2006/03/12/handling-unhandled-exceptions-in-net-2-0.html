@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Handling Unhandled Exceptions in .NET 2.0 | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="Handling Unhandled Exceptions in .NET 2.0" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="I got hit with this problem from two separate clients last week - a .NET 1.1 application ported to .NET 2.0 is now terminating abruptly for no apparent reason. Well, of course there’s a reason - and it’s that both applications had “hidden” exceptions being thrown in some background thread that weren’t being caught. Under .NET 1.1, the CLR would print any exceptions that occurred on threadpool threads to the console and then return the thread to the pool. In addition, the CLR would silently eat any exception thrown on the finalizer thread (again printing the stack trace to the console). Under .NET 2.0, the behavior has changed and it will cause the AppDomain to be unloaded (yikes!). So, for example:" />
+<meta property="og:description" content="I got hit with this problem from two separate clients last week - a .NET 1.1 application ported to .NET 2.0 is now terminating abruptly for no apparent reason. Well, of course there’s a reason - and it’s that both applications had “hidden” exceptions being thrown in some background thread that weren’t being caught. Under .NET 1.1, the CLR would print any exceptions that occurred on threadpool threads to the console and then return the thread to the pool. In addition, the CLR would silently eat any exception thrown on the finalizer thread (again printing the stack trace to the console). Under .NET 2.0, the behavior has changed and it will cause the AppDomain to be unloaded (yikes!). So, for example:" />
+<link rel="canonical" href="http://localhost:4000/dotnet/2006/03/12/handling-unhandled-exceptions-in-net-2-0.html" />
+<meta property="og:url" content="http://localhost:4000/dotnet/2006/03/12/handling-unhandled-exceptions-in-net-2-0.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2006-03-12T18:00:00-06:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Handling Unhandled Exceptions in .NET 2.0" />
+<script type="application/ld+json">
+{"headline":"Handling Unhandled Exceptions in .NET 2.0","dateModified":"2006-03-12T18:00:00-06:00","datePublished":"2006-03-12T18:00:00-06:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/dotnet/2006/03/12/handling-unhandled-exceptions-in-net-2-0.html"},"description":"I got hit with this problem from two separate clients last week - a .NET 1.1 application ported to .NET 2.0 is now terminating abruptly for no apparent reason. Well, of course there’s a reason - and it’s that both applications had “hidden” exceptions being thrown in some background thread that weren’t being caught. Under .NET 1.1, the CLR would print any exceptions that occurred on threadpool threads to the console and then return the thread to the pool. In addition, the CLR would silently eat any exception thrown on the finalizer thread (again printing the stack trace to the console). Under .NET 2.0, the behavior has changed and it will cause the AppDomain to be unloaded (yikes!). So, for example:","url":"http://localhost:4000/dotnet/2006/03/12/handling-unhandled-exceptions-in-net-2-0.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Handling Unhandled Exceptions in .NET 2.0</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2006-03-12T18:00:00-06:00" itemprop="datePublished">Mar 12, 2006
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>I got hit with this problem from two separate clients last week - a .NET 1.1 application ported to .NET 2.0 is now terminating abruptly for no apparent reason.  Well, of course there’s a reason - and it’s that both applications had “hidden” exceptions being thrown in some background thread that weren’t being caught.  Under .NET 1.1, the CLR would print any exceptions that occurred on threadpool threads to the console and then return the thread to the pool.  In addition, the CLR would silently eat any exception thrown on the finalizer thread (again printing the stack trace to the console).  Under .NET 2.0, the behavior has changed and it will cause the AppDomain to be unloaded (yikes!).  So, for example:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">BadClass</span>
+<span class="p">{</span>
+    <span class="p">~</span><span class="nf">BadClass</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="k">throw</span> <span class="k">new</span> <span class="nf">Exception</span><span class="p">(</span><span class="s">"I'm Bad"</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">class</span> <span class="nc">BadClass</span>
+<span class="p">{</span>
+    <span class="k">static</span> <span class="k">void</span> <span class="nf">Main</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="k">for</span> <span class="p">(;;)</span>
+            <span class="k">new</span> <span class="nf">BadClass</span><span class="p">();</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The above code would run forever under CLR 1.1, but will terminate immediately when run under CLR 2.0 with an unhandled exception.</p>
+
+<pre><code class="language-output">Unhandled Exception: System.Exception: I'm bad  
+   at BadClass.Finalize() in W:ProjectsTestAppTestAppProgram.cs:line 11  
+</code></pre>
+
+<p>There are a couple of ways to deal with this - the best is to do all your testing and close the holes.  You really shouldn’t have unhandled exceptions loose in your program.  But for a really large program, or one where you don’t know where the exception is happening, Microsoft has given you a couple of options.  The first one is the **<legacyUnhandledExceptionPolicy> ** tag which you can put into your **app.config** file:</legacyUnhandledExceptionPolicy></p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;configuration&gt;</span>
+ <span class="nt">&lt;runtime&gt;</span>
+ <span class="nt">&lt;legacyUnhandledExceptionPolicy</span> <span class="na">enabled=</span><span class="s">"1"</span><span class="nt">/&gt;</span>  <span class="nt">&lt;runtime&gt;</span>  
+<span class="nt">&lt;configuration&gt;</span>
+</code></pre></div></div>
+
+<p>This will essentially revert the CLR to the 1.1 behavior.  Consider it a short-term fix because it will ultimately mask issues with your application that are really bugs.</p>
+
+<p>Along with the above, you can also be notified about unhandled exceptions prior to the AppDomain being unloaded.  This is done through several different methods based on the type of application. The first basic method is through the AppDomain.UnhandledException event which is raised for Console applications:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">static</span> <span class="k">void</span> <span class="nf">Main</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="n">AppDomain</span><span class="p">.</span><span class="n">CurrentDomain</span><span class="p">.</span><span class="n">UnhandledException</span> <span class="p">+=</span> <span class="k">delegate</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">UnhandledExceptionEventArgs</span> <span class="n">e</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"{0} - IsTerminating = {1}"</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">ExceptionObject</span><span class="p">.</span><span class="nf">ToString</span><span class="p">(),</span> <span class="n">e</span><span class="p">.</span><span class="n">IsTerminating</span><span class="p">);</span>
+    <span class="p">};</span>
+
+    <span class="k">for</span><span class="p">(;</span> <span class="p">;)</span>
+        <span class="k">new</span> <span class="nf">BadClass</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>In this case, the application will still be terminated, <em>but</em> we will now get notified right before termination.  This allows our application to log the error (using the nifty <strong>System.Diagnostics.TraceSource</strong> support or through the EventLog) so we at least know what happened.</p>
+
+<p>For Windows Forms applications, things are a little different – instead of the <strong>AppDomain.UnhandledException</strong> event being raised, the Windows Forms infrastructure will raise the <strong>Application.ThreadException</strong> event for exceptions that occur on the primary thread. The default behavior for this handler is to display the friendly <strong>System.Windows.Forms.ThreadException</strong> dialog:</p>
+
+<p><img src="/images/unhandled_exception.jpg" alt="" /></p>
+
+<p>If the exception occurs in the primary (message pumping) thread, the user will see the above dialog box and be given the choice to terminate the application or not.  The code behind it looks something like:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">void</span> <span class="nf">Application_ThreadException</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">ThreadExceptionEventArgs</span> <span class="n">e</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="k">try</span>
+    <span class="p">{</span>
+        <span class="c1">// Call user override</span>
+        <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="n">threadExceptionHandler</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nf">threadExceptionHandler</span><span class="p">(</span><span class="n">Thread</span><span class="p">.</span><span class="n">CurrentThread</span><span class="p">,</span> <span class="k">new</span> <span class="nf">ThreadExceptionEventArgs</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">Exception</span><span class="p">));</span>
+        <span class="p">}</span>
+        <span class="k">else</span>
+        <span class="p">{</span>
+            <span class="k">using</span> <span class="p">(</span><span class="n">ThreadExceptionDialog</span> <span class="n">excptDlg</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">ThreadExceptionDialog</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">Exception</span><span class="p">))</span>  
+            <span class="p">{</span>
+                <span class="n">DialogResult</span> <span class="n">result</span> <span class="p">=</span> <span class="n">excptDlg</span><span class="p">.</span><span class="nf">ShowDialog</span><span class="p">();</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">result</span> <span class="p">==</span> <span class="n">DialogResult</span><span class="p">.</span><span class="n">Abort</span><span class="p">)</span> <span class="n">Application</span><span class="p">.</span><span class="nf">Exit</span><span class="p">();</span>  
+            <span class="p">}</span>  
+      <span class="p">}</span>  
+    <span class="p">}</span>
+    <span class="k">catch</span>
+    <span class="p">{</span>  
+    <span class="p">}</span>  
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>That’s great for the main thread, but if the exception occurs in a secondary thread, then the application will still be terminated after raising the <strong>AppDomain.UnhandledException</strong> event.  So, for non-UI threads, you must still register the unhandled exception handler on the AppDomain, log the failure and then watch your application die.  Having two handlers can be a pain and if you want to have the application terminate on <em>any</em> unhandled exception, you can direct Windows Forms to <em>not</em> catch primary thread exceptions automatically by using the <strong>Application.SetUnhandledExceptionBehavior</strong> method:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="n">STAThread</span><span class="p">]</span>  
+<span class="k">static</span> <span class="k">void</span> <span class="nf">Main</span><span class="p">()</span>  
+<span class="p">{</span>  
+    <span class="n">Application</span><span class="p">.</span><span class="nf">SetUnhandledExceptionMode</span><span class="p">(</span><span class="n">UnhandledExceptionMode</span><span class="p">.</span><span class="n">ThrowException</span><span class="p">);</span>  
+    <span class="n">Application</span><span class="p">.</span><span class="nf">Run</span><span class="p">(</span><span class="k">new</span> <span class="nf">Form1</span><span class="p">());</span>  
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The above line will cause exceptions thrown in the main thread to be unhandled - thereby triggering the <strong>AppDomain.UnhandledException</strong> event.</p>
+
+<p>For ASP.NET applications, things are also a bit different.  First, be aware that any exception thrown during a Page request (the normal Page rendering process) will be handled automatically by ASP.NET and rendered back to the client based on the error settings in web.config.  If I throw an exception while rendering the page, then I’ll get an HTML response like:</p>
+
+<pre><code class="language-output">Server Error in '/TestWebSite' Application.  
+  
+Description: An unhandled exception occurred during the execution of the current web request. Please review the stack trace for more information about the error and where it originated in the code.
+</code></pre>
+
+<p>The important thing here is that the AppDomain <em>continues to run</em>.  I can tell ASP.NET to redirect to a specific page through the <code class="language-plaintext highlighter-rouge">&lt;customErrors&gt;</code> section of the web.config.  Or, I can catch these exceptions and handle them myself through the global.asax <strong>Application_Error</strong> method (which is hooking the <strong>HttpApplication.Error</strong> event):</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">void</span> <span class="nf">Application_Error</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">EventArgs</span> <span class="n">e</span><span class="p">)</span>  
+<span class="p">{</span>  
+    <span class="n">Exception</span> <span class="n">ex</span> <span class="p">=</span> <span class="n">Server</span><span class="p">.</span><span class="nf">GetLastError</span><span class="p">();</span>
+    <span class="n">Context</span><span class="p">.</span><span class="nf">ClearError</span><span class="p">();</span>    <span class="c1">// Stop default error reporting</span>
+    <span class="n">Response</span><span class="p">.</span><span class="nf">Write</span><span class="p">(</span><span class="s">"Application Error:"</span><span class="p">);</span>  
+    <span class="n">Response</span><span class="p">.</span><span class="nf">Write</span><span class="p">(</span><span class="s">"****"</span> <span class="p">+</span> <span class="n">Server</span><span class="p">.</span><span class="nf">HtmlEncode</span><span class="p">(</span><span class="n">ex</span><span class="p">.</span><span class="nf">ToString</span><span class="p">())</span> <span class="p">+</span> <span class="s">"****"</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>A more popular way to display errors is to cache off the last error in a session variable and then execute <strong>Server.Transfer</strong> to some error.aspx page:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">void</span> <span class="nf">Application_Error</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">EventArgs</span> <span class="n">e</span><span class="p">)</span>  
+<span class="p">{</span>  
+    <span class="n">Exception</span> <span class="n">ex</span> <span class="p">=</span> <span class="n">Server</span><span class="p">.</span><span class="nf">GetLastError</span><span class="p">();</span>
+    <span class="n">Session</span><span class="p">[</span><span class="s">"LastException"</span><span class="p">]</span> <span class="p">=</span> <span class="n">ex</span><span class="p">;</span>
+    <span class="n">Server</span><span class="p">.</span><span class="nf">Transfer</span><span class="p">(</span><span class="s">"myerrorpage.aspx"</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Unfortunately, just like Windows Forms, if an unhandled exception occurs on a separate thread (such as a Threadpool thread), or outside the request processing framework, then the AppDomain is terminated.  This has significant consequences for ASP.NET applications - because the website itself is cycled.  This means you have lost session state and your users are going to notice the website outage.  Most of the time, there isn’t much information to work off of – you end up with a cryptic Event Log entry like:</p>
+
+<pre><code class="language-output">EventType clr20r3, P1 w3wp.exe, P2 6.0.3790.1830, P3 4333d6f1, P4 app_web_5hu0gabf, P5 0.0.0.0, P6 4415a8be, P7 7, P8 a, P9 system.exception, P10 NIL.
+</code></pre>
+
+<p>In order to get more information, we need to hook the <strong>AppDomain.UnhandledException</strong> event and then log the information, just like we have for Windows Forms and Console applications.  We could put a handler into our global.asax, but that would only handle that one web application.  It would be better to create a new HTTP Module with the event handler and hook that up through the web.config.  Luckily for me, Microsoft has already published a KB article which shows off this exact solution - <a href="http://support.microsoft.com/?id=911816">http://support.microsoft.com/?id=911816</a>.  In this article, Microsoft details creating a new HttpModule class which will log the exception information to the event log so you will know exactly where the exception occurred and can provide your own exception handling.  Unfortunately, without the above <code class="language-plaintext highlighter-rouge">&lt;legacyUnhandledExceptionPolicy&gt;</code> entry, the website will still be cycled.</p>
+
+<p>Bottom line is: be aware of this new, breaking change – look for places where you might not be handling exceptions properly and implement good audit trail mechanisms to log failures when/if they occur.  This will allow you to find and fix issues before they become production problems as you port your legacy code over to .NET 2.0!</p>
+
+  </div><a class="u-url" href="/dotnet/2006/03/12/handling-unhandled-exceptions-in-net-2-0.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

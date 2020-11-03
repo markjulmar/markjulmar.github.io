@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Behaviors in Windows 8.1 Store Apps | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="Behaviors in Windows 8.1 Store Apps" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Visual Studio 2013 RC was released to MSDN this week and it includes some very cool new features which have been detailed on various blogs around the Internet. One feature I’ve not seen much coverage of, but am very excited about is support for Blend behaviors. If you create a new Windows Store application using the 8.1 profile you will find Blend behaviors in the Assets tab:" />
+<meta property="og:description" content="Visual Studio 2013 RC was released to MSDN this week and it includes some very cool new features which have been detailed on various blogs around the Internet. One feature I’ve not seen much coverage of, but am very excited about is support for Blend behaviors. If you create a new Windows Store application using the 8.1 profile you will find Blend behaviors in the Assets tab:" />
+<link rel="canonical" href="http://localhost:4000/mvvm/2013/09/10/behaviors-in-windows-8-1-store-apps.html" />
+<meta property="og:url" content="http://localhost:4000/mvvm/2013/09/10/behaviors-in-windows-8-1-store-apps.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2013-09-10T19:00:00-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Behaviors in Windows 8.1 Store Apps" />
+<script type="application/ld+json">
+{"headline":"Behaviors in Windows 8.1 Store Apps","dateModified":"2013-09-10T19:00:00-05:00","datePublished":"2013-09-10T19:00:00-05:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/mvvm/2013/09/10/behaviors-in-windows-8-1-store-apps.html"},"description":"Visual Studio 2013 RC was released to MSDN this week and it includes some very cool new features which have been detailed on various blogs around the Internet. One feature I’ve not seen much coverage of, but am very excited about is support for Blend behaviors. If you create a new Windows Store application using the 8.1 profile you will find Blend behaviors in the Assets tab:","url":"http://localhost:4000/mvvm/2013/09/10/behaviors-in-windows-8-1-store-apps.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Behaviors in Windows 8.1 Store Apps</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2013-09-10T19:00:00-05:00" itemprop="datePublished">Sep 10, 2013
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>Visual Studio 2013 RC was released to MSDN this week and it includes some very cool new features which have been detailed on various blogs around the Internet.  One feature I’ve not seen much coverage of, but am <em>very</em> excited about is support for Blend behaviors.  If you create a new Windows Store application using the 8.1 profile you will find Blend behaviors in the Assets tab:</p>
+
+<p><a href="/images/Blend-Behaviors.jpg" title="Blend-Behaviors"></a></p>
+
+<p>The list of behaviors is small - compared to WPF and Silverlight, but all the important ones are there, along with a new one - <code class="language-plaintext highlighter-rouge">IncrementalUpdateBehavior</code> which I’ll get to in a later post.</p>
+
+<p>What I wanted to talk about here was the <em>architecture</em> of these behaviors.  First, they are in an SDK assembly - so not in the core .NET profile.  In order to use them, you either need to pull up Blend and drag one onto your design surface (which adds the appropriate references), or add the Behaviors SDK reference in Visual Studio 2013:</p>
+
+<p><a href="/images/AddReference-Behaviors.jpg" title="AddReference-Behaviors"></a></p>
+
+<p>This will add two assemblies to your project which come from the Windows SDK folder:</p>
+
+<p><img src="/images/Folder-Behaviors.jpg" alt="" title="Folder-Behaviors" /></p>
+
+<p><code class="language-plaintext highlighter-rouge">Microsoft.Xaml.Interactivity</code> is where the core support is - any custom behaviors will need access to the types in this assembly.  <code class="language-plaintext highlighter-rouge">Microsoft.Xaml.Interactions</code> is where the system-supplied behaviors are located.</p>
+
+<p><img src="/images/Class-List-Behaviors.jpg" alt="" title="Class-List-Behaviors" /></p>
+
+<p>Examining the core data structures, you will see several differences from the WPF/SL behavior world - in particular there is no set of base classes (<code class="language-plaintext highlighter-rouge">Behavior&lt;T&gt;</code>, <code class="language-plaintext highlighter-rouge">Trigger&lt;T&gt;</code>, <code class="language-plaintext highlighter-rouge">Action&lt;T&gt;</code>) to derive from - instead we have some interfaces: <code class="language-plaintext highlighter-rouge">IAction</code> and <code class="language-plaintext highlighter-rouge">IBehavior</code>.  This is presumably because WinRT doesn’t support inheritance across the ABI and they want to keep the same basic style for native behaviors in the C++ world.</p>
+
+<p>Notice as well, there is no <em>trigger</em> in this implementation - instead, everything is a <em>behavior</em> and some behaviors contain a collection of <em>actions</em> to invoke.  So they’ve simplified the model some.  So, let’s see how we’d implement a custom behavior in this new world.</p>
+
+<p>As our example, we’ll re implement the <code class="language-plaintext highlighter-rouge">DragPositionBehavior</code> which is missing in this framework. First, we create a type that derives from <code class="language-plaintext highlighter-rouge">DependencyObject</code> and implement <code class="language-plaintext highlighter-rouge">IBehavior</code>.  <code class="language-plaintext highlighter-rouge">DependencyObject</code> will give us access to dependency properties which are bindable - and the infrastructure will ensure that the DataContext is carried through for us.  In my experimentation, I found that deriving from higher level constructs such as <code class="language-plaintext highlighter-rouge">FrameworkElement</code> stopped some things from working so it appears that <code class="language-plaintext highlighter-rouge">DependencyObject</code> is the best base class for this at the moment.</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">class</span> <span class="nc">DragPositionBehavior</span> <span class="p">:</span> <span class="n">DependencyObject</span><span class="p">,</span> <span class="n">IBehavior</span>
+<span class="p">{</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Next, add any properties which will control this behavior - we will get to triggers and actions in a moment, but for this example we only need a flag as to whether this is enabled or not:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">class</span> <span class="nc">DragPositionBehavior</span> <span class="p">:</span> <span class="n">DependencyObject</span><span class="p">,</span> <span class="n">IBehavior</span>
+<span class="p">{</span>
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Backing storage for the IsEnabled property.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="k">static</span> <span class="n">DependencyProperty</span> <span class="n">IsEnabledProperty</span> <span class="p">=</span> <span class="n">DependencyProperty</span><span class="p">.</span><span class="nf">Register</span><span class="p">(</span><span class="s">"IsEnabled"</span><span class="p">,</span> <span class="k">typeof</span><span class="p">(</span><span class="kt">bool</span><span class="p">),</span> <span class="k">typeof</span><span class="p">(</span><span class="n">DragPositionBehavior</span><span class="p">),</span> <span class="k">new</span> <span class="nf">PropertyMetadata</span><span class="p">(</span><span class="k">false</span><span class="p">));</span>
+
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Property to enable/disable the drag capability</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="kt">bool</span> <span class="n">IsEnabled</span>
+    <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="p">(</span><span class="kt">bool</span><span class="p">)</span> <span class="k">base</span><span class="p">.</span><span class="nf">GetValue</span><span class="p">(</span><span class="n">IsEnabledProperty</span><span class="p">);</span> <span class="p">}</span>
+        <span class="k">set</span> <span class="p">{</span> <span class="k">base</span><span class="p">.</span><span class="nf">SetValue</span><span class="p">(</span><span class="n">IsEnabledProperty</span><span class="p">,</span> <span class="k">value</span><span class="p">);</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Next, we need to implement the <code class="language-plaintext highlighter-rouge">IBehavior</code> interface. It looks like this:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">interface</span> <span class="nc">IBehavior</span>
+<span class="p">{</span>
+    <span class="n">DependencyObject</span> <span class="n">AssociatedObject</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="p">}</span>
+    <span class="k">void</span> <span class="nf">Attach</span><span class="p">(</span><span class="n">DependencyObject</span> <span class="n">associatedObject</span><span class="p">);</span>
+    <span class="k">void</span> <span class="nf">Detach</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>This should look a bit familiar if you’ve built behaviors for other XAML based platforms - it’s the basic interface used by the Behavior class. In this case, the system will call <code class="language-plaintext highlighter-rouge">Attach()</code> when our behavior is associated with an element, and <code class="language-plaintext highlighter-rouge">Detach()</code> when it is removed. Your code is responsible for setting the AssociatedObject property - notice it only has a getter in the interface. Here’s a bare-bones implementation that will hook into the PointerPressed event when it is attached and remove our handler when it is released, along the way we’ll have a little logic to verify we aren’t added to more than one element, not supported in design-mode (important!) and we are always detached before being re-attached:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// Get the associated target object</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="k">public</span> <span class="n">DependencyObject</span> <span class="n">AssociatedObject</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+<span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// Attaches to the specified object.</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="k">public</span> <span class="k">void</span> <span class="nf">Attach</span><span class="p">(</span><span class="n">DependencyObject</span> <span class="n">associatedObject</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="k">if</span> <span class="p">((</span><span class="n">associatedObject</span> <span class="p">!=</span> <span class="n">AssociatedObject</span><span class="p">)</span>
+        <span class="p">&amp;&amp;</span> <span class="p">!</span><span class="n">DesignMode</span><span class="p">.</span><span class="n">DesignModeEnabled</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">AssociatedObject</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+            <span class="k">throw</span> <span class="k">new</span> <span class="nf">InvalidOperationException</span><span class="p">(</span><span class="s">"Cannot attach behavior multiple times."</span><span class="p">);</span>
+
+        <span class="n">AssociatedObject</span> <span class="p">=</span> <span class="n">associatedObject</span><span class="p">;</span>
+        <span class="n">FrameworkElement</span> <span class="n">fe</span> <span class="p">=</span> <span class="n">AssociatedObject</span> <span class="k">as</span> <span class="n">FrameworkElement</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">fe</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="n">fe</span><span class="p">.</span><span class="nf">AddHandler</span><span class="p">(</span><span class="n">UIElement</span><span class="p">.</span><span class="n">PointerPressedEvent</span><span class="p">,</span> <span class="k">new</span> <span class="nf">PointerEventHandler</span><span class="p">(</span><span class="n">OnPointerPressed</span><span class="p">),</span> <span class="k">true</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// Detaches this instance from its associated object.</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="k">public</span> <span class="k">void</span> <span class="nf">Detach</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="n">FrameworkElement</span> <span class="n">fe</span> <span class="p">=</span> <span class="n">AssociatedObject</span> <span class="k">as</span> <span class="n">FrameworkElement</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">fe</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">fe</span><span class="p">.</span><span class="nf">RemoveHandler</span><span class="p">(</span><span class="n">UIElement</span><span class="p">.</span><span class="n">PointerPressedEvent</span><span class="p">,</span> <span class="k">new</span> <span class="nf">PointerEventHandler</span><span class="p">(</span><span class="n">OnPointerPressed</span><span class="p">));</span>
+    <span class="p">}</span>
+
+    <span class="n">AssociatedObject</span> <span class="p">=</span> <span class="k">null</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Next, let’s add our pointer logic to watch for a touch-drag or left-button-down drag:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// Handles the pointer down event</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="k">private</span> <span class="k">void</span> <span class="nf">OnPointerPressed</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">PointerRoutedEventArgs</span> <span class="n">e</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="c1">// Ignore if the property is turned off.</span>
+    <span class="k">if</span> <span class="p">(!</span><span class="n">IsEnabled</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+
+    <span class="c1">// Begin the drag operation</span>
+    <span class="n">FrameworkElement</span> <span class="n">uie</span> <span class="p">=</span> <span class="p">(</span><span class="n">FrameworkElement</span><span class="p">)</span> <span class="n">sender</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">Pointer</span><span class="p">.</span><span class="n">PointerDeviceType</span> <span class="p">==</span> <span class="n">PointerDeviceType</span><span class="p">.</span><span class="n">Mouse</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// If it's not the left button, then exit.</span>
+        <span class="k">if</span> <span class="p">(!</span><span class="n">e</span><span class="p">.</span><span class="nf">GetCurrentPoint</span><span class="p">(</span><span class="n">uie</span><span class="p">).</span><span class="n">Properties</span><span class="p">.</span><span class="n">IsLeftButtonPressed</span><span class="p">)</span>
+            <span class="k">return</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="kt">var</span> <span class="n">currentDragInfo</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">ElementMouseDrag</span><span class="p">();</span>
+    <span class="n">currentDragInfo</span><span class="p">.</span><span class="nf">OnPointerDown</span><span class="p">(</span><span class="n">uie</span><span class="p">,</span> <span class="n">e</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>That’s the basic implementation - Attach hooks any events, Detach unhooks events and then you provide event handlers to drive your behavior. Here’s the full sample:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">using</span> <span class="nn">System</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Windows.ApplicationModel</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Windows.Devices.Input</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Windows.UI.Input</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Windows.UI.Xaml</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Windows.UI.Xaml.Controls</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Windows.UI.Xaml.Input</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Windows.UI.Xaml.Media</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Microsoft.Xaml.Interactivity</span><span class="p">;</span>
+
+<span class="k">namespace</span> <span class="nn">JulMar.Windows.Interactivity</span>
+<span class="p">{</span>
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// This Blend behavior provides positional translation for elements through a</span>
+    <span class="c1">/// RenderTransform using Drag/Drop semantics.</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="k">class</span> <span class="nc">DragPositionBehavior</span> <span class="p">:</span> <span class="n">DependencyObject</span><span class="p">,</span> <span class="n">IBehavior</span>
+    <span class="p">{</span>
+        <span class="c1">/// &lt;summary&gt;</span>
+        <span class="c1">/// Backing storage for the IsEnabled property.</span>
+        <span class="c1">/// &lt;/summary&gt;</span>
+        <span class="k">public</span> <span class="k">static</span> <span class="n">DependencyProperty</span> <span class="n">IsEnabledProperty</span> <span class="p">=</span> <span class="n">DependencyProperty</span><span class="p">.</span><span class="nf">Register</span><span class="p">(</span><span class="s">"IsEnabled"</span><span class="p">,</span> <span class="k">typeof</span> <span class="p">(</span><span class="kt">bool</span><span class="p">),</span> <span class="k">typeof</span> <span class="p">(</span><span class="n">DragPositionBehavior</span><span class="p">),</span> <span class="k">new</span> <span class="nf">PropertyMetadata</span><span class="p">(</span><span class="k">false</span><span class="p">));</span>
+
+        <span class="c1">/// &lt;summary&gt;</span>
+        <span class="c1">/// Property to enable/disable the drag capability</span>
+        <span class="c1">/// &lt;/summary&gt;</span>
+        <span class="k">public</span> <span class="kt">bool</span> <span class="n">IsEnabled</span>
+        <span class="p">{</span>
+            <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="p">(</span><span class="kt">bool</span><span class="p">)</span> <span class="k">base</span><span class="p">.</span><span class="nf">GetValue</span><span class="p">(</span><span class="n">IsEnabledProperty</span><span class="p">);</span> <span class="p">}</span>
+            <span class="k">set</span> <span class="p">{</span> <span class="k">base</span><span class="p">.</span><span class="nf">SetValue</span><span class="p">(</span><span class="n">IsEnabledProperty</span><span class="p">,</span> <span class="k">value</span><span class="p">);</span> <span class="p">}</span>
+        <span class="p">}</span>
+
+        <span class="c1">/// &lt;summary&gt;</span>
+        <span class="c1">/// Get the associated target object</span>
+        <span class="c1">/// &lt;/summary&gt;</span>
+        <span class="k">public</span> <span class="n">DependencyObject</span> <span class="n">AssociatedObject</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+
+        <span class="c1">/// &lt;summary&gt;</span>
+        <span class="c1">/// Attaches to the specified object.</span>
+        <span class="c1">/// &lt;/summary&gt;</span>
+        <span class="k">public</span> <span class="k">void</span> <span class="nf">Attach</span><span class="p">(</span><span class="n">DependencyObject</span> <span class="n">associatedObject</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="k">if</span> <span class="p">((</span><span class="n">associatedObject</span> <span class="p">!=</span> <span class="n">AssociatedObject</span><span class="p">)</span>
+                <span class="p">&amp;&amp;</span> <span class="p">!</span><span class="n">DesignMode</span><span class="p">.</span><span class="n">DesignModeEnabled</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">AssociatedObject</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+                    <span class="k">throw</span> <span class="k">new</span> <span class="nf">InvalidOperationException</span><span class="p">(</span><span class="s">"Cannot attach behavior multiple times."</span><span class="p">);</span>
+
+                <span class="n">AssociatedObject</span> <span class="p">=</span> <span class="n">associatedObject</span><span class="p">;</span>
+                <span class="n">FrameworkElement</span> <span class="n">fe</span> <span class="p">=</span> <span class="n">AssociatedObject</span> <span class="k">as</span> <span class="n">FrameworkElement</span><span class="p">;</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">fe</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+                <span class="p">{</span>
+                    <span class="n">fe</span><span class="p">.</span><span class="nf">AddHandler</span><span class="p">(</span><span class="n">UIElement</span><span class="p">.</span><span class="n">PointerPressedEvent</span><span class="p">,</span> <span class="k">new</span> <span class="nf">PointerEventHandler</span><span class="p">(</span><span class="n">OnPointerPressed</span><span class="p">),</span> <span class="k">true</span><span class="p">);</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+
+        <span class="c1">/// &lt;summary&gt;</span>
+        <span class="c1">/// Detaches this instance from its associated object.</span>
+        <span class="c1">/// &lt;/summary&gt;</span>
+        <span class="k">public</span> <span class="k">void</span> <span class="nf">Detach</span><span class="p">()</span>
+        <span class="p">{</span>
+            <span class="n">FrameworkElement</span> <span class="n">fe</span> <span class="p">=</span> <span class="n">AssociatedObject</span> <span class="k">as</span> <span class="n">FrameworkElement</span><span class="p">;</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">fe</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="n">fe</span><span class="p">.</span><span class="nf">RemoveHandler</span><span class="p">(</span><span class="n">UIElement</span><span class="p">.</span><span class="n">PointerPressedEvent</span><span class="p">,</span> <span class="k">new</span> <span class="nf">PointerEventHandler</span><span class="p">(</span><span class="n">OnPointerPressed</span><span class="p">));</span>
+            <span class="p">}</span>
+            <span class="n">AssociatedObject</span> <span class="p">=</span> <span class="k">null</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="c1">/// &lt;summary&gt;</span>
+        <span class="c1">/// Handles the pointer down event</span>
+        <span class="c1">/// &lt;/summary&gt;</span>
+        <span class="k">private</span> <span class="k">void</span> <span class="nf">OnPointerPressed</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">PointerRoutedEventArgs</span> <span class="n">e</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="c1">// Ignore if the property is turned off.</span>
+            <span class="k">if</span> <span class="p">(!</span><span class="n">IsEnabled</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+
+            <span class="c1">// Begin the drag operation</span>
+            <span class="n">FrameworkElement</span> <span class="n">uie</span> <span class="p">=</span> <span class="p">(</span><span class="n">FrameworkElement</span><span class="p">)</span> <span class="n">sender</span><span class="p">;</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">Pointer</span><span class="p">.</span><span class="n">PointerDeviceType</span> <span class="p">==</span> <span class="n">PointerDeviceType</span><span class="p">.</span><span class="n">Mouse</span><span class="p">)</span> <span class="p">{</span>
+                <span class="c1">// If it's not the left button, then exit.</span>
+                <span class="k">if</span> <span class="p">(!</span><span class="n">e</span><span class="p">.</span><span class="nf">GetCurrentPoint</span><span class="p">(</span><span class="n">uie</span><span class="p">).</span><span class="n">Properties</span><span class="p">.</span><span class="n">IsLeftButtonPressed</span><span class="p">)</span>
+                    <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="kt">var</span> <span class="n">currentDragInfo</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">ElementMouseDrag</span><span class="p">();</span>
+            <span class="n">currentDragInfo</span><span class="p">.</span><span class="nf">OnPointerDown</span><span class="p">(</span><span class="n">uie</span><span class="p">,</span> <span class="n">e</span><span class="p">);</span>
+        <span class="p">}</span>
+
+        <span class="c1">/// &lt;summary&gt;</span>
+        <span class="c1">/// This class encapsulates the drag data + logic for a given element.</span>
+        <span class="c1">/// It saves memory space as it is only allocated while the object is</span>
+        <span class="c1">/// being dragged around.</span>
+        <span class="c1">/// &lt;/summary&gt;</span>
+        <span class="k">internal</span> <span class="k">class</span> <span class="nc">ElementMouseDrag</span>
+        <span class="p">{</span>
+            <span class="k">private</span> <span class="n">PointerPoint</span> <span class="n">_startPos</span><span class="p">;</span>
+            <span class="k">private</span> <span class="kt">bool</span> <span class="n">_adjustCanvasCoordinates</span><span class="p">,</span> <span class="n">_movedItem</span><span class="p">;</span>
+            <span class="k">private</span> <span class="n">TranslateTransform</span> <span class="n">_translatePos</span><span class="p">;</span>
+
+            <span class="k">public</span> <span class="k">void</span> <span class="nf">OnPointerDown</span><span class="p">(</span><span class="n">FrameworkElement</span> <span class="n">uie</span><span class="p">,</span> <span class="n">PointerRoutedEventArgs</span> <span class="n">e</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="n">FrameworkElement</span> <span class="n">parent</span> <span class="p">=</span> <span class="n">VisualTreeHelper</span><span class="p">.</span><span class="nf">GetParent</span><span class="p">(</span><span class="n">uie</span><span class="p">)</span> <span class="k">as</span> <span class="n">FrameworkElement</span><span class="p">;</span>
+                <span class="n">_adjustCanvasCoordinates</span> <span class="p">=</span> <span class="p">(</span><span class="n">parent</span> <span class="p">!=</span> <span class="k">null</span> <span class="p">&amp;&amp;</span> <span class="n">parent</span><span class="p">.</span><span class="nf">GetType</span><span class="p">()</span> <span class="p">==</span> <span class="k">typeof</span><span class="p">(</span><span class="n">Canvas</span><span class="p">));</span>
+                <span class="n">_startPos</span> <span class="p">=</span> <span class="n">e</span><span class="p">.</span><span class="nf">GetCurrentPoint</span><span class="p">(</span><span class="k">null</span><span class="p">);</span>
+
+                <span class="n">uie</span><span class="p">.</span><span class="n">PointerReleased</span> <span class="p">+=</span> <span class="n">OnPointerReleased</span><span class="p">;</span>
+                <span class="n">uie</span><span class="p">.</span><span class="n">PointerMoved</span> <span class="p">+=</span> <span class="n">OnPointerMoved</span><span class="p">;</span>
+                <span class="n">uie</span><span class="p">.</span><span class="n">PointerCaptureLost</span> <span class="p">+=</span> <span class="n">OnLostCapture</span><span class="p">;</span>
+                <span class="n">uie</span><span class="p">.</span><span class="nf">CapturePointer</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">Pointer</span><span class="p">);</span>
+            <span class="p">}</span>
+
+            <span class="k">private</span> <span class="k">void</span> <span class="nf">OnPointerReleased</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">PointerRoutedEventArgs</span> <span class="n">e</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="n">FrameworkElement</span> <span class="n">uie</span> <span class="p">=</span> <span class="p">(</span><span class="n">FrameworkElement</span><span class="p">)</span><span class="n">sender</span><span class="p">;</span>
+                <span class="n">uie</span><span class="p">.</span><span class="nf">ReleasePointerCapture</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">Pointer</span><span class="p">);</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">_movedItem</span><span class="p">)</span>
+                    <span class="n">e</span><span class="p">.</span><span class="n">Handled</span> <span class="p">=</span> <span class="k">true</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="k">private</span> <span class="k">void</span> <span class="nf">OnLostCapture</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">PointerRoutedEventArgs</span> <span class="n">e</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="n">FrameworkElement</span> <span class="n">uie</span> <span class="p">=</span> <span class="p">(</span><span class="n">FrameworkElement</span><span class="p">)</span><span class="n">sender</span><span class="p">;</span>
+                <span class="n">uie</span><span class="p">.</span><span class="n">PointerReleased</span> <span class="p">-=</span> <span class="n">OnPointerReleased</span><span class="p">;</span>
+                <span class="n">uie</span><span class="p">.</span><span class="n">PointerMoved</span> <span class="p">-=</span> <span class="n">OnPointerMoved</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="k">public</span> <span class="k">void</span> <span class="nf">OnPointerMoved</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">PointerRoutedEventArgs</span> <span class="n">e</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="n">FrameworkElement</span> <span class="n">uie</span> <span class="p">=</span> <span class="p">(</span><span class="n">FrameworkElement</span><span class="p">)</span><span class="n">sender</span><span class="p">;</span>
+
+                <span class="n">PointerPoint</span> <span class="n">currentPosition</span> <span class="p">=</span> <span class="n">e</span><span class="p">.</span><span class="nf">GetCurrentPoint</span><span class="p">(</span><span class="k">null</span><span class="p">);</span>
+
+                <span class="k">if</span> <span class="p">(!</span><span class="n">_movedItem</span><span class="p">)</span>
+                <span class="p">{</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">Math</span><span class="p">.</span><span class="nf">Abs</span><span class="p">(</span><span class="n">currentPosition</span><span class="p">.</span><span class="n">Position</span><span class="p">.</span><span class="n">X</span> <span class="p">-</span> <span class="n">_startPos</span><span class="p">.</span><span class="n">Position</span><span class="p">.</span><span class="n">X</span><span class="p">)</span> <span class="p">&lt;=</span> <span class="m">5</span> <span class="p">&amp;&amp;</span>
+                        <span class="n">Math</span><span class="p">.</span><span class="nf">Abs</span><span class="p">(</span><span class="n">currentPosition</span><span class="p">.</span><span class="n">Position</span><span class="p">.</span><span class="n">Y</span> <span class="p">-</span> <span class="n">_startPos</span><span class="p">.</span><span class="n">Position</span><span class="p">.</span><span class="n">Y</span><span class="p">)</span> <span class="p">&lt;=</span> <span class="m">5</span><span class="p">)</span>
+                        <span class="k">return</span><span class="p">;</span>
+                <span class="p">}</span>
+
+                <span class="n">_movedItem</span> <span class="p">=</span> <span class="k">true</span><span class="p">;</span>
+                <span class="n">e</span><span class="p">.</span><span class="n">Handled</span> <span class="p">=</span> <span class="k">true</span><span class="p">;</span>
+
+                <span class="k">if</span> <span class="p">(</span><span class="n">_adjustCanvasCoordinates</span><span class="p">)</span>
+                <span class="p">{</span>
+                    <span class="kt">double</span> <span class="n">adjustX</span> <span class="p">=</span> <span class="n">currentPosition</span><span class="p">.</span><span class="n">Position</span><span class="p">.</span><span class="n">X</span> <span class="p">-</span> <span class="n">_startPos</span><span class="p">.</span><span class="n">Position</span><span class="p">.</span><span class="n">X</span><span class="p">;</span>
+                    <span class="kt">double</span> <span class="n">adjustY</span> <span class="p">=</span> <span class="n">currentPosition</span><span class="p">.</span><span class="n">Position</span><span class="p">.</span><span class="n">Y</span> <span class="p">-</span> <span class="n">_startPos</span><span class="p">.</span><span class="n">Position</span><span class="p">.</span><span class="n">Y</span><span class="p">;</span>
+
+                    <span class="n">Canvas</span><span class="p">.</span><span class="nf">SetLeft</span><span class="p">(</span><span class="n">uie</span><span class="p">,</span> <span class="n">Canvas</span><span class="p">.</span><span class="nf">GetLeft</span><span class="p">(</span><span class="n">uie</span><span class="p">)</span> <span class="p">+</span> <span class="n">adjustX</span><span class="p">);</span>
+                    <span class="n">Canvas</span><span class="p">.</span><span class="nf">SetTop</span><span class="p">(</span><span class="n">uie</span><span class="p">,</span> <span class="n">Canvas</span><span class="p">.</span><span class="nf">GetTop</span><span class="p">(</span><span class="n">uie</span><span class="p">)</span> <span class="p">+</span> <span class="n">adjustY</span><span class="p">);</span>
+
+                    <span class="n">_startPos</span> <span class="p">=</span> <span class="n">currentPosition</span><span class="p">;</span>
+                <span class="p">}</span>
+                <span class="k">else</span> <span class="c1">// Not in a Canvas - use a RenderTransform instead.</span>
+                <span class="p">{</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">_translatePos</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+                    <span class="p">{</span>
+                        <span class="n">_translatePos</span><span class="p">.</span><span class="n">X</span> <span class="p">=</span> <span class="n">currentPosition</span><span class="p">.</span><span class="n">Position</span><span class="p">.</span><span class="n">X</span> <span class="p">-</span> <span class="n">_startPos</span><span class="p">.</span><span class="n">Position</span><span class="p">.</span><span class="n">X</span><span class="p">;</span>
+                        <span class="n">_translatePos</span><span class="p">.</span><span class="n">Y</span> <span class="p">=</span> <span class="n">currentPosition</span><span class="p">.</span><span class="n">Position</span><span class="p">.</span><span class="n">Y</span> <span class="p">-</span> <span class="n">_startPos</span><span class="p">.</span><span class="n">Position</span><span class="p">.</span><span class="n">Y</span><span class="p">;</span>
+                    <span class="p">}</span>
+                    <span class="k">else</span>
+                    <span class="p">{</span>
+                        <span class="n">_translatePos</span> <span class="p">=</span> <span class="k">new</span> <span class="n">TranslateTransform</span> <span class="p">{</span> <span class="n">X</span> <span class="p">=</span> <span class="n">currentPosition</span><span class="p">.</span><span class="n">Position</span><span class="p">.</span><span class="n">X</span> <span class="p">-</span> <span class="n">_startPos</span><span class="p">.</span><span class="n">Position</span><span class="p">.</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span> <span class="p">=</span> <span class="n">currentPosition</span><span class="p">.</span><span class="n">Position</span><span class="p">.</span><span class="n">Y</span> <span class="p">-</span> <span class="n">_startPos</span><span class="p">.</span><span class="n">Position</span><span class="p">.</span><span class="n">Y</span> <span class="p">};</span>
+
+                        <span class="c1">// Replace existing transform if it exists.</span>
+                        <span class="n">TransformGroup</span> <span class="n">transformGroup</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">TransformGroup</span><span class="p">();</span>
+                        <span class="k">if</span> <span class="p">(</span><span class="n">uie</span><span class="p">.</span><span class="n">RenderTransform</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+                            <span class="n">transformGroup</span><span class="p">.</span><span class="n">Children</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="n">uie</span><span class="p">.</span><span class="n">RenderTransform</span><span class="p">);</span>
+                        <span class="n">transformGroup</span><span class="p">.</span><span class="n">Children</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="n">_translatePos</span><span class="p">);</span>
+                        <span class="n">uie</span><span class="p">.</span><span class="n">RenderTransform</span> <span class="p">=</span> <span class="n">transformGroup</span><span class="p">;</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Ok, so that’s basic behaviors - what about triggers and actions? Well, as I mentioned, triggers are missing from this framework and have been replaced by behaviors with an Actions collection. There are two supplied trigger behaviors:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">EventTriggerBehavior</code> runs a set of actions when an event occurs - typically from the UI.</li>
+  <li><code class="language-plaintext highlighter-rouge">DataTriggerBehavior</code> runs a set of actions when a binding value matches a specific condition (==, !=, &gt;, etc.)</li>
+</ul>
+
+<p>As with normal behaviors, we can create our own trigger behaviors. As an example, let’s implement a <code class="language-plaintext highlighter-rouge">TimerTrigger</code> (also missing from the basic set of behaviors). The big difference between this and the prior example is we now have a <code class="language-plaintext highlighter-rouge">DependencyProperty</code> which returns an <code class="language-plaintext highlighter-rouge">ActionCollection</code> to assign actions to, and at some point we call the built-in <code class="language-plaintext highlighter-rouge">Interaction.ExecuteActions</code> method to run the actions.</p>
+
+<p>Here’s the code:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">using</span> <span class="nn">System</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Windows.ApplicationModel</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Windows.UI.Xaml</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Windows.UI.Xaml.Markup</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Microsoft.Xaml.Interactivity</span><span class="p">;</span>
+
+<span class="k">namespace</span> <span class="nn">JulMar.Windows.Interactivity</span>
+<span class="p">{</span>
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Trigger which runs off a timer</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="p">[</span><span class="nf">ContentProperty</span><span class="p">(</span><span class="n">Name</span> <span class="p">=</span> <span class="s">"Actions"</span><span class="p">)]</span>
+    <span class="k">public</span> <span class="k">sealed</span> <span class="k">class</span> <span class="nc">TimerTriggerBehavior</span> <span class="p">:</span> <span class="n">DependencyObject</span><span class="p">,</span> <span class="n">IBehavior</span>
+    <span class="p">{</span>
+        <span class="k">private</span> <span class="kt">int</span> <span class="n">_tickCount</span><span class="p">;</span>
+        <span class="k">private</span> <span class="n">DispatcherTimer</span> <span class="n">_timer</span><span class="p">;</span>
+
+        <span class="c1">/// &lt;summary&gt;</span>
+        <span class="c1">/// Backing storage for Actions collection</span>
+        <span class="c1">/// &lt;/summary&gt;</span>
+        <span class="k">public</span> <span class="k">static</span> <span class="k">readonly</span> <span class="n">DependencyProperty</span> <span class="n">ActionsProperty</span> <span class="p">=</span> <span class="n">DependencyProperty</span><span class="p">.</span><span class="nf">Register</span><span class="p">(</span><span class="s">"Actions"</span><span class="p">,</span> <span class="k">typeof</span><span class="p">(</span><span class="n">ActionCollection</span><span class="p">),</span> <span class="k">typeof</span><span class="p">(</span><span class="n">TimerTriggerBehavior</span><span class="p">),</span> <span class="k">new</span> <span class="nf">PropertyMetadata</span><span class="p">(</span><span class="k">null</span><span class="p">));</span>
+
+        <span class="c1">/// &lt;summary&gt;</span>
+        <span class="c1">/// Actions collection</span>
+        <span class="c1">/// &lt;/summary&gt;</span>
+        <span class="k">public</span> <span class="n">ActionCollection</span> <span class="n">Actions</span>
+        <span class="p">{</span>
+            <span class="k">get</span>
+            <span class="p">{</span>
+                <span class="n">ActionCollection</span> <span class="n">actions</span> <span class="p">=</span> <span class="p">(</span><span class="n">ActionCollection</span><span class="p">)</span><span class="k">base</span><span class="p">.</span><span class="nf">GetValue</span><span class="p">(</span><span class="n">ActionsProperty</span><span class="p">);</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">actions</span> <span class="p">==</span> <span class="k">null</span><span class="p">)</span>
+                <span class="p">{</span>
+                    <span class="n">actions</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">ActionCollection</span><span class="p">();</span>
+                    <span class="k">base</span><span class="p">.</span><span class="nf">SetValue</span><span class="p">(</span><span class="n">ActionsProperty</span><span class="p">,</span> <span class="n">actions</span><span class="p">);</span>
+                <span class="p">}</span>
+                <span class="k">return</span> <span class="n">actions</span><span class="p">;</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+
+        <span class="c1">/// &lt;summary&gt;</span>
+        <span class="c1">/// Backing storage for the counter</span>
+        <span class="c1">/// &lt;/summary&gt;</span>
+        <span class="k">public</span> <span class="k">static</span> <span class="k">readonly</span> <span class="n">DependencyProperty</span> <span class="n">MillisecondsPerTickProperty</span> <span class="p">=</span> <span class="n">DependencyProperty</span><span class="p">.</span><span class="nf">Register</span><span class="p">(</span><span class="s">"MillisecondsPerTick"</span><span class="p">,</span> <span class="k">typeof</span><span class="p">(</span><span class="kt">double</span><span class="p">),</span> <span class="k">typeof</span><span class="p">(</span><span class="n">TimerTrigger</span><span class="p">),</span> <span class="k">new</span> <span class="nf">PropertyMetadata</span><span class="p">(</span><span class="m">1000.0</span><span class="p">));</span>
+
+        <span class="c1">/// &lt;summary&gt;</span>
+        <span class="c1">/// Milliseconds</span>
+        <span class="c1">/// &lt;/summary&gt;</span>
+        <span class="k">public</span> <span class="kt">double</span> <span class="n">MillisecondsPerTick</span>
+        <span class="p">{</span>
+            <span class="k">get</span>
+            <span class="p">{</span>
+                <span class="k">return</span> <span class="p">(</span><span class="kt">double</span><span class="p">)</span><span class="k">base</span><span class="p">.</span><span class="nf">GetValue</span><span class="p">(</span><span class="n">MillisecondsPerTickProperty</span><span class="p">);</span>
+            <span class="p">}</span>
+            <span class="k">set</span>
+            <span class="p">{</span>
+                <span class="k">base</span><span class="p">.</span><span class="nf">SetValue</span><span class="p">(</span><span class="n">MillisecondsPerTickProperty</span><span class="p">,</span> <span class="k">value</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+
+        <span class="c1">/// &lt;summary&gt;</span>
+        <span class="c1">/// Backing storage for the total ticks counter</span>
+        <span class="c1">/// &lt;/summary&gt;</span>
+        <span class="k">public</span> <span class="k">static</span> <span class="k">readonly</span> <span class="n">DependencyProperty</span> <span class="n">TotalTicksProperty</span> <span class="p">=</span> <span class="n">DependencyProperty</span><span class="p">.</span><span class="nf">Register</span><span class="p">(</span><span class="s">"TotalTicks"</span><span class="p">,</span> <span class="k">typeof</span><span class="p">(</span><span class="kt">int</span><span class="p">),</span> <span class="k">typeof</span><span class="p">(</span><span class="n">TimerTrigger</span><span class="p">),</span> <span class="k">new</span> <span class="nf">PropertyMetadata</span><span class="p">(-</span><span class="m">1</span><span class="p">));</span>
+
+        <span class="c1">/// &lt;summary&gt;</span>
+        <span class="c1">/// Total ticks elapsed</span>
+        <span class="c1">/// &lt;/summary&gt;</span>
+        <span class="k">public</span> <span class="kt">int</span> <span class="n">TotalTicks</span>
+        <span class="p">{</span>
+            <span class="k">get</span>
+            <span class="p">{</span>
+                <span class="k">return</span> <span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="k">base</span><span class="p">.</span><span class="nf">GetValue</span><span class="p">(</span><span class="n">TotalTicksProperty</span><span class="p">);</span>
+            <span class="p">}</span>
+            <span class="k">set</span>
+            <span class="p">{</span>
+                <span class="k">base</span><span class="p">.</span><span class="nf">SetValue</span><span class="p">(</span><span class="n">TotalTicksProperty</span><span class="p">,</span> <span class="k">value</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+
+        <span class="c1">/// &lt;summary&gt;</span>
+        <span class="c1">/// Called when the timer elapses</span>
+        <span class="c1">/// &lt;/summary&gt;</span>
+        <span class="c1">/// &lt;param name="sender"&gt;&lt;/param&gt;</span>
+        <span class="c1">/// &lt;param name="e"&gt;&lt;/param&gt;</span>
+        <span class="k">private</span> <span class="k">void</span> <span class="nf">OnTimerTick</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="kt">object</span> <span class="n">e</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="n">TotalTicks</span> <span class="p">&gt;</span> <span class="m">0</span> <span class="p">&amp;&amp;</span> <span class="p">++</span><span class="k">this</span><span class="p">.</span><span class="n">_tickCount</span> <span class="p">&gt;=</span> <span class="k">this</span><span class="p">.</span><span class="n">TotalTicks</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="k">this</span><span class="p">.</span><span class="nf">StopTimer</span><span class="p">();</span>
+            <span class="p">}</span>
+
+            <span class="c1">// Raise the actions</span>
+            <span class="n">Interaction</span><span class="p">.</span><span class="nf">ExecuteActions</span><span class="p">(</span><span class="n">AssociatedObject</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="n">Actions</span><span class="p">,</span> <span class="k">null</span><span class="p">);</span>
+        <span class="p">}</span>
+
+        <span class="c1">/// &lt;summary&gt;</span>
+        <span class="c1">/// Called to start the timer</span>
+        <span class="c1">/// &lt;/summary&gt;</span>
+        <span class="k">internal</span> <span class="k">void</span> <span class="nf">StartTimer</span><span class="p">()</span>
+        <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="n">_timer</span> <span class="p">=</span> <span class="k">new</span> <span class="n">DispatcherTimer</span> <span class="p">{</span><span class="n">Interval</span> <span class="p">=</span> <span class="p">(</span><span class="n">TimeSpan</span><span class="p">.</span><span class="nf">FromMilliseconds</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="n">MillisecondsPerTick</span><span class="p">))};</span>
+            <span class="k">this</span><span class="p">.</span><span class="n">_timer</span><span class="p">.</span><span class="n">Tick</span> <span class="p">+=</span> <span class="k">this</span><span class="p">.</span><span class="n">OnTimerTick</span><span class="p">;</span>
+            <span class="k">this</span><span class="p">.</span><span class="n">_timer</span><span class="p">.</span><span class="nf">Start</span><span class="p">();</span>
+        <span class="p">}</span>
+
+         <span class="c1">/// &lt;summary&gt;</span>
+        <span class="c1">/// Called to stop the timer</span>
+        <span class="c1">/// &lt;/summary&gt;</span>
+        <span class="k">internal</span> <span class="k">void</span> <span class="nf">StopTimer</span><span class="p">()</span>
+        <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="n">_timer</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="k">this</span><span class="p">.</span><span class="n">_timer</span><span class="p">.</span><span class="nf">Stop</span><span class="p">();</span>
+                <span class="k">this</span><span class="p">.</span><span class="n">_timer</span> <span class="p">=</span> <span class="k">null</span><span class="p">;</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+
+        <span class="c1">/// &lt;summary&gt;</span>
+        <span class="c1">/// Attaches to the specified object.</span>
+        <span class="c1">/// &lt;/summary&gt;</span>
+        <span class="c1">/// &lt;param name="associatedObject"&gt;The &lt;see cref="T:Windows.UI.Xaml.DependencyObject"/&gt; to which the &lt;seealso cref="T:Microsoft.Xaml.Interactivity.IBehavior"/&gt; will be attached.&lt;/param&gt;</span>
+        <span class="k">public</span> <span class="k">void</span> <span class="nf">Attach</span><span class="p">(</span><span class="n">DependencyObject</span> <span class="n">associatedObject</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="k">if</span> <span class="p">((</span><span class="n">associatedObject</span> <span class="p">!=</span> <span class="n">AssociatedObject</span><span class="p">)</span> <span class="p">&amp;&amp;</span> <span class="p">!</span><span class="n">DesignMode</span><span class="p">.</span><span class="n">DesignModeEnabled</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">AssociatedObject</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+                    <span class="k">throw</span> <span class="k">new</span> <span class="nf">InvalidOperationException</span><span class="p">(</span><span class="s">"Cannot attach behavior multiple times."</span><span class="p">);</span>
+                <span class="n">AssociatedObject</span> <span class="p">=</span> <span class="n">associatedObject</span><span class="p">;</span>
+                <span class="nf">StartTimer</span><span class="p">();</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+
+        <span class="c1">/// &lt;summary&gt;</span>
+        <span class="c1">/// Detaches this instance from its associated object.</span>
+        <span class="c1">/// &lt;/summary&gt;</span>
+        <span class="k">public</span> <span class="k">void</span> <span class="nf">Detach</span><span class="p">()</span>
+        <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nf">StopTimer</span><span class="p">();</span>
+            <span class="n">AssociatedObject</span> <span class="p">=</span> <span class="k">null</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="c1">/// &lt;summary&gt;</span>
+        <span class="c1">/// Gets the &lt;see cref="T:Windows.UI.Xaml.DependencyObject"/&gt; to which the &lt;seealso cref="T:Microsoft.Xaml.Interactivity.IBehavior"/&gt; is attached.</span>
+        <span class="c1">/// &lt;/summary&gt;</span>
+        <span class="k">public</span> <span class="n">DependencyObject</span> <span class="n">AssociatedObject</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">private</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>A couple of notes.</p>
+
+<ol>
+  <li>The <code class="language-plaintext highlighter-rouge">ContentPropertyAttribute</code> applied to the class allows us to add <code class="language-plaintext highlighter-rouge">Action</code> elements directly as children to the behavior. This is important, both for Blendability but also for the action collection management.</li>
+  <li>The <code class="language-plaintext highlighter-rouge">Actions</code> property creates a new <code class="language-plaintext highlighter-rouge">ActionCollection</code> if one doesn’t exist in the getter. This is a requirement - otherwise WinRT throws a weird null collection exception.</li>
+  <li>When the timer expires, we call the static method <code class="language-plaintext highlighter-rouge">Interaction.ExecuteActions</code> which takes the object raising the notification, the ActionCollection and a parameter which will be passed to each action. This method is built into the framework and will do the work of running all the IAction types.</li>
+</ol>
+
+<p>To use the behavior, you can pull up your code in Blend, build the app (so Blend sees the behaviors - note you will need a reference to the Behaviors SDK or it won’t see them until you have it).  Drag the <code class="language-plaintext highlighter-rouge">TimerTriggerBehavior</code> onto an element and then drag actions onto the behavior - this applies the actions. The default trigger (when you drag/drop and action by itself onto an element) is an <code class="language-plaintext highlighter-rouge">EventTriggerBehavior</code>. You can also just type the code into Visual Studio 2013 (make sure to define the appropriate namespaces).</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">&lt;!--Play sound after 1 second--&gt;</span>
+<span class="nt">&lt;interactivity1:TimerTriggerBehavior</span> <span class="na">MillisecondsPerTick=</span><span class="s">"1000"</span> <span class="na">TotalTicks=</span><span class="s">"2"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;media:PlaySoundAction</span> <span class="na">Source=</span><span class="s">"tada.wav"</span> <span class="na">Volume=</span><span class="s">"1"</span> <span class="nt">/&gt;</span>
+<span class="nt">&lt;/interactivity1:TimerTriggerBehavior&gt;</span>
+</code></pre></div></div>
+
+<p>Lastly, we have actions. These are bits of code to perform when a trigger behavior runs. This is actually the main thing people typically build UI behaviors on top of.</p>
+
+<p>There are several system-supplied actions including</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">CallMethodAction</code> - invokes a public method, typically on a viewmodel</li>
+  <li><code class="language-plaintext highlighter-rouge">ChangePropertyAction</code> - changes a property value</li>
+  <li><code class="language-plaintext highlighter-rouge">ControlStoryboardAction</code> - play, pause, stop a storyboard animation</li>
+  <li><code class="language-plaintext highlighter-rouge">GoToStateAction</code> - changes a visual state using the VisualStateManager</li>
+  <li><code class="language-plaintext highlighter-rouge">InvokeCommandAction</code> - invokes an <code class="language-plaintext highlighter-rouge">ICommand</code> implementation, typically on a viewmodel</li>
+  <li><code class="language-plaintext highlighter-rouge">NavigateToPageAction</code> - does a frame Navigate to a specific page</li>
+  <li><code class="language-plaintext highlighter-rouge">PlaySoundAction</code> - plays a media file.</li>
+</ul>
+
+<p>You can easily create your own - in this case it requires implementing <code class="language-plaintext highlighter-rouge">IAction</code> which looks like:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">interface</span> <span class="nc">IAction</span>
+<span class="p">{</span>
+    <span class="kt">object</span> <span class="nf">Execute</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="kt">object</span> <span class="n">parameter</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Very simple. As an example, let’s implement a <code class="language-plaintext highlighter-rouge">SetFocusAction</code> to push focus to a UI element, it doesn’t have an Attach/Detach - it simply executes. However, it also should derive from <code class="language-plaintext highlighter-rouge">DependencyObject</code> and expose any controlling properties as <code class="language-plaintext highlighter-rouge">DependencyProperty</code> types for binding purposes. In our example here, we need a UI target to shift focus to when the action runs so we will define a <code class="language-plaintext highlighter-rouge">Target</code> property and then when we are invoked, attempt to move focus programmatically to that target.</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">using</span> <span class="nn">Microsoft.Xaml.Interactivity</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Windows.UI.Xaml</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">Windows.UI.Xaml.Controls</span><span class="p">;</span>
+
+<span class="k">namespace</span> <span class="nn">JulMar.Windows.Interactivity</span>
+<span class="p">{</span>
+    <span class="c1">/// &lt;summary&gt;</span>
+    <span class="c1">/// Shifts focus to some control</span>
+    <span class="c1">/// &lt;/summary&gt;</span>
+    <span class="k">public</span> <span class="k">sealed</span> <span class="k">class</span> <span class="nc">SetFocusAction</span> <span class="p">:</span> <span class="n">DependencyObject</span><span class="p">,</span> <span class="n">IAction</span>
+    <span class="p">{</span>
+        <span class="c1">/// &lt;summary&gt;</span>
+        <span class="c1">/// Backing storage for Target property</span>
+        <span class="c1">/// &lt;/summary&gt;</span>
+        <span class="k">public</span> <span class="k">static</span> <span class="k">readonly</span> <span class="n">DependencyProperty</span> <span class="n">TargetProperty</span> <span class="p">=</span> <span class="n">DependencyProperty</span><span class="p">.</span><span class="nf">Register</span><span class="p">(</span><span class="s">"Target"</span><span class="p">,</span> <span class="k">typeof</span> <span class="p">(</span><span class="n">Control</span><span class="p">),</span> <span class="k">typeof</span> <span class="p">(</span><span class="n">SetFocusAction</span><span class="p">),</span> <span class="k">new</span> <span class="nf">PropertyMetadata</span><span class="p">(</span><span class="k">null</span><span class="p">));</span>
+
+        <span class="c1">/// &lt;summary&gt;</span>
+        <span class="c1">/// The focus target.</span>
+        <span class="c1">/// &lt;/summary&gt;</span>
+        <span class="k">public</span> <span class="n">Control</span> <span class="n">Target</span>
+        <span class="p">{</span>
+            <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="p">(</span><span class="n">Control</span><span class="p">)</span><span class="k">base</span><span class="p">.</span><span class="nf">GetValue</span><span class="p">(</span><span class="n">TargetProperty</span><span class="p">);</span> <span class="p">}</span>
+            <span class="k">set</span> <span class="p">{</span> <span class="k">base</span><span class="p">.</span><span class="nf">SetValue</span><span class="p">(</span><span class="n">TargetProperty</span><span class="p">,</span> <span class="k">value</span><span class="p">);</span> <span class="p">}</span>
+        <span class="p">}</span>
+
+        <span class="c1">/// &lt;summary&gt;</span>
+        <span class="c1">/// Executes the action.</span>
+        <span class="c1">/// &lt;/summary&gt;</span>
+        <span class="c1">/// &lt;param name="sender"&gt;The &lt;see cref="T:System.Object"/&gt; that is passed to the action by the behavior. Generally this is &lt;seealso cref="P:Microsoft.Xaml.Interactivity.IBehavior.AssociatedObject"/&gt; or a target object.&lt;/param&gt;&lt;param name="parameter"&gt;The value of this parameter is determined by the caller.&lt;/param&gt;</span>
+        <span class="c1">/// &lt;remarks&gt;</span>
+        <span class="c1">/// An example of parameter usage is EventTriggerBehavior, which passes the EventArgs as a parameter to its actions.</span>
+        <span class="c1">/// &lt;/remarks&gt;</span>
+        <span class="c1">/// &lt;returns&gt;</span>
+        <span class="c1">/// Returns the result of the action.</span>
+        <span class="c1">/// &lt;/returns&gt;</span>
+        <span class="k">public</span> <span class="kt">object</span> <span class="nf">Execute</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="kt">object</span> <span class="n">parameter</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">Target</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="k">return</span> <span class="n">Target</span><span class="p">.</span><span class="nf">Focus</span><span class="p">(</span><span class="n">FocusState</span><span class="p">.</span><span class="n">Programmatic</span><span class="p">);</span>
+            <span class="p">}</span>
+            <span class="k">return</span> <span class="k">false</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>If you are interested in more Behaviors, TriggerBehaviors and Actions, check out <a href="https://github.com/markjulmar/mvvmhelpers/">MVVMHelpers</a> - it has several additional built-in behaviors for 8.1, along with the same behaviors (and all the plumbing) for Windows 8.  You can also just add it directly to your project with NuGet by searching for “MVVMHelpers.Metro”.</p>
+
+  </div><a class="u-url" href="/mvvm/2013/09/10/behaviors-in-windows-8-1-store-apps.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Making Async Popups in WSAs | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="Making Async Popups in WSAs" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="The async and await keywords are awesome and allow for a much easier style of async programming over the traditional callback approach. Ideally, we could use these everywhere in our programming - particularly for UI environments such as Window Store apps. But not all the APIs are programmed this way in WinRT - take for example the Popup control." />
+<meta property="og:description" content="The async and await keywords are awesome and allow for a much easier style of async programming over the traditional callback approach. Ideally, we could use these everywhere in our programming - particularly for UI environments such as Window Store apps. But not all the APIs are programmed this way in WinRT - take for example the Popup control." />
+<link rel="canonical" href="http://localhost:4000/uwp/2013/09/09/making-async-popups-in-wsas.html" />
+<meta property="og:url" content="http://localhost:4000/uwp/2013/09/09/making-async-popups-in-wsas.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2013-09-09T19:00:00-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Making Async Popups in WSAs" />
+<script type="application/ld+json">
+{"headline":"Making Async Popups in WSAs","dateModified":"2013-09-09T19:00:00-05:00","datePublished":"2013-09-09T19:00:00-05:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/uwp/2013/09/09/making-async-popups-in-wsas.html"},"description":"The async and await keywords are awesome and allow for a much easier style of async programming over the traditional callback approach. Ideally, we could use these everywhere in our programming - particularly for UI environments such as Window Store apps. But not all the APIs are programmed this way in WinRT - take for example the Popup control.","url":"http://localhost:4000/uwp/2013/09/09/making-async-popups-in-wsas.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Making Async Popups in WSAs</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2013-09-09T19:00:00-05:00" itemprop="datePublished">Sep 9, 2013
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>The <strong>async</strong> and <strong>await</strong> keywords are awesome and allow for a much easier style of async programming over the traditional callback approach. Ideally, we could use these everywhere in our programming - particularly for UI environments such as Window Store apps. But not all the APIs are programmed this way in WinRT - take for example the <strong>Popup</strong> control.</p>
+
+<p>You show the <strong>Popup</strong> by setting the <strong>IsOpen</strong> property to “true” and then close it by resetting it to “false”. This is a holdover from the WPF/SL world where this was the paradigm used. The problem is that to manage a continuation of logic you now need to wire up to the <strong>Closing</strong> event which makes it harder to plug into MVVM style programming.</p>
+
+<p>I had a question from a former student not long ago where he was trying to show a popup from a viewmodel but wanted to then process the results of the popup once it was dismissed - as part of the execution of an <strong>ICommand</strong> handler.  The two-fold nature of the API was getting in the way and he asked if there was a way to make it work more like a task-based API where async/await could be used.  It turns out that it’s not hard at all - you can wrap the management into a simple method.</p>
+
+<p>For example, if you have a <strong>Button</strong> in the UI to create a folder (like SkyDrive) and then in the handler (event or <strong>ICommand</strong>) do something like this:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">private</span> <span class="k">async</span> <span class="k">void</span> <span class="nf">OnShowPopup</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">RoutedEventArgs</span> <span class="n">e</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">string</span> <span class="n">filename</span> <span class="p">=</span> <span class="k">await</span> <span class="nf">GetFolderName</span><span class="p">();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">filename</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="k">await</span> <span class="k">new</span> <span class="nf">MessageDialog</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">"Got:"</span><span class="p">).</span><span class="nf">ShowAsync</span><span class="p">();</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Notice the call to <strong>GetFolderName</strong> - it shows the <strong>Popup</strong> and then provides the returned folder name. This code could easily be in a viewmodel (the <strong>MessageDialog</strong> not withstanding of course). Here’s the <strong>GetFolderName</strong> method:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">private</span> <span class="n">Task</span><span class="p">&lt;</span><span class="kt">string</span><span class="p">&gt;</span> <span class="nf">GetFolderName</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="kt">string</span> <span class="n">theFilename</span> <span class="p">=</span> <span class="k">null</span><span class="p">;</span>
+    <span class="n">ManualResetEventSlim</span> <span class="n">evt</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">ManualResetEventSlim</span><span class="p">();</span>
+    <span class="n">Popup</span> <span class="n">popup</span> <span class="p">=</span> <span class="k">new</span> <span class="n">Popup</span> <span class="p">{</span>
+        <span class="n">IsLightDismissEnabled</span> <span class="p">=</span> <span class="k">true</span><span class="p">,</span>
+        <span class="n">HorizontalOffset</span> <span class="p">=</span> <span class="n">Window</span><span class="p">.</span><span class="n">Current</span><span class="p">.</span><span class="n">Bounds</span><span class="p">.</span><span class="n">Width</span><span class="p">/</span><span class="m">2</span><span class="p">,</span>
+        <span class="n">VerticalOffset</span> <span class="p">=</span> <span class="n">Window</span><span class="p">.</span><span class="n">Current</span><span class="p">.</span><span class="n">Bounds</span><span class="p">.</span><span class="n">Height</span><span class="p">/</span><span class="m">2</span>
+    <span class="p">};</span>
+
+    <span class="n">TextBox</span> <span class="n">tb</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">TextBox</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">Margin</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">Thickness</span><span class="p">(</span><span class="m">5</span><span class="p">),</span>
+        <span class="n">Padding</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">Thickness</span><span class="p">(</span><span class="m">5</span><span class="p">)</span>
+    <span class="p">};</span>
+
+    <span class="n">Button</span> <span class="n">btn</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">Button</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">Content</span> <span class="p">=</span> <span class="s">"Create"</span><span class="p">,</span>
+        <span class="n">Margin</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">Thickness</span><span class="p">(</span><span class="m">5</span><span class="p">),</span>
+        <span class="n">IsEnabled</span> <span class="p">=</span> <span class="k">false</span>
+    <span class="p">};</span>
+
+    <span class="n">btn</span><span class="p">.</span><span class="n">Click</span> <span class="p">+=</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span> <span class="p">=&gt;</span> <span class="p">{</span> <span class="n">theFilename</span> <span class="p">=</span> <span class="n">tb</span><span class="p">.</span><span class="n">Text</span><span class="p">;</span> <span class="n">popup</span><span class="p">.</span><span class="n">IsOpen</span> <span class="p">=</span> <span class="k">false</span><span class="p">;</span> <span class="p">};</span>
+    <span class="n">tb</span><span class="p">.</span><span class="n">TextChanged</span> <span class="p">+=</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span> <span class="p">=&gt;</span> <span class="p">{</span> <span class="n">btn</span><span class="p">.</span><span class="n">IsEnabled</span> <span class="p">=</span> <span class="p">!</span><span class="kt">string</span><span class="p">.</span><span class="nf">IsNullOrEmpty</span><span class="p">(</span><span class="n">tb</span><span class="p">.</span><span class="n">Text</span><span class="p">);</span> <span class="p">};</span>
+
+    <span class="n">Border</span> <span class="n">bd</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">Border</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">Background</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">SolidColorBrush</span><span class="p">(</span><span class="n">Colors</span><span class="p">.</span><span class="n">Black</span><span class="p">),</span>
+        <span class="n">BorderBrush</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">SolidColorBrush</span><span class="p">(</span><span class="n">Colors</span><span class="p">.</span><span class="n">White</span><span class="p">),</span>
+        <span class="n">BorderThickness</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">Thickness</span><span class="p">(</span><span class="m">2</span><span class="p">),</span>
+        <span class="n">Width</span> <span class="p">=</span> <span class="m">300</span><span class="p">,</span>
+        <span class="n">Padding</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">Thickness</span><span class="p">(</span><span class="m">20</span><span class="p">)</span>
+    <span class="p">};</span>
+
+    <span class="n">StackPanel</span> <span class="n">sp</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">StackPanel</span><span class="p">();</span>
+    <span class="n">sp</span><span class="p">.</span><span class="n">Children</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="k">new</span> <span class="nf">TextBlock</span><span class="p">()</span> <span class="p">{</span> <span class="n">Text</span> <span class="p">=</span> <span class="s">"Enter folder name"</span> <span class="p">});</span>
+    <span class="n">sp</span><span class="p">.</span><span class="n">Children</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="n">tb</span><span class="p">);</span>
+    <span class="n">sp</span><span class="p">.</span><span class="n">Children</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="n">btn</span><span class="p">);</span>
+    <span class="n">bd</span><span class="p">.</span><span class="n">Child</span> <span class="p">=</span> <span class="n">sp</span><span class="p">;</span>
+
+    <span class="n">popup</span><span class="p">.</span><span class="n">Child</span> <span class="p">=</span> <span class="n">bd</span><span class="p">;</span>
+    <span class="n">popup</span><span class="p">.</span><span class="n">Closed</span> <span class="p">+=</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span> <span class="p">=&gt;</span> <span class="n">evt</span><span class="p">.</span><span class="nf">Set</span><span class="p">();</span>
+    <span class="n">popup</span><span class="p">.</span><span class="n">IsOpen</span> <span class="p">=</span> <span class="k">true</span><span class="p">;</span>
+    <span class="n">tb</span><span class="p">.</span><span class="nf">Focus</span><span class="p">(</span><span class="n">FocusState</span><span class="p">.</span><span class="n">Programmatic</span><span class="p">);</span>
+
+    <span class="k">return</span> <span class="n">Task</span><span class="p">.</span><span class="nf">Run</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="p">{</span> <span class="n">evt</span><span class="p">.</span><span class="nf">Wait</span><span class="p">();</span> <span class="k">return</span> <span class="n">theFilename</span><span class="p">;</span> <span class="p">});</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Here we are building the <strong>Popup</strong> dynamically - you could just as easily provide XAML for this (particularly for the <strong>Content</strong>). In this case, we wire into the <strong>Closed</strong> event and signal a thread to return the collected filename. Then a <strong>Task</strong> is spun up to wait for the signal and this is what the UI is going to use await on. In this way, we can use the same sort of logic we might use with an I/O based API in our viewmodel but with a <strong>Flyout</strong> or <strong>Popup</strong>.</p>
+
+  </div><a class="u-url" href="/uwp/2013/09/09/making-async-popups-in-wsas.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

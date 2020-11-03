@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Implementing disposable components | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="Implementing disposable components" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="A few months ago, I ran into a really weird bug with the System.Net.NetworkInformation.Ping class. I was using it to monitor the network connectivity to a server and as my program ran, it appeared to leak handles. I was calling Dispose (as I should) but it was still appeared to be leaking handles when called over and over." />
+<meta property="og:description" content="A few months ago, I ran into a really weird bug with the System.Net.NetworkInformation.Ping class. I was using it to monitor the network connectivity to a server and as my program ran, it appeared to leak handles. I was calling Dispose (as I should) but it was still appeared to be leaking handles when called over and over." />
+<link rel="canonical" href="http://localhost:4000/dotnet/2006/03/21/implementing-disposable-components.html" />
+<meta property="og:url" content="http://localhost:4000/dotnet/2006/03/21/implementing-disposable-components.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2006-03-21T18:00:00-06:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Implementing disposable components" />
+<script type="application/ld+json">
+{"headline":"Implementing disposable components","dateModified":"2006-03-21T18:00:00-06:00","datePublished":"2006-03-21T18:00:00-06:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/dotnet/2006/03/21/implementing-disposable-components.html"},"description":"A few months ago, I ran into a really weird bug with the System.Net.NetworkInformation.Ping class. I was using it to monitor the network connectivity to a server and as my program ran, it appeared to leak handles. I was calling Dispose (as I should) but it was still appeared to be leaking handles when called over and over.","url":"http://localhost:4000/dotnet/2006/03/21/implementing-disposable-components.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Implementing disposable components</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2006-03-21T18:00:00-06:00" itemprop="datePublished">Mar 21, 2006
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>A few months ago, I ran into a really weird bug with the <strong>System.Net.NetworkInformation.Ping</strong> class.  I was using it to monitor the network connectivity to a server and as my program ran, it appeared to leak handles.  I was calling <strong>Dispose</strong> (as I should) but it was still appeared to be leaking handles when called over and over.</p>
+
+<p>Here’s the basic code I was running (simplified for this example):</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Ping</span> <span class="n">icmp</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">Ping</span><span class="p">();</span>  
+<span class="n">icmp</span><span class="p">.</span><span class="n">PingCompleted</span> <span class="p">+=</span> <span class="k">delegate</span><span class="p">(</span><span class="kt">object</span> <span class="n">sender</span><span class="p">,</span> <span class="n">PingCompletedEventArgs</span> <span class="n">e</span><span class="p">)</span>  
+<span class="p">{</span>  
+      <span class="n">PingReply</span> <span class="n">reply</span> <span class="p">=</span> <span class="n">e</span><span class="p">.</span><span class="n">Reply</span><span class="p">;</span>  
+      <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Address: {0} - {1}"</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">reply</span><span class="p">.</span><span class="n">RoundtripTime</span><span class="p">);</span>  
+      <span class="n">icmp</span><span class="p">.</span><span class="nf">Dispose</span><span class="p">();</span> <span class="c1">// Get rid of resources</span>
+<span class="p">};</span>  
+  
+<span class="n">icmp</span><span class="p">.</span><span class="nf">SendAsync</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="m">100</span><span class="p">);</span>  
+  
+<span class="c1">// Continue doing work</span>
+</code></pre></div></div>
+
+<p>The code looked ok to me, so I started looking a little deeper.  In reality, I found that if I waited long enough, the GC process was cleaning up the unmanaged handles using the SafeHandle class, but I was confused because Dispose should have done that for me. When I looked at the ping class using Reflector, the problem became obvious and it’s a warning to anyone building components that need to free up non-memory related resources.</p>
+
+<p>In order to integrate with the Windows Forms and ASP.NET designer, the <strong>Ping</strong> component extends <strong>System.ComponentModel.Component</strong>.  This provides the design-time integration with Visual Studio .NET and it also provides some basic plumbing that used to cleanup the component - specifically it implements IDisposable for you and provides a nice virtual <strong>Dispose</strong> method which you are supposed to override and free your resources.  The code follows Microsoft’s <a href="http://msdn.microsoft.com/en-us/library/system.idisposable(v=vs.110).aspx">IDisposable</a> pattern exactly - providing the IDisposable.Dispose method which delegates to an internal <strong>virtual void Dispose(bool isDisposing)</strong> method which is the method you should override.</p>
+
+<p>The <strong>Ping</strong> component uses an internal socket and the ICMP W2K support under the covers to do its work and this socket needs to be cleaned up.  So, the author implemented <strong>IDisposable</strong> to indicate this -</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">class</span> <span class="nc">Ping</span> <span class="p">:</span> <span class="n">Component</span><span class="p">,</span> <span class="n">IDisposable</span>  
+<span class="p">{</span>  
+    <span class="k">private</span> <span class="k">void</span> <span class="nf">InternalDispose</span><span class="p">()</span>  
+    <span class="p">{</span>  
+        <span class="k">if</span> <span class="p">(!</span><span class="n">disposed</span><span class="p">)</span>  
+        <span class="p">{</span>  
+             <span class="c1">// Cleanup socket and/or ICMP handle resources..  </span>
+        <span class="p">}</span>  
+    <span class="p">}</span>  
+
+    <span class="n">IDisposable</span><span class="p">.</span><span class="nf">Dispose</span><span class="p">()</span>  
+    <span class="p">{</span>  
+        <span class="k">this</span><span class="p">.</span><span class="nf">InternalDispose</span><span class="p">();</span>  
+    <span class="p">}</span>  
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Note how the author used an explicit interface implementation for the <strong>Dispose</strong> method.  This means we will need to cast the object to an <strong>IDisposable</strong> interface in order to call the method (something I’m not doing above).  In fact, it won’t even show up as a callable method inside VS.NET.  There is nothing wrong with this implementation (except of course it doesn’t follow Microsoft’s guidelines) until you add in the derivation from <strong>Component</strong>.  If we add it’s implementation into the mix, and expand it out I get something like:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">class</span> <span class="nc">Ping</span> <span class="p">:</span> <span class="n">Component</span><span class="p">,</span> <span class="n">IDisposable</span>  
+<span class="p">{</span>  
+    <span class="k">private</span> <span class="k">void</span> <span class="nf">InternalDispose</span><span class="p">()</span>  
+    <span class="p">{</span>  
+        <span class="k">if</span> <span class="p">(!</span><span class="n">disposed</span><span class="p">)</span>  
+        <span class="p">{</span>  
+            <span class="c1">// Cleanup socket and/or ICMP handle resources..  </span>
+        <span class="p">}</span>
+    <span class="p">}</span>  
+  
+    <span class="n">IDisposable</span><span class="p">.</span><span class="nf">Dispose</span><span class="p">()</span>  
+    <span class="p">{</span>  
+        <span class="k">this</span><span class="p">.</span><span class="nf">InternalDispose</span><span class="p">();</span>  
+    <span class="p">}</span>  
+  
+    <span class="k">public</span> <span class="k">void</span> <span class="nf">Dispose</span><span class="p">()</span>  
+    <span class="p">{</span>  
+        <span class="k">this</span><span class="p">.</span><span class="nf">Dispose</span><span class="p">(</span><span class="k">true</span><span class="p">);</span>  
+        <span class="n">GC</span><span class="p">.</span><span class="nf">SupressFinalize</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>  
+    <span class="p">}</span>  
+  
+    <span class="k">protected</span> <span class="k">virtual</span> <span class="k">void</span> <span class="nf">Dispose</span><span class="p">(</span><span class="kt">bool</span> <span class="n">disposing</span><span class="p">)</span>  
+    <span class="p">{</span>  
+        <span class="c1">// Remove object from component container</span>
+    <span class="p">}</span>  
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>See the problem?  I now have a public <strong>Dispose</strong> method available directly - and intellisense will show that.  This is the one I was calling my code when my async call was finished.  The problem is that it wasn’t actually disposing the unmanaged resources - it was running the <strong>Component.Dispose</strong> code.</p>
+
+<p>I need to back up and make another point on this.  I wouldn’t have even seen the problem if I had been doing things synchronously.  In that case, I would have likely doing a <strong>using</strong> statement:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">using</span> <span class="p">(</span><span class="n">Ping</span> <span class="n">icmp</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">Ping</span><span class="p">())</span>  
+<span class="p">{</span>  
+    <span class="n">PingReply</span> <span class="n">reply</span> <span class="p">=</span> <span class="n">icmp</span><span class="p">.</span><span class="nf">Send</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="m">100</span><span class="p">);</span>  
+    <span class="k">if</span> <span class="p">(</span><span class="n">reply</span><span class="p">.</span><span class="n">Status</span> <span class="p">==</span> <span class="n">IPStatus</span><span class="p">.</span><span class="n">Success</span><span class="p">)</span>  
+    <span class="p">{</span>  
+        <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Address: {0} - {1}"</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">reply</span><span class="p">.</span><span class="n">RoundtripTime</span><span class="p">);</span>  
+    <span class="p">}</span>  
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>In this case, the C# compiler is nice enough to dispose of the object for me - and it does it by casting the object to <strong>IDisposable</strong>.  So, the generated code would <em>really</em> look like:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Ping</span> <span class="n">icmp</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">Ping</span><span class="p">();</span>  
+<span class="k">try</span>  
+<span class="p">{</span>  
+    <span class="n">PingReply</span> <span class="n">reply</span> <span class="p">=</span> <span class="n">icmp</span><span class="p">.</span><span class="nf">Send</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="m">100</span><span class="p">);</span>  
+    <span class="k">if</span> <span class="p">(</span><span class="n">reply</span><span class="p">.</span><span class="n">Status</span> <span class="p">==</span> <span class="n">IPStatus</span><span class="p">.</span><span class="n">Success</span><span class="p">)</span>  
+    <span class="p">{</span>  
+        <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">"Address: {0} - {1}"</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">reply</span><span class="p">.</span><span class="n">RoundtripTime</span><span class="p">);</span>  
+    <span class="p">}</span>  
+<span class="p">}</span>  
+<span class="k">finally</span>  
+<span class="p">{</span>  
+    <span class="p">((</span><span class="n">IDisposable</span><span class="p">)</span><span class="n">icmp</span><span class="p">).</span><span class="nf">Dispose</span><span class="p">();</span>  
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>So, this would end up calling the correct implementation.  It was only because I was calling <strong>Dispose</strong> directly that I had a problem.  If the author had followed the IDisposable guidelines, this problem would have been found immediately because the C# compiler would have spit out a warning that <strong>public void Dispose()</strong> is hiding a base class implementation - cluing the author in that they need to hook into the base class implementation.  So, how did this happen?  My guess is that originally the <strong>Ping</strong> class didn’t extend Component.  That derivation was added later in order to provide for design-time support.</p>
+
+<p>If you are building components yourself, don’t fall into this trap!  Always, always, always use Microsoft’s stated guidelines - here’s a simple example for those not familiar with it:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">class</span> <span class="nc">MyResource</span><span class="p">:</span> <span class="n">IDisposable</span>  
+<span class="p">{</span>  
+    <span class="c1">// Track whether Dispose has been called.  </span>
+    <span class="k">protected</span> <span class="kt">bool</span> <span class="n">disposed</span> <span class="p">=</span> <span class="k">false</span><span class="p">;</span>  
+
+    <span class="c1">// Implement IDisposable.  </span>
+    <span class="c1">// Do not make this method virtual.  </span>
+    <span class="c1">// A derived class should not be able to override this method.  </span>
+    <span class="k">public</span> <span class="k">void</span> <span class="nf">Dispose</span><span class="p">()</span>  
+    <span class="p">{</span>  
+        <span class="nf">Dispose</span><span class="p">(</span><span class="k">true</span><span class="p">);</span>  
+        <span class="c1">// This object will be cleaned up by the Dispose method.  </span>
+        <span class="c1">// Therefore, you should call GC.SupressFinalize to  </span>
+        <span class="c1">// take this object off the finalization queue  </span>
+        <span class="c1">// and prevent finalization code for this object  </span>
+        <span class="c1">// from executing a second time.  </span>
+        <span class="n">GC</span><span class="p">.</span><span class="nf">SuppressFinalize</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>  
+    <span class="p">}</span>
+
+    <span class="c1">// Dispose(bool disposing) executes in two distinct scenarios.  </span>
+    <span class="c1">// If disposing equals true, the method has been called directly  </span>
+    <span class="c1">// or indirectly by a user's code. Managed and unmanaged resources  </span>
+    <span class="c1">// can be disposed.  </span>
+    <span class="c1">// If disposing equals false, the method has been called by the  </span>
+    <span class="c1">// runtime from inside the finalizer and you should not reference  </span>
+    <span class="c1">// other objects. Only unmanaged resources can be disposed.  </span>
+    <span class="k">protected</span> <span class="k">virtual</span> <span class="k">void</span> <span class="nf">Dispose</span><span class="p">(</span><span class="kt">bool</span> <span class="n">disposing</span><span class="p">)</span>  
+    <span class="p">{</span>  
+        <span class="c1">// Check to see if Dispose has already been called.  </span>
+        <span class="k">if</span><span class="p">(!</span><span class="k">this</span><span class="p">.</span><span class="n">disposed</span><span class="p">)</span>  
+        <span class="p">{</span>  
+            <span class="c1">// If disposing equals true, dispose all managed  </span>
+            <span class="c1">// and unmanaged resources.  </span>
+            <span class="k">if</span><span class="p">(</span><span class="n">disposing</span><span class="p">)</span>  
+            <span class="p">{</span>  
+                <span class="c1">// Dispose all managed resources here.  </span>
+            <span class="p">}</span>  
+
+            <span class="c1">// Call the appropriate methods to clean up  </span>
+            <span class="c1">// unmanaged resources here.  </span>
+        <span class="p">}</span>  
+        <span class="n">disposed</span> <span class="p">=</span> <span class="k">true</span><span class="p">;</span>  
+   <span class="p">}</span>  
+<span class="p">}</span>  
+</code></pre></div></div>
+
+<p>There’s a bunch more information on this topic is section 9.3 of the <a href="http://www.amazon.com/gp/product/0321246756/sr=8-1/qid=1143055197/ref=pd_bbs_1/002-4294371-8914451?%5Fencoding=UTF8">Framework Design Guidelines</a> - a must read for anyone building class libraries or reusable components.</p>
+
+  </div><a class="u-url" href="/dotnet/2006/03/21/implementing-disposable-components.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

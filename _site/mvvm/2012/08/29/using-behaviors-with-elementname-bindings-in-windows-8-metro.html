@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Using behaviors with ElementName bindings in Windows 8 Metro | Wandering in the Wilderness</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="Using behaviors with ElementName bindings in Windows 8 Metro" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="I got an email yesterday from a developer who was trying to use MVVMHelpers and the new System.Windows.Interactivity support for Windows 8 and was having trouble. Specifically, he was trying to do this:" />
+<meta property="og:description" content="I got an email yesterday from a developer who was trying to use MVVMHelpers and the new System.Windows.Interactivity support for Windows 8 and was having trouble. Specifically, he was trying to do this:" />
+<link rel="canonical" href="http://localhost:4000/mvvm/2012/08/29/using-behaviors-with-elementname-bindings-in-windows-8-metro.html" />
+<meta property="og:url" content="http://localhost:4000/mvvm/2012/08/29/using-behaviors-with-elementname-bindings-in-windows-8-metro.html" />
+<meta property="og:site_name" content="Wandering in the Wilderness" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2012-08-29T19:00:00-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Using behaviors with ElementName bindings in Windows 8 Metro" />
+<script type="application/ld+json">
+{"headline":"Using behaviors with ElementName bindings in Windows 8 Metro","dateModified":"2012-08-29T19:00:00-05:00","datePublished":"2012-08-29T19:00:00-05:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/mvvm/2012/08/29/using-behaviors-with-elementname-bindings-in-windows-8-metro.html"},"description":"I got an email yesterday from a developer who was trying to use MVVMHelpers and the new System.Windows.Interactivity support for Windows 8 and was having trouble. Specifically, he was trying to do this:","url":"http://localhost:4000/mvvm/2012/08/29/using-behaviors-with-elementname-bindings-in-windows-8-metro.html","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Wandering in the Wilderness" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Wandering in the Wilderness</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Using behaviors with ElementName bindings in Windows 8 Metro</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2012-08-29T19:00:00-05:00" itemprop="datePublished">Aug 29, 2012
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>I got an email yesterday from a developer who was trying to use MVVMHelpers and the new <strong>System.Windows.Interactivity</strong> support for Windows 8 and was having trouble. Specifically, he was trying to do this:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;ListView</span> <span class="na">x:Name=</span><span class="s">"lstModules"</span> <span class="na">Padding=</span><span class="s">"10,0,0,60"</span> <span class="na">IsItemClickEnabled=</span><span class="s">"true"</span> <span class="na">ItemsSource=</span><span class="s">"{Binding Modules}"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;interactivity:Interaction.Triggers&gt;</span>
+    <span class="nt">&lt;interactivity:EventTrigger</span> <span class="na">EventName=</span><span class="s">"ItemClick"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;julmar:InvokeCommand</span> <span class="na">Command=</span><span class="s">"{Binding SelectModule}"</span> <span class="na">CommandParameter=</span><span class="s">"{Binding ElementName=lstModules,Path=SelectedItem}"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;/interactivity:EventTrigger&gt;</span>
+  <span class="nt">&lt;/interactivity:Interaction.Triggers&gt;</span>
+<span class="nt">&lt;/ListView&gt;</span>
+</code></pre></div></div>
+
+<p>The idea was to have a command get invoked when an item is tapped in the ListView - passing the selected item as the parameter to the command. He was always getting <strong>null</strong> in his command handler. There are actually two issues with this snippet, one is in the setup of the <strong>ListView</strong> itself and the second is a restriction of attached properties today in Windows 8 Metro. Let’s tackle them in the opposite order.</p>
+
+<h3 id="elementname-bindings-and-namescopes">ElementName bindings and Namescopes</h3>
+
+<p>Windows 8 XAML uses the same principles for XAML parsing that WPF and Silverlight do - a single XAML file encompasses a <em>name scope</em> which is used to find elements by name in that area.  Within a template (data or control), the name scope is limited to that specific template instantiation.  The behaviors are being attached via the <strong>Interaction.Triggers</strong> collection - and, while they are <strong>FrameworkElement</strong> classes so they inherit the DataContext, they are not part of the visual tree and so do not get automatic access to the XAML name scope. A few of the behaviors walk the visual tree and hook into the namescope to look up things (specifically targeted actions), but most of them remain unaware of it.  Now, what that means practically, is that <strong>{Binding ElementName}</strong> style bindings as shown above <em>will not work inside the trigger or behaviors collections</em>.</p>
+
+<p>Most of the time, I’m actually ok with this restriction - I don’t really want to pass much of the UI shell into my ViewModel, they are intentionally separated.  But it can be convenient sometimes, for triggers and such - so how do we manage that?</p>
+
+<h4 id="enter-namescopebinding">Enter: <strong>NameScopeBinding</strong></h4>
+
+<p>In MVVMHelpers 1.02, I added a new type which solves this problem by using resources.  Essentially, you can add a <strong>NameScopeBinding</strong> to your resources, bind it to the element in question and then use <strong>{StaticResource}</strong> in your behavior/trigger to get access to that element - kind of an indirect lookup like a stored field.  Here’s an example:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;Page.Resources&gt;</span>
+    <span class="nt">&lt;Behaviors:NameScopeBinding</span> <span class="na">x:Key=</span><span class="s">"ItemListView"</span> <span class="na">Element=</span><span class="s">"{Binding ElementName=lstModules}"</span> <span class="nt">/&gt;</span>
+<span class="nt">&lt;/Page.Resources&gt;</span>
+    ...
+<span class="nt">&lt;julmar:InvokeCommand</span> <span class="na">Command=</span><span class="s">"{Binding SelectModule}"</span>
+    <span class="na">CommandParameter=</span><span class="s">"{Binding Element.SelectedItem, Source={StaticResource ItemListView}}"</span><span class="nt">&gt;</span>
+</code></pre></div></div>
+
+<p>Notice how the <strong>CommandParameter</strong> locates the namescope binder and then grabs the element and selected item - this works and solves at least this part of the problem. You could use this approach to get access to any named element in a place where it’s not normally available to you.</p>
+
+<h3 id="listviews-in-windows-8">ListViews in Windows 8</h3>
+
+<p>The second issue is how the ListView actually works - notice in the original XAML block, it has the <strong>IsItemClickEnabled</strong> property set? This actually tells the ListView to work as a touch-style control, i.e. you tap items and they raise an ItemClick event, <em>but do not actually perform a selection!</em> This means the approach of passing a <strong>SelectedItem</strong> is actually flawed because the ListView won’t track selection here. So, if you <em>really</em> want to use this approach, you need to turn that feature off, allow selection and wire up to the <strong>SelectionChanged</strong> event instead (or more ideally, data bind the <strong>SelectedItem</strong> property of the ListView to some property in the ViewModel then you don’t need the parameter at all.) Another approach is to take advantage of the <strong>ItemClick</strong> event - it passes an <strong>ItemClickEventArgs</strong> which includes the tapped item. MVVMHelpers and <strong>InvokeCommand</strong> will help you here - if you do not wire up the <strong>CommandParameter</strong> (or it’s null) then it will automatically pass the trigger parameter - which in this case would be the <strong>ItemClickEventArgs</strong>. You could then grab the clicked item from that in your ViewModel. So, if you just did this:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;interactivity:Interaction.Triggers&gt;</span>
+    <span class="nt">&lt;interactivity:EventTrigger</span> <span class="na">EventName=</span><span class="s">"ItemClick"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;julmar:InvokeCommand</span> <span class="na">Command=</span><span class="s">"{Binding SelectModule}"</span> <span class="nt">/&gt;</span>
+    <span class="nt">&lt;/interactivity:EventTrigger&gt;</span>
+<span class="nt">&lt;/interactivity:Interaction.Triggers&gt;</span>
+</code></pre></div></div>
+
+<p>You’d actually get the <strong>EventArgs</strong> for the <strong>ItemClick</strong> passed to you. So you could do this in the ViewModel:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">SelectModule</span> <span class="p">=</span> <span class="k">new</span> <span class="n">DelegateCommand</span><span class="p">&lt;</span><span class="n">ItemClickEventArgs</span><span class="p">&gt;(</span><span class="n">OnSelectModuleFromItemClick</span><span class="p">);</span>
+<span class="p">...</span>
+
+<span class="k">private</span> <span class="k">void</span> <span class="nf">OnSelectModuleFromItemClick</span><span class="p">(</span><span class="n">ItemClickEventArgs</span> <span class="n">e</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="nf">DoSelectModule</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">ClickedItem</span> <span class="k">as</span> <span class="n">Module</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>As I mentioned, I’m not a big fan of this approach because it’s leaking some UI implementation details into the ViewModel and I’m a fan of keeping them separate, however I also live in the real world and sometimes you have to break rules :-)</p>
+
+<p>Thanks to Frank Nguyen for reporting it to me and working through it!</p>
+
+<p>Happy coding!</p>
+
+  </div><a class="u-url" href="/mvvm/2012/08/29/using-behaviors-with-elementname-bindings-in-windows-8-metro.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Wandering in the Wilderness</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Wandering in the Wilderness</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/markjulmar"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">markjulmar</span></a></li><li><a href="https://www.twitter.com/marksm"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">marksm</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Musings from a distracted developer.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
