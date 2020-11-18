@@ -27,7 +27,7 @@ twitter_username: marksm
 github_username:  markjulmar
 
 # Build settings
-theme: jekyll-theme-cayman
+theme: jekyll-theme-slate
 plugins:
   - jekyll-feed
 
