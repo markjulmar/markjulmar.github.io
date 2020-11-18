@@ -27,7 +27,7 @@ twitter_username: marksm
 github_username:  markjulmar
 
 # Build settings
-theme: jekyll-theme-slate
+theme: minima
 plugins:
   - jekyll-feed
 
