@@ -8,7 +8,7 @@ tags: bio
 
 One of the projects that was really interesting was Trident - [https://tridentworkflow.codeplex.com/](https://tridentworkflow.codeplex.com/).  It provided a graphical designer based on Windows Workflow 3.0 to create scientific analysis applications.  The .NET Bio team created some activities to introduce bioinformatics into that platform and it was a sample application that was shown off in some of the training sessions.  Unfortunately, WF 3.0 was deprecated when .NET 4.0 shipped (and replaced by a completely different version of Workflow!), and the TSCB project just went dark.  It also was quite heavy and slow having requirements on SQL server and some services to actually execute the workflows themselves.
 
-But I really liked the idea of creating simple analysis programs with WF so I took the concept and created a new project - BioWF ([http://markjulmar.github.io/BioWF/](http://markjulmar.github.io/BioWF/)) which uses .NET 4.5 and .NET Bio 1.1 to provide a similar capability.  It has two parts to it:
+But I really liked the idea of creating simple analysis programs with WF so I took the concept and created a new project - [BioWorkflow](https://github.com/markjulmar/BioWorkflow/) which uses .NET 4.5 and .NET Bio 1.1 to provide a similar capability.  It has two parts to it:
 
 1. A GUI designer which re-hosts Workflow 4.5 and provides access to a set of pre-defined activities and the core WF activities.  You can create, edit and save workflows to XML based files.
 1. A console based runner which can take a persisted WF and execute it providing both input and output capabilities.
